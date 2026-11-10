@@ -1,7 +1,7 @@
 "use strict";
 /**
  * vigia.js
- * @version 1.0.0
+ * @version 1.1.0
  * @author Ruda Gabriel
  * @description Módulo de persistência do quiosque: um processo pequeno que
  *              reabre o Consulta Estoque se ele for fechado SEM o comando de
@@ -15,6 +15,7 @@
  *   app.pid              PID do aplicativo em execução (gravado por ele ao abrir)
  *   vigia.pid            PID deste vigia (um só por vez)
  *   saida-autorizada     criado pelo aplicativo ao sair com a senha → o vigia termina
+ *   reiniciando          criado pelo aplicativo ao reiniciar sozinho → o vigia espera
  *   config.json          com "persistente": false o vigia termina
  *
  * Transparente e reversível: aparece no Gerenciador de Tarefas como
@@ -24,7 +25,9 @@
  *
  * @changelog
  *   (Histórico completo das versões: CHANGELOG.md no repositório.)
- *   1.0.0 — Primeira versão.
+ *   1.1.0 — Reabre em 1 a 2 s (antes ~14 s): confere a cada 1 s e só espera o prazo
+ *           longo quando o próprio aplicativo avisou que está reiniciando ou logo
+ *           depois de reabrir (o aplicativo novo ainda está gravando o PID).
  */
 
 const fs = require("fs");
@@ -33,8 +36,9 @@ const cp = require("child_process");
 
 // CONSULTA_VIGIA_RAPIDO=1 encurta os tempos (só nos testes automáticos).
 const R = process.env.CONSULTA_VIGIA_RAPIDO === "1" ? 0.1 : 1;
-const INTERVALO_MS = 2000 * R;
-const ESPERA_REINICIO_MS = 12000 * R; // tempo para um app que está reiniciando gravar o PID novo
+const INTERVALO_MS = 1000 * R;
+const ESPERA_REINICIO_MS = 15000 * R; // só quando o app avisou que está reiniciando (grava o PID novo ao abrir)
+const AVISO_VALIDO_MS = 30000;        // aviso "reiniciando" mais velho que isso é ignorado
 const MAX_REINICIOS = 5;              // em JANELA_MS → pausa longa (evita laço se o app não abre)
 const JANELA_MS = 3 * 60000 * R;
 const PAUSA_LONGA_MS = 60000 * R;
@@ -54,6 +58,7 @@ const ARQ = {
     app: path.join(PASTA, "app.pid"),
     vigia: path.join(PASTA, "vigia.pid"),
     saida: path.join(PASTA, "saida-autorizada"),
+    reiniciando: path.join(PASTA, "reiniciando"),
     config: path.join(PASTA, "config.json"),
     log: path.join(PASTA, "consulta-estoque.log")
 };
@@ -72,6 +77,10 @@ const persistenciaLigada = () => {
     try { return JSON.parse(fs.readFileSync(ARQ.config, "utf8").replace(/^﻿/, "")).persistente !== false; }
     catch (_) { return true; } // config ilegível: segue protegendo (o padrão é ligado)
 };
+// O próprio aplicativo avisou que está reiniciando (aviso recente)?
+const reiniciandoAvisado = () => {
+    try { return Date.now() - fs.statSync(ARQ.reiniciando).mtimeMs < AVISO_VALIDO_MS; } catch (_) { return false; }
+};
 const encerrar = (motivo) => {
     log("Vigia encerrado: " + motivo + ".");
     try { if (lerPid(ARQ.vigia) === process.pid) fs.unlinkSync(ARQ.vigia); } catch (_) {}
@@ -87,6 +96,7 @@ log("Vigia iniciado (PID " + process.pid + ") — reabre o aplicativo se ele for
 let reinicios = [];
 let mortoDesde = 0;
 let pausaAte = 0;
+let abertoEm = 0;          // última reabertura: o app novo leva uns segundos para gravar o PID
 
 function abrirApp() {
     const env = Object.assign({}, process.env);
@@ -110,8 +120,10 @@ setInterval(() => {
     const pid = lerPid(ARQ.app);
     if (vivo(pid)) { mortoDesde = 0; return; }
     const agora = Date.now();
-    if (!mortoDesde) { mortoDesde = agora; return; }        // pode estar só reiniciando
-    if (agora - mortoDesde < ESPERA_REINICIO_MS || agora < pausaAte) return;
+    // Confirma na volta seguinte (1 s) que caiu mesmo; reinício avisado pelo app espera mais.
+    if (!mortoDesde) { mortoDesde = agora; return; }
+    if (agora < pausaAte || agora - abertoEm < ESPERA_REINICIO_MS) return;
+    if (reiniciandoAvisado() && agora - mortoDesde < ESPERA_REINICIO_MS) return;
 
     reinicios = reinicios.filter(t => agora - t < JANELA_MS);
     if (reinicios.length >= MAX_REINICIOS) {
@@ -122,5 +134,6 @@ setInterval(() => {
     }
     reinicios.push(agora);
     mortoDesde = 0;
+    abertoEm = agora;
     abrirApp();
 }, INTERVALO_MS);

@@ -1,7 +1,7 @@
 "use strict";
 /**
  * copia-gbak.js
- * @version 1.0.0
+ * @version 1.1.0
  * @author Ruda Gabriel
  * @description Cópia do banco pelo gbak (método do Relatórios FDB-FBK): backup
  *              do banco principal SEM coleta de lixo (-g, leitura numa "foto" da
@@ -19,7 +19,10 @@
  *
  * @changelog
  *   (Histórico completo das versões: CHANGELOG.md no repositório.)
- *   1.0.0 — Primeira versão.
+ *   1.1.0 — Andamento com estimativa: o manifesto guarda a duração do backup e da
+ *           restauração, e status() devolve inicioEm, etapaDesde e as estimativas
+ *           (da última cópia). gbak procurado pelo registro do Windows em vez da
+ *           consulta WMI do PowerShell (que levava segundos em PCs antigos).
  */
 
 const fs = require("fs");
@@ -28,7 +31,7 @@ const os = require("os");
 const cp = require("child_process");
 const { decodificarTexto } = require("./firebird.js");
 
-const VERSAO = "1.0.0";
+const VERSAO = "1.1.0";
 const RE_COPIA = /^SMALL_OFFLINE_\d{8}_\d{6}(?:_\d+)?\.FDB$/i;
 const RE_TEMP = /^SMALL_OFFLINE_\d{8}_\d{6}(?:_\d+)?\.(?:FBK|FDB)\.tmp$/i;
 const MANIFESTO = "copia.json";
@@ -52,8 +55,9 @@ const _execTexto = (exe, args, ms) => new Promise(resolve => {
 const _existe = async p => { try { return !!p && (await fs.promises.stat(p)).isFile(); } catch (_) { return false; } };
 
 /**
- * Procura o gbak: configurado → pasta do serviço Firebird em execução (mesma
- * versão do servidor local) → pastas conhecidas → PATH. "" se não achar.
+ * Procura o gbak: configurado → pasta dos serviços do Firebird (registro do
+ * Windows: mesma versão do servidor local) → pastas conhecidas → PATH. "" se
+ * não achar.
  * Assíncrona: nunca congela a janela.
  */
 async function localizarGbak(preferido) {
@@ -61,12 +65,15 @@ async function localizarGbak(preferido) {
     const nome = process.platform === "win32" ? "gbak.exe" : "gbak";
     const cands = [];
     if (process.platform === "win32") {
-        const ps = "Get-CimInstance Win32_Service | Where-Object { $_.Name -like 'Firebird*' -and $_.State -eq 'Running' } | ForEach-Object { $_.PathName }";
-        const out = await _execTexto("powershell.exe", ["-NoProfile", "-NonInteractive", "-EncodedCommand", Buffer.from(ps, "utf16le").toString("base64")], 10000);
-        String(out).split(/\r?\n/).forEach(l => {
-            const m = l.match(/^\s*"?([^"]+?\.exe)"?/i);
-            if (m) cands.push(path.join(path.dirname(m[1]), nome));
-        });
+        // Serviços do Firebird pelo registro: "reg" responde em milissegundos.
+        const chaves = await _execTexto("reg", ["query", "HKLM\\SYSTEM\\CurrentControlSet\\Services", "/k", "/f", "Firebird"], 5000);
+        for (const l of String(chaves).split(/\r?\n/).slice(0, 10)) {
+            const k = l.trim();
+            if (!/^HKEY_LOCAL_MACHINE\\SYSTEM\\CurrentControlSet\\Services\\[^\\]+$/i.test(k)) continue;
+            const v = await _execTexto("reg", ["query", k, "/v", "ImagePath"], 3000);
+            const m = /ImagePath\s+REG_(?:EXPAND_)?SZ\s+"?([^"\r\n]+?\.exe)/i.exec(String(v));
+            if (m) cands.push(path.join(path.dirname(m[1].trim()), nome));
+        }
         const raizes = [process.env.ProgramFiles, process.env["ProgramFiles(x86)"], "C:\\Program Files", "C:\\Program Files (x86)"].filter(Boolean);
         for (const r of raizes) {
             ["Firebird_5_0", "Firebird_4_0", "Firebird_3_0", "Firebird_2_5", "Firebird_2_1"].forEach(v => cands.push(path.join(r, "Firebird", v, "bin", nome), path.join(r, "Firebird", v, nome)));
@@ -101,6 +108,8 @@ function criarCopiaGbak(opcoes) {
     let emAndamento = false;
     let etapa = "";
     let inicio = 0;
+    let etapaDesde = 0;
+    let manifestoCache;               // undefined = ainda não lido
     let permissoesFeitas = false;
 
     const caminhoManifesto = () => path.join(pasta, MANIFESTO);
@@ -212,10 +221,11 @@ function criarCopiaGbak(opcoes) {
             prepararPasta();
             limpar();
             while (fs.existsSync(fdb()) || fs.existsSync(fdbTmp()) || fs.existsSync(fbk())) nome = base + "_" + (n++);
-            etapa = "backup";
+            etapa = "backup"; etapaDesde = Date.now();
             log("Cópia: backup de " + alvoGbak(fonte.host, fonte.porta, fonte.caminho) + " (sem coleta de lixo)...");
             await rodar(["-b", "-g", alvoGbak(fonte.host, fonte.porta, fonte.caminho), fbk()], "backup (gbak -b)");
-            etapa = "restauracao";
+            const duracaoBackupMs = Date.now() - inicio;
+            etapa = "restauracao"; etapaDesde = Date.now();
             log("Cópia: restaurando em modo somente leitura no Firebird desta máquina...");
             await rodar(["-c", "-mode", "read_only", fbk(), alvoGbak("127.0.0.1", o.porta, fdbTmp())], "restauração (gbak -c)");
             try { fs.unlinkSync(fbk()); } catch (_) {}
@@ -223,7 +233,8 @@ function criarCopiaGbak(opcoes) {
             let tamanho = 0;
             try { tamanho = fs.statSync(fdb()).size; } catch (_) {}
             const duracaoMs = Date.now() - inicio;
-            gravarManifesto({ arquivo: fdb(), criadaEm: Date.now(), duracaoMs, tamanho, fonte: { host: fonte.host, caminho: fonte.caminho } });
+            gravarManifesto({ arquivo: fdb(), criadaEm: Date.now(), duracaoMs, duracaoBackupMs, duracaoRestauracaoMs: duracaoMs - duracaoBackupMs, tamanho, fonte: { host: fonte.host, caminho: fonte.caminho } });
+            manifestoCache = undefined;
             limpar();
             log("Cópia pronta: " + path.basename(fdb()) + " (" + (tamanho / 1048576).toFixed(1) + " MB em " + Math.round(duracaoMs / 1000) + " s).");
             return { arquivo: fdb(), duracaoMs, tamanho };
@@ -244,7 +255,22 @@ function criarCopiaGbak(opcoes) {
         ativa() { const m = lerManifesto(); return m ? m.arquivo : null; },
         manifesto: lerManifesto,
         limpar,
-        status() { return { emAndamento, etapa, decorridoMs: emAndamento ? Date.now() - inicio : 0 }; },
+        /** Andamento: etapa, tempos e a estimativa tirada da última cópia (null na primeira). */
+        status() {
+            // Manifesto lido uma vez e de novo só depois de cada cópia (status é chamado muitas vezes).
+            if (manifestoCache === undefined) manifestoCache = lerManifesto();
+            const m = manifestoCache;
+            const num = v => (Number(v) > 0 ? Number(v) : null);
+            const total = m ? num(m.duracaoMs) : null;
+            const bkp = m ? num(m.duracaoBackupMs) : null;
+            return {
+                emAndamento, etapa, decorridoMs: emAndamento ? Date.now() - inicio : 0,
+                inicioEm: emAndamento ? inicio : 0, etapaDesde: emAndamento ? etapaDesde : 0,
+                estimativaMs: total,
+                estimativaBackupMs: bkp,
+                estimativaRestauracaoMs: total && bkp && total > bkp ? total - bkp : null
+            };
+        },
         definirGbak(g) { o.gbak = g; },
         _podeApagar: podeApagar
     };

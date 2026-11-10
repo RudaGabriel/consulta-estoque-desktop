@@ -7,19 +7,19 @@ Versões em uso hoje:
 
 | Arquivo | Versão |
 |---|---|
-| Aplicativo (`package.json`) | [1.3.0](#aplicativo) |
-| [`main.js`](#mainjs) | 1.2.0 |
-| [`preload.js`](#preloadjs) | 1.2.0 |
-| [`ui/index.html`, `ui/estilo.css`, `ui/app.js`](#ui) | 1.2.0 |
-| [`src/motor.js`](#srcmotorjs) | 1.2.0 |
+| Aplicativo (`package.json`) | [1.4.0](#aplicativo) |
+| [`main.js`](#mainjs) | 1.3.0 |
+| [`preload.js`](#preloadjs) | 1.3.0 |
+| [`ui/index.html`, `ui/estilo.css`, `ui/app.js`](#ui) | 1.3.0 |
+| [`src/motor.js`](#srcmotorjs) | 1.3.0 |
 | [`src/firebird.js`](#srcfirebirdjs) | 1.0.0 |
 | [`src/estoque-dados.js`](#srcestoque-dadosjs) | 1.0.0 |
 | [`src/estoque-busca.js`](#srcestoque-buscajs) | 1.1.0 |
 | [`src/localizar-banco.js`](#srclocalizar-bancojs) | 1.3.0 |
 | [`src/instalar-firebird.js`](#srcinstalar-firebirdjs) | 1.0.0 |
-| [`src/copia-gbak.js`](#srccopia-gbakjs) | 1.0.0 |
-| [`src/config.js`](#srcconfigjs) | 1.2.0 |
-| [`src/vigia.js`](#srcvigiajs) | 1.0.0 |
+| [`src/copia-gbak.js`](#srccopia-gbakjs) | 1.1.0 |
+| [`src/config.js`](#srcconfigjs) | 1.3.0 |
+| [`src/vigia.js`](#srcvigiajs) | 1.1.0 |
 | [`src/registro.js`](#srcregistrojs) | 1.0.0 |
 | [`src/demo.js`](#srcdemojs) | 1.0.0 |
 | [`electron-builder.config.js`](#electron-builderconfigjs) | 1.0.0 |
@@ -33,6 +33,18 @@ Versões em uso hoje:
 ## Aplicativo
 
 Versão do Consulta Estoque (a que aparece no instalador e em *Configurações → Diagnóstico*).
+
+### 1.4.0 — 2026-11-10
+
+**Abertura rápida, andamento da cópia e senha opcional.**
+
+- **Abre mais rápido:** cópia salva ainda no prazo não é refeita a cada abertura; o estoque salvo é lido sem travar; gbak procurado pelo registro do Windows (a consulta WMI levava segundos); a primeira atualização espera a tela abrir.
+- **Vigia reabre em 1 a 2 s** (antes ~14 s), sem abrir duas vezes.
+- **Uma instância só:** a segunda abertura sai na hora e traz a janela aberta para a frente.
+- **Barra de tarefas:** a janela já nasce oculta da barra (não aparece e some depois).
+- **Andamento da cópia:** barra com etapa, porcentagem e quanto falta (pela última cópia).
+- **Configuração inicial:** nome da loja e senha do administrador, os dois opcionais; sem senha, tudo fica livre; criar e remover a senha depois.
+- 63 testes; tela validada no Electron 44 e 22.
 
 ### 1.3.0 — 2026-11-10
 
@@ -94,6 +106,10 @@ Versão do Consulta Estoque (a que aparece no instalador e em *Configurações �
 
 Processo principal (janela, instância única, pasta de dados, IPC).
 
+### 1.3.0 — 2026-11-10
+
+**Abertura e instância única.** Segunda abertura sai na hora (`app.exit`), PID gravado antes do `ready`, aviso `reiniciando` para o vigia no reinício pelo próprio aplicativo, `skipTaskbar` já na criação da janela; `admin:remover-senha` e `app:configuracao-inicial` (livre só antes da primeira configuração); `configInicial` nunca muda pela tela.
+
 ### 1.2.0 — 2026-11-10
 
 **Firebird e outros .FDB.** Canais `firebird:estado`, `firebird:instalar` (com a senha; a janela sai de "sempre acima" enquanto o Windows pede a permissão; uma instalação por vez), `firebird:nao-perguntar` (sem senha: só desliga a pergunta), `banco:outros` e `banco:usar` (com a senha). Foco do teclado na tela ao abrir.
@@ -111,6 +127,10 @@ Processo principal (janela, instância única, pasta de dados, IPC).
 ## `preload.js`
 
 Ponte segura entre a tela e o processo principal.
+
+### 1.3.0 — 2026-11-10
+
+**Configuração inicial e senha opcional:** `configuracaoInicial` e `removerSenha`.
 
 ### 1.2.0 — 2026-11-10
 
@@ -132,6 +152,10 @@ Ponte segura entre a tela e o processo principal.
 
 A tela.
 
+### 1.3.0 — 2026-11-10
+
+**Andamento e senha opcional.** Barra de andamento da cópia (porcentagem e tempo que falta; indeterminada sem histórico ou na leitura instantânea); configuração inicial com nome da loja e senha opcional; "Criar a senha"/"Remover a senha" na aba Administrador; cópia salva em dia aparece como "Atualizado em"; campo de texto na janela de pergunta.
+
 ### 1.2.0 — 2026-11-10
 
 **Foco, busca esperta e configuração inicial.** Foco de volta na busca 30 s após a última ação (tela principal); dica da busca e destaque das partes do coringa (filtro de preço não é destacado); opções de coringa e preço (*Consulta*), meta da busca, "Ver outros arquivos .FDB" e "Instalar o Firebird" (*Banco de dados*); na primeira abertura: senha → onde está o banco → Firebird, e só então a tela volta a ser pública; janela de pergunta com terceiro botão, lista de escolha e andamento sem botões.
@@ -149,6 +173,10 @@ A tela.
 ## `src/motor.js`
 
 Modos, atualização, cache em disco e auto-correção do banco.
+
+### 1.3.0 — 2026-11-10
+
+**Abertura rápida.** Cópia salva no prazo e do mesmo banco não é refeita ao abrir (agenda para o fim do prazo); cache descompactado de forma assíncrona; primeira atualização após 1,5 s; procura do gbak compartilhada; `ocupadoDesde` e método da cópia salva no status.
 
 ### 1.2.0 — 2026-11-10
 
@@ -234,6 +262,10 @@ Instalação automática do Firebird neste computador.
 
 Cópia por gbak.
 
+### 1.1.0 — 2026-11-10
+
+**Andamento e gbak rápido.** Manifesto com a duração do backup e da restauração; `status()` com início, etapa e estimativas (manifesto lido uma vez por cópia); gbak dos serviços do Firebird pelo registro do Windows (`reg query`) em vez do PowerShell/WMI.
+
 ### 1.0.0 — 2026-11-09
 
 **Primeira versão.** `gbak -b -g` + `gbak -c -mode read_only`, senha por variável de ambiente, prioridade abaixo do normal, troca atômica com manifesto, limpeza só de arquivos próprios, prazo e cancelamento, gbak localizado sozinho (serviço do Firebird em execução primeiro).
@@ -243,6 +275,10 @@ Cópia por gbak.
 ## `src/config.js`
 
 Configuração validada.
+
+### 1.3.0 — 2026-11-10
+
+**`configInicial`** (interna): configuração inicial feita.
 
 ### 1.2.0 — 2026-11-10
 
@@ -261,6 +297,10 @@ Configuração validada.
 ## `src/vigia.js`
 
 Persistência do quiosque.
+
+### 1.1.0 — 2026-11-10
+
+**Reabre em 1 a 2 s.** Confere a cada 1 s; espera o prazo longo (15 s) só com o aviso `reiniciando` do aplicativo ou logo depois de reabrir (o aplicativo novo ainda grava o PID).
 
 ### 1.0.0 — 2026-11-10
 

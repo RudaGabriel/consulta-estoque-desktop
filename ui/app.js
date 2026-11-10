@@ -1,6 +1,6 @@
 /**
  * app.js — Consulta Estoque (tela)
- * @version 1.2.0
+ * @version 1.3.0
  * @author Ruda Gabriel
  * @description Tela de consulta de preço e estoque. Pensada para o leitor de
  *              código de barras USB/Bluetooth (que "digita" o código e manda
@@ -10,11 +10,11 @@
  *              Compatível com o Chromium 108 (versão para Windows 7/8).
  * @changelog
  *   (Histórico completo das versões: CHANGELOG.md no repositório.)
- *   1.2.0 — Foco de volta na busca 30 s após a última ação (tela principal); dica e
- *           destaque da busca com coringa "*" e preço ">valor"/"<valor"; na primeira
- *           abertura pergunta onde está o banco (rede ou este computador) e oferece
- *           instalar o Firebird; sem SMALL.FDB em lugar nenhum, oferece os outros
- *           .FDB achados para o administrador escolher.
+ *   1.3.0 — Barra de andamento da cópia com porcentagem e tempo que falta (estimativa
+ *           pela última cópia; sem histórico, barra indeterminada com o tempo
+ *           decorrido); configuração inicial com nome da loja e senha do
+ *           administrador opcional (sem senha, tudo fica livre); remover a senha;
+ *           cópia salva em dia aparece como "Atualizado em".
  */
 (function () {
     "use strict";
@@ -47,6 +47,14 @@
         if (!ms) return "";
         var d = new Date(ms), p = function (n) { return String(n).padStart(2, "0"); };
         return p(d.getDate()) + "/" + p(d.getMonth() + 1) + " " + p(d.getHours()) + ":" + p(d.getMinutes());
+    };
+    /** "45 s", "3 min", "1 h 20 min". */
+    var fmtDuracao = function (ms) {
+        var s = Math.max(0, Math.round(ms / 1000));
+        if (s < 60) return s + " s";
+        var m = Math.round(s / 60);
+        if (m < 60) return m + " min";
+        return Math.floor(m / 60) + " h" + (m % 60 ? " " + (m % 60) + " min" : "");
     };
     var guardar = function (k, v) { try { localStorage.setItem("consulta." + k, JSON.stringify(v)); } catch (_) {} };
     var ler = function (k, padrao) { try { var v = localStorage.getItem("consulta." + k); return v == null ? padrao : JSON.parse(v); } catch (_) { return padrao; } };
@@ -331,7 +339,7 @@
         else if (s.itens) {
             if (s.erro) classe = "alerta";
             if (s.ocupado) classe = "girando";
-            partes.push((s.dadosDoDisco ? "Dados salvos de " : "Atualizado em ") + fmtData(s.carregadoEm));
+            partes.push((s.dadosDoDisco && s.erro ? "Dados salvos de " : "Atualizado em ") + fmtData(s.carregadoEm));
             partes.push(s.itens.toLocaleString("pt-BR") + " itens");
             if (s.metodoEfetivo) partes.push(NOMES_METODO[s.metodoEfetivo] || s.metodoEfetivo);
             if (s.ocupado) partes.push("atualizando...");
@@ -347,7 +355,40 @@
         if (!s.itens) mostrarVazio();
         if (estado.painel && estado.aba === "banco") desenharInfoBanco();
         $("bOutrosFdb").hidden = !s.buscaSemSmall;
+        desenharAndamento();
         talvezPerguntarOutros();
+    }
+
+    // ── Andamento da atualização (barra abaixo do topo) ──────────────────────
+    // Cópia gbak: porcentagem e tempo que falta pela duração da última cópia.
+    // Sem histórico (primeira cópia) ou leitura instantânea: barra indeterminada.
+    function desenharAndamento() {
+        var s = estado.status || {};
+        var c = s.copia || {};
+        var leitura = !!(s.ocupado && s.ocupadoDesde && s.modo !== "direto");
+        var box = $("andamento"), barra = $("andamentoBarra");
+        if (!c.emAndamento && !leitura) {
+            box.hidden = true;
+            if (estado.timerAndamento) { clearInterval(estado.timerAndamento); estado.timerAndamento = null; }
+            return;
+        }
+        var agora = Date.now(), pct = null, texto;
+        if (c.emAndamento) {
+            var dec = Math.max(0, agora - (c.inicioEm || agora));
+            var etapa = c.etapa === "restauracao" ? "restaurando a cópia neste computador" : "copiando o banco do servidor";
+            if (c.estimativaMs > 0) {
+                var falta = c.estimativaMs - dec;
+                pct = Math.min(99, Math.max(1, Math.round(100 * dec / c.estimativaMs)));
+                texto = "Cópia do banco: " + etapa + " · " + pct + "% · " + (falta > 0 ? "faltam cerca de " + fmtDuracao(falta) : "quase pronta (mais demorada que a última)");
+            } else texto = "Cópia do banco: " + etapa + " · " + fmtDuracao(dec) + " (primeira cópia, ainda sem estimativa)";
+        } else {
+            texto = (s.mensagem || "Atualizando o estoque...") + " · " + fmtDuracao(agora - s.ocupadoDesde);
+        }
+        barra.classList.toggle("indeterminada", pct == null);
+        barra.style.width = pct == null ? "" : pct + "%";
+        $("andamentoTexto").textContent = texto;
+        box.hidden = false;
+        if (!estado.timerAndamento) estado.timerAndamento = setInterval(desenharAndamento, 1000);
     }
 
     function mostrarVazio() {
@@ -466,9 +507,11 @@
     }
     function desenharInfoAdmin() {
         var a = estado.admin || {};
-        $("infoAdmin").innerHTML = (a.temSenha ? "<b>Senha do administrador:</b> definida." : "<b>Atenção:</b> nenhuma senha definida — qualquer pessoa pode mudar as configurações e sair do aplicativo. Defina uma senha abaixo.") +
+        $("infoAdmin").innerHTML = (a.temSenha ? "<b>Senha do administrador:</b> definida." : "<b>Sem senha do administrador:</b> tudo fica livre — qualquer pessoa pode mudar as configurações e sair do aplicativo. Para proteger, crie uma senha abaixo.") +
             "<br><b>Modo quiosque:</b> " + (a.quiosque ? (a.manutencao ? "suspenso (manutenção)" : "ligado — tela cheia permanente") : "desligado (desenvolvimento)") +
             "<br><b>Persistência:</b> " + (a.podePersistir ? (estado.info && estado.info.vigiaAtivo ? "vigia ativo" : "vigia parado") : "só no aplicativo instalado/portátil");
+        $("bTrocarSenha").textContent = a.temSenha ? "Trocar a senha" : "Criar a senha";
+        $("bRemoverSenha").hidden = !a.temSenha;
         $("bManutencao").textContent = a.manutencao ? "Voltar para a tela cheia" : "Modo manutenção (sair da tela cheia)";
         $("bManutencao").hidden = !a.quiosque;
     }
@@ -580,8 +623,12 @@
         $("modalTitulo").textContent = o.titulo || "";
         $("modalTexto").textContent = o.texto || "";
         $("modalTexto").className = o.andamento ? "andamento" : "";
+        $("modalCampo").hidden = !o.campo; $("modalCampo").value = o.campo && o.campo.valor ? o.campo.valor : "";
+        $("modalCampo").placeholder = o.campo && o.campo.placeholder ? o.campo.placeholder : "";
         $("modalSenha").hidden = !o.senha; $("modalSenha").value = "";
+        $("modalSenha").placeholder = o.senhaPlaceholder || "Senha";
         $("modalSenha2").hidden = !o.repetir; $("modalSenha2").value = "";
+        $("modalSenha2").placeholder = o.senha2Placeholder || "Repita a senha";
         $("modalErro").textContent = "";
         $("modal").classList.toggle("largo", !!(o.largo || o.lista));
         $("modalBotoes").hidden = !!o.andamento;
@@ -591,7 +638,7 @@
         estado.modal = false;
         $("modalFundo").hidden = true; $("modal").hidden = true;
         $("modalOk").onclick = null; $("modalCancelar").onclick = null; $("modalExtra").onclick = null; perguntar.tecla = null;
-        $("modalSenha").value = ""; $("modalSenha2").value = "";
+        $("modalSenha").value = ""; $("modalSenha2").value = ""; $("modalCampo").value = ""; $("modalCampo").hidden = true;
         $("modalLista").innerHTML = ""; $("modalLista").hidden = true; $("modalLista").onchange = null;
         $("modalTexto").className = ""; $("modalBotoes").hidden = false;
         focarBusca(false);
@@ -623,12 +670,12 @@
             }
             setTimeout(function () {
                 var r = o.lista ? caixa.querySelector("input:checked") : null;
-                (o.senha ? $("modalSenha") : (r || $("modalOk"))).focus();
+                (o.campo ? $("modalCampo") : o.senha ? $("modalSenha") : (r || $("modalOk"))).focus();
             }, 30);
             var terminar = function (v) { fecharModal(); resolve(v); };
             var confirmar = async function () {
                 if ($("modalOk").disabled) return;
-                var v1 = $("modalSenha").value, v2 = $("modalSenha2").value;
+                var v1 = $("modalSenha").value, v2 = $("modalSenha2").value, campo = $("modalCampo").value;
                 var escolha;
                 if (o.lista) {
                     var marcado = caixa.querySelector("input:checked");
@@ -638,11 +685,11 @@
                 if (o.validar) {
                     $("modalOk").disabled = true;
                     var msg = null;
-                    try { msg = await o.validar(v1, v2, escolha); } catch (e) { msg = String(e && e.message || e); }
+                    try { msg = await o.validar(v1, v2, escolha, campo); } catch (e) { msg = String(e && e.message || e); }
                     $("modalOk").disabled = false;
                     if (msg) { $("modalErro").textContent = msg; if (o.senha) $("modalSenha").select(); return; }
                 }
-                terminar(o.lista ? escolha : (o.senha ? v1 : true));
+                terminar(o.lista ? escolha : o.campo ? { campo: campo, senha: v1 } : (o.senha ? v1 : true));
             };
             $("modalOk").onclick = confirmar;
             $("modalCancelar").onclick = function () { terminar(null); };
@@ -692,21 +739,30 @@
         });
     }
 
-    async function criarSenhaInicial() {
-        var criada = await perguntar({
-            titulo: "Crie a senha do administrador",
-            texto: "Primeira vez neste computador. A senha protege as configurações, a saída do aplicativo e a exportação (a consulta de preço continua livre para todos). Mínimo de 4 caracteres.",
-            senha: true, repetir: true, ok: "Criar senha", cancelar: false,
-            validar: async function (v1, v2) {
-                if (String(v1).length < 4) return "A senha precisa ter pelo menos 4 caracteres.";
-                if (v1 !== v2) return "As duas senhas não são iguais.";
-                var r = await api.definirSenha({ nova: v1 });
-                if (!r || !r.ok) return (r && r.mensagem) || "Não foi possível criar a senha.";
+    /** Primeira abertura: nome da loja e senha do administrador — os dois opcionais. */
+    async function configuracaoInicial() {
+        var r = await perguntar({
+            titulo: "Bem-vindo ao Consulta Estoque",
+            texto: "Os dois campos são opcionais. O nome da loja aparece no topo da tela. A senha do administrador protege as configurações, a saída do aplicativo e a exportação (a consulta de preço continua livre); em branco, tudo fica livre — dá para criar a senha depois em Configurações → Administrador.",
+            campo: { placeholder: "Nome da loja (opcional)" },
+            senha: true, repetir: true, senhaPlaceholder: "Senha do administrador (opcional, mínimo 4)", senha2Placeholder: "Repita a senha",
+            ok: "Começar", cancelar: false,
+            validar: async function (v1, v2, _escolha, loja) {
+                if (v1 || v2) {
+                    if (String(v1).length < 4) return "A senha precisa ter pelo menos 4 caracteres (ou deixe os dois campos em branco).";
+                    if (v1 !== v2) return "As duas senhas não são iguais.";
+                    var s1 = await api.definirSenha({ nova: v1 });
+                    if (!s1 || !s1.ok) return (s1 && s1.mensagem) || "Não foi possível criar a senha.";
+                }
+                var c = await api.configuracaoInicial({ nomeLoja: String(loja || "").trim() });
+                if (!c || c.ok === false) return (c && c.mensagem) || "Não foi possível salvar.";
+                if (c.cfg) { estado.cfg = c.cfg; aplicarAparencia(c.cfg); }
                 return null;
             }
         });
-        if (criada != null) toast("Senha do administrador criada.");
-        return criada != null;
+        if (r && r.senha) toast("Senha do administrador criada.");
+        else if (r) toast("Sem senha do administrador: tudo fica livre (dá para criar depois em Configurações → Administrador).", 5000);
+        return r != null;
     }
 
     // ── Primeira abertura: onde está o banco e o Firebird deste computador ──
@@ -918,6 +974,12 @@
         $("admNova").value = ""; $("admNova2").value = "";
         if (await resultadoAdmin(r, "Senha do administrador trocada.")) { estado.admin = r.estado; desenharInfoAdmin(); desenharTrava(); }
     });
+    $("bRemoverSenha").addEventListener("click", async function () {
+        var sim = await perguntar({ titulo: "Remover a senha do administrador?", texto: "Sem senha, qualquer pessoa pode mudar as configurações, exportar e sair do aplicativo.", ok: "Remover a senha" });
+        if (!sim) return;
+        var r = await api.removerSenha();
+        if (await resultadoAdmin(r, "Senha removida: tudo fica livre.")) { estado.admin = r.estado; desenharInfoAdmin(); desenharTrava(); }
+    });
     $("bCsv").addEventListener("click", async function () {
         var r = await api.exportarCsv(parametros(1));
         if (r && r.ok) toast(r.linhas.toLocaleString("pt-BR") + " itens exportados.");
@@ -992,13 +1054,14 @@
         try {
             await atualizarAdmin();
             var recemCriada = false;
-            if (estado.admin && !estado.admin.temSenha) recemCriada = await criarSenhaInicial();
+            // Primeira abertura (sem configuração inicial e sem senha): nome da loja e senha opcional.
+            if (!(estado.cfg && estado.cfg.configInicial) && !(estado.admin && estado.admin.temSenha)) recemCriada = await configuracaoInicial();
             if (!(estado.info && estado.info.demo)) {
                 var c = estado.cfg || {}, st = estado.status || {};
                 if (!c.metaBusca && (recemCriada || !st.fonte)) await perguntarMeta();
                 await perguntarFirebird(false);
             }
-            // A senha acabou de ser criada: a configuração inicial terminou, a tela volta a ser pública.
+            // Configuração inicial terminou: com senha, a tela volta a ser pública.
             if (recemCriada) { try { estado.admin = await api.bloquear(); } catch (_) {} }
         } finally {
             estado.iniciando = false;

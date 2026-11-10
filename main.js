@@ -1,7 +1,7 @@
 "use strict";
 /**
  * main.js
- * @version 1.2.0
+ * @version 1.3.0
  * @author Ruda Gabriel
  * @description Processo principal do Consulta Estoque (Electron): janela em
  *              modo quiosque, senha do administrador, módulo de persistência
@@ -17,12 +17,12 @@
  *
  * @changelog
  *   (Histórico completo das versões: CHANGELOG.md no repositório.)
- *   1.2.0 — Instalação automática do Firebird neste computador (pedida na tela,
- *           com a senha do administrador; a janela sai de "sempre acima" enquanto o
- *           Windows pede a permissão); outros .FDB para escolher quando não há
- *           SMALL.FDB em lugar nenhum (listar e usar, com a senha); "não perguntar
- *           mais" do Firebird sem senha (só desliga a pergunta); foco do teclado na
- *           tela ao abrir.
+ *   1.3.0 — Abertura mais rápida e uma instância só: a segunda abertura sai na
+ *           hora (só traz a janela aberta para a frente); o PID é gravado logo no
+ *           início (o vigia reabre em 1 a 2 s) e o reinício pelo próprio aplicativo
+ *           avisa o vigia ("reiniciando"); a janela já nasce fora da barra de
+ *           tarefas. Senha do administrador opcional: configuração inicial (nome da
+ *           loja + senha opcional) e remover a senha.
  */
 
 const { app, BrowserWindow, ipcMain, dialog, shell, screen, powerSaveBlocker } = require("electron");
@@ -67,6 +67,7 @@ const ARQ = {
     appPid: path.join(PASTA_DADOS, "app.pid"),
     vigiaPid: path.join(PASTA_DADOS, "vigia.pid"),
     saida: path.join(PASTA_DADOS, "saida-autorizada"),
+    reiniciando: path.join(PASTA_DADOS, "reiniciando"),
     vigia: path.join(PASTA_DADOS, "vigia.js")
 };
 const reg = criarRegistro(PASTA_DADOS, { console: !app.isPackaged });
@@ -83,6 +84,9 @@ const ARQ_PARTIDA = path.join(PASTA_DADOS, "partida-pendente");
 const INSTANCIA_PRINCIPAL = app.requestSingleInstanceLock();
 let partidaAnteriorFalhou = false;
 if (INSTANCIA_PRINCIPAL) {
+    // PID gravado já (o vigia vê o aplicativo vivo sem esperar a janela) e o aviso de reinício cumprido.
+    try { fs.writeFileSync(ARQ.appPid, String(process.pid)); } catch (_) {}
+    try { fs.unlinkSync(ARQ.reiniciando); } catch (_) {}
     partidaAnteriorFalhou = fs.existsSync(ARQ_PARTIDA);
     try { fs.writeFileSync(ARQ_PARTIDA, String(Date.now())); } catch (_) {}
 }
@@ -96,7 +100,9 @@ process.on("unhandledRejection", e => reg.erro("Promessa rejeitada sem tratament
 
 // ── Instância única ──────────────────────────────────────────────────────────
 if (!INSTANCIA_PRINCIPAL) {
-    app.quit();
+    // Já existe um aberto: ele recebe o aviso ("second-instance") e vem para a frente.
+    // Esta cópia sai na hora, sem abrir janela nem ocupar memória.
+    app.exit(0);
 } else {
     let janela = null;
     let motor = null;
@@ -195,6 +201,8 @@ if (!INSTANCIA_PRINCIPAL) {
     function reiniciarApp(motivo) {
         reg.info("Reiniciando o aplicativo (" + motivo + ").");
         saidaAutorizada = true;
+        // O vigia espera o aplicativo novo em vez de abrir outro por cima.
+        try { fs.writeFileSync(ARQ.reiniciando, String(Date.now())); } catch (_) {}
         try { app.relaunch(process.env.PORTABLE_EXECUTABLE_FILE ? { execPath: EXE_APP, args: [] } : undefined); } catch (_) {}
         setTimeout(() => app.exit(0), 50);
     }
@@ -250,6 +258,8 @@ if (!INSTANCIA_PRINCIPAL) {
             show: false,
             fullscreen: QUIOSQUE,
             kiosk: QUIOSQUE,
+            // Já nasce fora da barra de tarefas (sem aparecer e sumir depois).
+            skipTaskbar: QUIOSQUE && !!cfg.ocultarBarraTarefas,
             backgroundColor: escuro ? "#0f1419" : "#f4f6f8",
             title: "Consulta Estoque",
             autoHideMenuBar: true,
@@ -368,6 +378,7 @@ if (!INSTANCIA_PRINCIPAL) {
         tratar("config:salvar", c => {
             const parcial = Object.assign({}, objeto(c));
             delete parcial.senhaAdmin;
+            delete parcial.configInicial; // só pela configuração inicial (senão a tela pública poderia reabri-la)
             if (parcial.fbPass == null) delete parcial.fbPass; // tela bloqueada não recebe a senha do Firebird
             const antes = motor.config();
             if (Config.sensiveisAlteradas(antes, parcial).length) exigirAdmin();
@@ -398,6 +409,21 @@ if (!INSTANCIA_PRINCIPAL) {
             motor.definirSenhaAdmin(Config.gerarHashSenha(nova));
             desbloqueadoAte = Date.now() + DESBLOQUEIO_MS;
             return { ok: true, estado: estadoAdmin() };
+        });
+        tratar("admin:remover-senha", () => {
+            exigirAdmin();
+            motor.definirSenhaAdmin("");
+            desbloqueadoAte = 0;
+            reg.info("Senha do administrador removida: todas as configurações ficam livres.");
+            return { ok: true, estado: estadoAdmin() };
+        });
+        // Primeira abertura: nome da loja (opcional). Depois de feita, só com a senha.
+        tratar("app:configuracao-inicial", p => {
+            const c = motor.config();
+            if (c.configInicial) exigirAdmin();
+            const d = objeto(p);
+            motor.salvarConfig({ nomeLoja: String(d.nomeLoja == null ? "" : d.nomeLoja).trim().slice(0, 60), configInicial: true });
+            return { ok: true, cfg: configParaTela() };
         });
         tratar("admin:manutencao", ligar => {
             exigirAdmin();
@@ -480,7 +506,6 @@ if (!INSTANCIA_PRINCIPAL) {
             ", " + os.type() + " " + os.release() + " " + process.arch + (DEMO ? " — MODO DEMONSTRAÇÃO" : "") +
             (SEM_GPU ? " — sem aceleração gráfica" : "") +
             (QUIOSQUE ? " — quiosque" : "") + ". Dados em " + PASTA_DADOS);
-        try { fs.writeFileSync(ARQ.appPid, String(process.pid)); } catch (_) {}
         let dep = {};
         if (DEMO) {
             const demo = require("./src/demo.js");

@@ -1,7 +1,7 @@
 "use strict";
 /**
  * motor.js
- * @version 1.2.0
+ * @version 1.3.0
  * @author Ruda Gabriel
  * @description O coração do aplicativo: mantém o estoque em memória e atualizado
  *              conforme o modo escolhido, acha o banco sozinho e responde às
@@ -27,11 +27,12 @@
  *
  * @changelog
  *   (Histórico completo das versões: CHANGELOG.md no repositório.)
- *   1.2.0 — Busca com coringa "*" e filtro de preço (buscaCoringa/buscaPreco); meta da
- *           busca automática (metaBusca); sem SMALL.FDB em lugar nenhum, guarda os
- *           outros .FDB achados (status.buscaSemSmall), outrosFdb() abre cada um e
- *           usarBanco() adota o escolhido; firebirdLocal() e redetectarFirebird()
- *           para a instalação automática; nova busca de fundo no máximo a cada 30 min.
+ *   1.3.0 — Abertura rápida: o estoque salvo é lido sem travar e, se a cópia salva
+ *           ainda está no prazo (e é do mesmo banco), a próxima cópia fica para quando
+ *           o prazo vencer — nada de gbak pesado a cada abertura; a primeira
+ *           atualização espera 1,5 s para a tela abrir primeiro. Procura do gbak
+ *           compartilhada (uma por vez). Status com ocupadoDesde e o andamento da
+ *           cópia (início, etapa, estimativa da última cópia).
  */
 
 const fs = require("fs");
@@ -44,7 +45,7 @@ const Config = require("./config.js");
 const Localizar = require("./localizar-banco.js");
 const Copia = require("./copia-gbak.js");
 
-const VERSAO = "1.2.0";
+const VERSAO = "1.3.0";
 const ARQ_CACHE = "estoque-cache.json.gz";
 const CHAVES_CONEXAO = ["modo", "metodoCopia", "fbHost", "fbPorta", "fdbPath", "fbUser", "fbPass", "gbakPath", "pastaCopias", "copiaTimeoutMin"];
 
@@ -68,10 +69,12 @@ function criarMotor(dep) {
     let ultimoErro = null;
     let tipoUltimoErro = null;
     let ocupado = false;
+    let ocupadoDesde = 0;
     let procurando = false;
     let metodoEfetivo = null;          // gbak | instantaneo | direto
     let gbak = "";
     let gbakProcurado = false;
+    let gbakPromessa = null;           // procura em andamento (compartilhada)
     let copia = null;
     let duracaoUltimaCopia = 0;
     let falhasSeguidas = 0;
@@ -89,8 +92,8 @@ function criarMotor(dep) {
     const statusAtual = () => {
         const cst = copia ? copia.status() : { emAndamento: false, etapa: "", decorridoMs: 0 };
         return {
-            estado, mensagem, ocupado, procurando,
-            modo: cfg.modo, metodoCopia: cfg.metodoCopia, metodoEfetivo,
+            estado, mensagem, ocupado, ocupadoDesde: ocupado ? ocupadoDesde : 0, procurando,
+            modo: cfg.modo, metodoCopia: cfg.metodoCopia, metodoEfetivo: metodoEfetivo || (retrato && retrato.modo) || null,
             fonte: cfg.fdbPath ? { host: cfg.fbHost || "127.0.0.1", caminho: cfg.fdbPath } : null,
             fbHostAuto: cfg.fbHostAuto, fbHostFixo: cfg.fbHostFixo,
             itens: retrato ? retrato.linhas.length : 0,
@@ -113,7 +116,9 @@ function criarMotor(dep) {
     const lerCacheDisco = async () => {
         try {
             const buf = await fs.promises.readFile(arqCache);
-            const obj = JSON.parse(zlib.gunzipSync(buf).toString("utf8"));
+            // Descompacta fora da linha principal (não segura a abertura da janela).
+            const txt = await new Promise((res, rej) => zlib.gunzip(buf, (e, b) => e ? rej(e) : res(b)));
+            const obj = JSON.parse(txt.toString("utf8"));
             return Dados.doDisco(obj);
         } catch (_) { return null; }
     };
@@ -184,12 +189,21 @@ function criarMotor(dep) {
     };
 
     // ── Método efetivo da cópia ───────────────────────────────────────────────
+    /** Procura o gbak uma vez por vez (tela e ciclo pedindo juntos dividem a mesma procura). */
+    const procurarGbak = () => {
+        if (gbak) return Promise.resolve(gbak);
+        if (!gbakPromessa) {
+            gbakPromessa = Promise.resolve().then(() => localizarGbak(cfg.gbakPath)).catch(() => "")
+                .then(g => { gbakPromessa = null; return g || ""; });
+        }
+        return gbakPromessa;
+    };
     const decidirMetodo = async () => {
         if (cfg.modo === "direto") return "direto";
         if (cfg.metodoCopia === "instantaneo") return "instantaneo";
         if (!gbak && !gbakProcurado) {
             gbakProcurado = true;
-            gbak = await localizarGbak(cfg.gbakPath);
+            gbak = await procurarGbak();
             reg.copia(gbak ? "gbak encontrado: " + gbak : "gbak não encontrado nesta máquina.");
         }
         const fbLocal = await portaAberta("127.0.0.1", 3050, 1500).catch(() => false);
@@ -311,6 +325,7 @@ function criarMotor(dep) {
         if (encerrado) return;
         if (ocupado) { pedidoPendente = true; return; }
         ocupado = true;
+        ocupadoDesde = Date.now();
         const gen = geracao;
         if (timer) { clearTimeout(timer); timer = null; }
         emitir();
@@ -525,7 +540,21 @@ function criarMotor(dep) {
                 definir(retrato ? "pronto" : "erro", ultimoErro);
                 return;
             }
-            agendar(50);
+            // A tela abre primeiro; a atualização vem logo depois. No modo cópia, cópia
+            // salva ainda no prazo (e do mesmo banco) não é refeita só porque o aplicativo abriu.
+            let espera = 1500;
+            if (doDisco && retrato === doDisco && cfg.modo === "copia" && cfg.fdbPath) {
+                const idade = Date.now() - (Number(doDisco.carregadoEm) || 0);
+                const prazo = cfg.copiaACadaMin * 60000;
+                const mesmoBanco = String(doDisco.origem || "") === (cfg.fbHost || "127.0.0.1") + ":" + cfg.fdbPath;
+                if (mesmoBanco && idade >= 0 && idade < prazo) {
+                    espera = Math.max(espera, prazo - idade);
+                    reg.info("A cópia salva tem " + Math.round(idade / 60000) + " min (prazo de " + cfg.copiaACadaMin + " min): a próxima cópia fica para " +
+                        new Date(Date.now() + espera).toLocaleTimeString("pt-BR") + " (ou Atualizar/F5).");
+                    definir("pronto", "Estoque salvo em dia.");
+                }
+            }
+            agendar(espera);
         },
         pesquisar,
         item,
@@ -578,12 +607,12 @@ function criarMotor(dep) {
             let ligado = false;
             try { ligado = await portaAberta("127.0.0.1", 3050, 1500); } catch (_) {}
             let gb = gbak;
-            if (!gb) { try { gb = await localizarGbak(cfg.gbakPath); } catch (_) { gb = ""; } }
+            if (!gb) gb = await procurarGbak();
             return { instalado: !!(ligado || gb), ligado, gbak: gb || "" };
         },
         /** Firebird recém-instalado: esquece o gbak procurado antes e atualiza já. */
         redetectarFirebird() {
-            gbak = ""; gbakProcurado = false;
+            gbak = ""; gbakProcurado = false; gbakPromessa = null;
             ultimaBuscaAutomatica = 0;
             if (!ocupado) agendar(500); else pedidoPendente = true;
         },
