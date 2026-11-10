@@ -24,7 +24,7 @@ Versões em uso hoje:
 | [`src/demo.js`](#srcdemojs) | 1.1.0 |
 | [`electron-builder.config.js`](#electron-builderconfigjs) | 1.0.0 |
 | [`gerar-instalador.bat`](#gerar-instaladorbat) | 1.0.0 |
-| [`.github/workflows/build.yml`](#githubworkflowsbuildyml) | 1.2.0 |
+| [`.github/workflows/build.yml`](#githubworkflowsbuildyml) | 1.3.0 |
 
 ---
 
@@ -391,6 +391,10 @@ Gera os instaladores com dois cliques.
 ## `.github/workflows/build.yml`
 
 CI.
+
+### 1.3.0 — 2026-11-10
+
+**Instaladores à prova de rede instável e texto da Release atualizado.** Até 3 tentativas para gerar os instaladores (uma queda de conexão no download do Electron derrubou a publicação da 1.5.0), downloads do Electron/electron-builder guardados em cache entre execuções e texto da Release com a configuração inicial atual (nome da loja e senha opcionais; sair com Ctrl+Shift+Q e a senha, se houver).
 
 ### 1.2.0 — 2026-11-10
 

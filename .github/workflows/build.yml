@@ -1,5 +1,5 @@
 # build.yml — testes e instaladores do Consulta Estoque (Windows)
-# v1.2.0 — Autor: Ruda Gabriel
+# v1.3.0 — Autor: Ruda Gabriel
 # Gera, a cada push e PR:
 #   - moderno: Windows 10/11, 64 bits (Electron 44)
 #   - legado:  Windows 7 a 11, 64 e 32 bits (Electron 22)
@@ -51,12 +51,27 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      # Downloads do Electron/electron-builder guardados entre execuções (menos rede, menos falha).
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/AppData/Local/electron/Cache
+            ~/AppData/Local/electron-builder/Cache
+          key: electron-${{ matrix.variante }}-${{ hashFiles('package-lock.json', 'electron-builder.config.js') }}
+          restore-keys: electron-${{ matrix.variante }}-
       - name: Gerar instalador e versão portátil
         shell: bash
         env:
           VARIANTE: ${{ matrix.variante }}
           CSC_IDENTITY_AUTO_DISCOVERY: "false"
-        run: npx electron-builder --config electron-builder.config.js --win nsis portable ${{ matrix.archs }} --publish never
+        # Até 3 tentativas: queda de rede no download do Electron (ECONNRESET) não derruba a versão.
+        run: |
+          for t in 1 2 3; do
+            npx electron-builder --config electron-builder.config.js --win nsis portable ${{ matrix.archs }} --publish never && exit 0
+            echo "Tentativa $t falhou (rede instável?) — tentando de novo em 20 s..."
+            sleep 20
+          done
+          exit 1
       - name: Conferir que o aplicativo empacotado abre (modo demonstração)
         shell: pwsh
         run: |
@@ -139,7 +154,8 @@ jobs:
             - Windows 10/11 64 bits: `...-win10-11-x64-instalador.exe` (instala) ou `...-win10-11-x64-portatil.exe` (sem instalar).
             - Windows 7, 8 ou 32 bits: os arquivos `...-legado-win7-a-11-...` (`x64` = 64 bits, `ia32` = 32 bits).
 
-            Na primeira abertura o aplicativo pede para criar a senha do administrador. Para sair: Ctrl+Shift+Q + senha.
+            Na primeira abertura o aplicativo pede o nome da loja e a senha do administrador — os dois opcionais (sem senha, tudo fica livre).
+            Para sair: Ctrl+Shift+Q (e a senha, se houver).
             O Windows pode avisar "O Windows protegeu o computador" (aplicativo sem assinatura paga): Mais informações → Executar assim mesmo.
             Histórico completo: CHANGELOG.md.
           files: arquivos/**/*.exe
