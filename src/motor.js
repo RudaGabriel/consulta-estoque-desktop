@@ -1,0 +1,548 @@
+"use strict";
+/**
+ * motor.js
+ * @version 1.1.0
+ * @author Ruda Gabriel
+ * @description O coração do aplicativo: mantém o estoque em memória e atualizado
+ *              conforme o modo escolhido, acha o banco sozinho e responde às
+ *              buscas da tela.
+ *
+ * Modos:
+ *   - "copia" (padrão, como o Relatórios FDB-FBK): a consulta nunca depende do
+ *     banco do caixa a cada busca. Método da cópia:
+ *       · "gbak": backup sem coleta de lixo + restauração somente leitura no
+ *         Firebird desta máquina; o estoque é lido da cópia;
+ *       · "instantaneo": uma única leitura (SELECT, somente leitura) da tabela
+ *         de produtos a cada intervalo, guardada em memória e em disco;
+ *       · "auto": gbak quando há gbak e Firebird nesta máquina; senão instantâneo.
+ *   - "direto" (como o Relatórios SSH): lê o banco principal em somente leitura,
+ *     recarrega a tabela a cada N segundos e, ao abrir um item, relê aquele item
+ *     ao vivo (estoque e preço do instante).
+ * Em todos: o último estoque carregado fica salvo em disco (estoque-cache.json.gz)
+ * e aparece na hora ao abrir o aplicativo — inclusive sem rede.
+ *
+ * Auto-correção: se o banco configurado falhar (servidor fora do ar, caminho
+ * errado, banco sem a tabela de produtos), procura o banco certo na máquina e na
+ * rede e SOBRESCREVE a configuração (fbHostAuto=true). fbHostFixo=true desliga.
+ *
+ * @changelog
+ *   (Histórico completo das versões: CHANGELOG.md no repositório.)
+ *   1.1.0 — Servidor conhecido sem o caminho (ou com o caminho errado): o SMALL.FDB é
+ *           procurado nesse servidor antes da busca geral (vale com fbHostFixo);
+ *           trocar só o servidor nas configurações apaga o caminho antigo; senha do
+ *           administrador gravada só por definirSenhaAdmin.
+ */
+
+const fs = require("fs");
+const path = require("path");
+const zlib = require("zlib");
+const FB = require("./firebird.js");
+const Dados = require("./estoque-dados.js");
+const Busca = require("./estoque-busca.js");
+const Config = require("./config.js");
+const Localizar = require("./localizar-banco.js");
+const Copia = require("./copia-gbak.js");
+
+const VERSAO = "1.0.0";
+const ARQ_CACHE = "estoque-cache.json.gz";
+const CHAVES_CONEXAO = ["modo", "metodoCopia", "fbHost", "fbPorta", "fdbPath", "fbUser", "fbPass", "gbakPath", "pastaCopias", "copiaTimeoutMin"];
+
+/**
+ * dep: { pastaDados, arquivoConfig, log (registro.js), Firebird (blindado),
+ *        aoStatus(status), aoDadosNovos(info), localizar (testes), localizarGbak (testes) }
+ */
+function criarMotor(dep) {
+    const d = dep || {};
+    const reg = d.log || { info() {}, aviso() {}, erro() {}, busca() {}, copia() {} };
+    const Firebird = d.Firebird !== undefined ? d.Firebird : FB.carregarDriver();
+    const localizarBanco = d.localizar || Localizar.localizar;
+    const localizarGbak = d.localizarGbak || Copia.localizarGbak;
+    const portaAberta = d.portaAberta || FB.portaAberta;
+    const arqCache = path.join(d.pastaDados, ARQ_CACHE);
+
+    let cfg = Config.carregar(d.arquivoConfig).cfg;
+    let retrato = null;
+    let estado = "iniciando";          // iniciando | carregando | pronto | erro
+    let mensagem = "Iniciando...";
+    let ultimoErro = null;
+    let tipoUltimoErro = null;
+    let ocupado = false;
+    let procurando = false;
+    let metodoEfetivo = null;          // gbak | instantaneo | direto
+    let gbak = "";
+    let gbakProcurado = false;
+    let copia = null;
+    let duracaoUltimaCopia = 0;
+    let falhasSeguidas = 0;
+    let timer = null;
+    let proximaEm = 0;
+    let encerrado = false;
+    let pedidoPendente = false;
+    let ultimaBuscaAutomatica = 0;
+    let conexaoViva = null;            // { p: Promise<db> } reaproveitada para o item ao vivo (modo direto)
+    let conexaoVivaTimer = null;
+    let geracao = 0;                   // invalida ciclos antigos quando a configuração muda
+
+    // ── Status para a tela ────────────────────────────────────────────────────
+    const statusAtual = () => {
+        const cst = copia ? copia.status() : { emAndamento: false, etapa: "", decorridoMs: 0 };
+        return {
+            estado, mensagem, ocupado, procurando,
+            modo: cfg.modo, metodoCopia: cfg.metodoCopia, metodoEfetivo,
+            fonte: cfg.fdbPath ? { host: cfg.fbHost || "127.0.0.1", caminho: cfg.fdbPath } : null,
+            fbHostAuto: cfg.fbHostAuto, fbHostFixo: cfg.fbHostFixo,
+            itens: retrato ? retrato.linhas.length : 0,
+            tabela: retrato ? retrato.tabela : null,
+            carregadoEm: retrato ? retrato.carregadoEm : 0,
+            dadosDoDisco: !!(retrato && retrato.doDisco),
+            versaoDados: retrato ? retrato.versao : null,
+            temCusto: !!(retrato && retrato.idxPapel.custo >= 0),
+            proximaEm,
+            erro: ultimoErro,
+            copia: cst
+        };
+    };
+    const emitir = () => { if (typeof d.aoStatus === "function") { try { d.aoStatus(statusAtual()); } catch (_) {} } };
+    const definir = (e, msg) => { estado = e; mensagem = msg; emitir(); };
+
+    // ── Cache em disco ────────────────────────────────────────────────────────
+    const lerCacheDisco = async () => {
+        try {
+            const buf = await fs.promises.readFile(arqCache);
+            const obj = JSON.parse(zlib.gunzipSync(buf).toString("utf8"));
+            return Dados.doDisco(obj);
+        } catch (_) { return null; }
+    };
+    const salvarCacheDisco = async r => {
+        try {
+            const buf = await new Promise((res, rej) => zlib.gzip(Buffer.from(JSON.stringify(Dados.paraDisco(r))), { level: 6 }, (e, b) => e ? rej(e) : res(b)));
+            const tmp = arqCache + ".tmp";
+            await fs.promises.writeFile(tmp, buf);
+            try { await fs.promises.rename(tmp, arqCache); }
+            catch (_) { await fs.promises.writeFile(arqCache, buf); try { await fs.promises.unlink(tmp); } catch (__) {} }
+        } catch (e) { reg.aviso("Não foi possível salvar o estoque em disco: " + e.message); }
+    };
+
+    const trocarRetrato = (novo, origemTxt) => {
+        const anterior = retrato;
+        retrato = novo;
+        reg.info("Estoque carregado (" + origemTxt + "): " + novo.linhas.length + " itens da tabela " + novo.tabela +
+            " (código: " + (novo.papeis.codigo || "—") + ", descrição: " + (novo.papeis.descricao || "—") + ", barras: " + (novo.papeis.barras || "—") +
+            ", estoque: " + (novo.papeis.qtd || "—") + ", preço: " + (novo.papeis.preco || "—") + ").");
+        if (novo.papeis.ativo && (!anterior || anterior.doDisco)) {
+            reg.info("Coluna de situação " + novo.papeis.ativo + ": " + Object.keys(novo.contagemAtivo || {}).map(k => k + "=" + novo.contagemAtivo[k]).join(", ") +
+                (novo.inverterAtivo ? " → lida ao contrário (a maioria daria \"inativo\")." : " → lida direto."));
+        }
+        if (typeof d.aoDadosNovos === "function") { try { d.aoDadosNovos({ versao: novo.versao, itens: novo.linhas.length }); } catch (_) {} }
+    };
+
+    // ── Conexões ──────────────────────────────────────────────────────────────
+    const alvoPrincipal = () => ({
+        host: cfg.fbHost || "127.0.0.1", porta: cfg.fbPorta, caminho: cfg.fdbPath, usuario: cfg.fbUser, senha: cfg.fbPass
+    });
+    const fecharConexaoViva = () => {
+        if (conexaoVivaTimer) { clearTimeout(conexaoVivaTimer); conexaoVivaTimer = null; }
+        if (conexaoViva) { const c = conexaoViva; conexaoViva = null; c.p.then(db => FB.desconectar(db), () => {}); }
+    };
+    const obterConexaoViva = async () => {
+        if (!conexaoViva) conexaoViva = { p: FB.conectar(Firebird, alvoPrincipal(), 4000) };
+        const c = conexaoViva;
+        try { return await c.p; }
+        catch (e) { if (conexaoViva === c) conexaoViva = null; throw e; }
+    };
+
+    /** Lê a tabela de um alvo e devolve o retrato. */
+    const lerDe = async (alvo, origem) => {
+        const db = await FB.conectar(Firebird, alvo, 15000);
+        try {
+            return await Dados.carregarTabela(db, { origem, octetsRecusado: retrato && retrato.octets === false, log: m => reg.info(m) });
+        } catch (e) {
+            FB.matarConexao(db);
+            throw e;
+        } finally {
+            FB.desconectar(db);
+        }
+    };
+
+    /** Valida host+caminho para a descoberta: abre e confere a tabela de produtos. */
+    const validar = async (host, caminho) => {
+        let db = null;
+        try {
+            db = await FB.conectar(Firebird, { host, porta: cfg.fbPorta, caminho, usuario: cfg.fbUser, senha: cfg.fbPass }, 12000);
+            const ok = await Dados.temTabelaProduto(db);
+            return ok ? { ok: true } : { ok: false, motivo: "o banco abriu, mas não tem a tabela de produtos" };
+        } catch (e) {
+            const t = FB.tipoErro(e);
+            return { ok: false, auth: t === "auth", inacessivel: t === "inacessivel", motivo: String(e.message || e).slice(0, 200) };
+        } finally {
+            if (db) FB.matarConexao(db);
+        }
+    };
+
+    // ── Método efetivo da cópia ───────────────────────────────────────────────
+    const decidirMetodo = async () => {
+        if (cfg.modo === "direto") return "direto";
+        if (cfg.metodoCopia === "instantaneo") return "instantaneo";
+        if (!gbak && !gbakProcurado) {
+            gbakProcurado = true;
+            gbak = await localizarGbak(cfg.gbakPath);
+            reg.copia(gbak ? "gbak encontrado: " + gbak : "gbak não encontrado nesta máquina.");
+        }
+        const fbLocal = await portaAberta("127.0.0.1", 3050, 1500).catch(() => false);
+        if (gbak && fbLocal) return "gbak";
+        if (cfg.metodoCopia === "gbak") {
+            const e = new Error(!gbak
+                ? "Método gbak escolhido, mas o gbak não foi encontrado nesta máquina (instale o Firebird ou informe o caminho do gbak.exe em Configurações)."
+                : "Método gbak escolhido, mas o Firebird desta máquina não está rodando (a cópia é aberta por ele).");
+            e.codigo = "GBAK";
+            throw e;
+        }
+        return "instantaneo";
+    };
+
+    // ── Descoberta automática ─────────────────────────────────────────────────
+    const buscaLiberada = () => !cfg.fbHostFixo;
+    /**
+     * Servidor conhecido, caminho não: procura o SMALL.FDB só NESSE servidor
+     * (caminhos típicos de C: a H: e o anterior). Rápido: servidor que responde
+     * recusa um caminho errado em milissegundos. Não troca o servidor.
+     */
+    async function procurarCaminhoNoServidor(host, motivo) {
+        if (!host) return false;
+        reg.busca("Procurando o caminho do SMALL.FDB no servidor " + host + (motivo ? " (" + motivo + ")" : "") + "...");
+        definir(estado === "pronto" ? "pronto" : "carregando", "Procurando o SMALL.FDB no servidor " + host + "...");
+        try {
+            const r = await Localizar.caminhoNoServidor({ host, cfg, validar, portaAberta, log: m => reg.busca(m) });
+            if (!r.achado) { reg.aviso(r.mensagem); ultimoErro = r.mensagem; return false; }
+            if (cfg.fdbPath === r.achado.caminho && cfg.fbHost === host) return true;
+            reg.busca("SMALL.FDB encontrado em " + host + ":" + r.achado.caminho + " — configuração atualizada automaticamente.");
+            cfg = Config.mesclar(cfg, { fdbPath: r.achado.caminho });
+            try { Config.salvar(d.arquivoConfig, cfg); } catch (e) { reg.erro("Falha ao salvar config.json: " + e.message); }
+            return true;
+        } catch (e) {
+            reg.erro("Falha ao procurar o caminho no servidor: " + e.message);
+            return false;
+        } finally { emitir(); }
+    }
+
+    async function procurarBanco(motivo) {
+        if (procurando) return false;
+        procurando = true;
+        ultimaBuscaAutomatica = Date.now();
+        definir(estado === "pronto" ? "pronto" : "carregando", "Procurando o banco do Small Commerce" + (motivo ? " (" + motivo + ")" : "") + "...");
+        reg.busca("Busca automática do banco iniciada" + (motivo ? " — motivo: " + motivo : "") + ".");
+        try {
+            const r = await localizarBanco({
+                cfg, validar, portaAberta, log: m => { reg.busca(m); },
+                cancelado: () => encerrado
+            });
+            if (encerrado) return false;
+            if (!r.achado) {
+                reg.aviso(r.mensagem);
+                ultimoErro = r.mensagem;
+                return false;
+            }
+            const { host, caminho } = r.achado;
+            if (cfg.fbHost === host && cfg.fdbPath === caminho) { reg.busca("O banco configurado já é o correto (" + host + ":" + caminho + ")."); return true; }
+            reg.busca("Banco encontrado em " + host + ":" + caminho + " — configuração atualizada automaticamente.");
+            cfg = Config.mesclar(cfg, { fbHost: host, fdbPath: caminho, fbHostAuto: true });
+            try { Config.salvar(d.arquivoConfig, cfg); } catch (e) { reg.erro("Falha ao salvar config.json: " + e.message); }
+            return true;
+        } catch (e) {
+            reg.erro("Falha na busca automática: " + e.message);
+            return false;
+        } finally {
+            procurando = false;
+            emitir();
+        }
+    }
+
+    // ── Ciclo de atualização ──────────────────────────────────────────────────
+    const agendar = ms => {
+        if (timer) clearTimeout(timer);
+        if (encerrado) return;
+        proximaEm = Date.now() + ms;
+        timer = setTimeout(() => { timer = null; ciclo().catch(() => {}); }, ms);
+        if (timer.unref) timer.unref();
+        emitir();
+    };
+    const intervaloNormal = () => {
+        if (cfg.modo === "direto") return cfg.diretoRecarregarSeg * 1000;
+        const base = cfg.copiaACadaMin * 60000;
+        // Nunca ocupa o banco do caixa mais que 1/3 do tempo.
+        return metodoEfetivo === "gbak" ? Math.max(base, 3 * duracaoUltimaCopia) : base;
+    };
+    const intervaloErro = () => Math.min(10 * 60000, 30000 * Math.pow(2, Math.max(0, falhasSeguidas - 1)));
+
+    async function carregarUmaVez(gen) {
+        metodoEfetivo = await decidirMetodo();
+        if (gen !== geracao) return;
+        const alvo = alvoPrincipal();
+        const origem = alvo.host + ":" + alvo.caminho;
+        if (metodoEfetivo === "gbak") {
+            if (!copia) copia = Copia.criarCopiaGbak({ pasta: cfg.pastaCopias || Copia.pastaPadrao(), gbak, porta: 3050, usuario: cfg.fbUser, senha: cfg.fbPass, timeoutMs: cfg.copiaTimeoutMin * 60000, log: m => reg.copia(m) });
+            const gerCopia = copia;
+            definir(estado === "pronto" ? "pronto" : "carregando", "Fazendo a cópia do banco (gbak)...");
+            const r = await gerCopia.executar(alvo);
+            duracaoUltimaCopia = r.duracaoMs;
+            if (gen !== geracao) return;
+            const novo = await lerDe({ host: "127.0.0.1", porta: 3050, caminho: r.arquivo, usuario: cfg.fbUser, senha: cfg.fbPass }, origem);
+            novo.modo = "gbak";
+            if (gen !== geracao) return;
+            trocarRetrato(novo, "cópia gbak de " + origem);
+            gerCopia.limpar();
+        } else {
+            definir(estado === "pronto" ? "pronto" : "carregando", metodoEfetivo === "direto" ? "Lendo o banco (leitura direta)..." : "Lendo o estoque do banco...");
+            const novo = await lerDe(alvo, origem);
+            novo.modo = metodoEfetivo;
+            if (gen !== geracao) return;
+            trocarRetrato(novo, (metodoEfetivo === "direto" ? "leitura direta de " : "cópia instantânea de ") + origem);
+        }
+        await salvarCacheDisco(retrato);
+    }
+
+    async function ciclo() {
+        if (encerrado) return;
+        if (ocupado) { pedidoPendente = true; return; }
+        ocupado = true;
+        const gen = geracao;
+        if (timer) { clearTimeout(timer); timer = null; }
+        emitir();
+        try {
+            // Servidor informado sem o caminho: o caminho é procurado nele.
+            if (!cfg.fdbPath && cfg.fbHost) await procurarCaminhoNoServidor(cfg.fbHost, "caminho não informado");
+            if (!cfg.fdbPath) {
+                if (!buscaLiberada()) throw Object.assign(new Error("Banco não configurado. Informe o servidor e o caminho do SMALL.FDB em Configurações → Banco de dados."), { codigo: "SEMCFG" });
+                await procurarBanco("primeira execução");
+                if (!cfg.fdbPath) throw Object.assign(new Error(ultimoErro || "Banco do Small Commerce não encontrado."), { codigo: "NAOACHOU" });
+            }
+            try {
+                await carregarUmaVez(gen);
+            } catch (e) {
+                const t = FB.tipoErro(e);
+                // Banco configurado com problema de LOCAL (não de senha): procura o certo e tenta de novo.
+                // (busca pesada: no máximo uma a cada 5 min enquanto o erro persistir)
+                const corrigivel = ["inacessivel", "arquivo", "tabela"].indexOf(t) >= 0 && !/restaura/i.test(String(e.message));
+                // Servidor respondeu mas o caminho está errado: primeiro procura o
+                // caminho nele mesmo (vale também com fbHostFixo — não troca o servidor).
+                let resolvido = false;
+                if ((t === "arquivo" || t === "tabela") && cfg.fbHost && !/restaura/i.test(String(e.message))) {
+                    const antesCam = cfg.fdbPath;
+                    if (await procurarCaminhoNoServidor(cfg.fbHost, "o caminho configurado falhou") && cfg.fdbPath !== antesCam) {
+                        await carregarUmaVez(gen);
+                        resolvido = true;
+                    }
+                }
+                if (resolvido) { /* carregado pelo caminho achado */ }
+                else if (corrigivel && buscaLiberada() && Date.now() - ultimaBuscaAutomatica > 5 * 60000) {
+                    reg.aviso("O banco configurado (" + (cfg.fbHost || "127.0.0.1") + ":" + cfg.fdbPath + ") falhou: " + FB.explicarErro(e) + " Procurando o banco correto...");
+                    const antes = cfg.fbHost + "|" + cfg.fdbPath;
+                    if (await procurarBanco("o banco configurado falhou") && antes !== cfg.fbHost + "|" + cfg.fdbPath) {
+                        await carregarUmaVez(gen);
+                    } else throw e;
+                } else throw e;
+            }
+            if (gen !== geracao) return;
+            falhasSeguidas = 0;
+            ultimoErro = null;
+            tipoUltimoErro = null;
+            definir("pronto", "Estoque atualizado.");
+            agendar(intervaloNormal());
+            // Banco adotado sozinho NESTA máquina (ou que não é SMALL.FDB): a meta é
+            // a rede — procura o servidor em segundo plano e troca se achar.
+            const ident = Localizar.identidadesDestaMaquina();
+            if (buscaLiberada() && !procurando && Date.now() - ultimaBuscaAutomatica > 5 * 60000 &&
+                Localizar.bancoAutoSuspeito(cfg, h => !String(h || "").trim() || Localizar.ehLocal(h) || ident.has(String(h).trim().toLowerCase()))) {
+                reg.busca("O banco em uso (" + (cfg.fbHost || "127.0.0.1") + ":" + cfg.fdbPath + ") foi escolhido automaticamente e não é o servidor da rede — procurando o servidor...");
+                const antes = cfg.fbHost + "|" + cfg.fdbPath;
+                setImmediate(() => procurarBanco("banco local adotado automaticamente").then(ok => {
+                    if (ok && antes !== cfg.fbHost + "|" + cfg.fdbPath && !encerrado) { geracao++; agendar(0); }
+                }).catch(() => {}));
+            }
+        } catch (e) {
+            if (gen !== geracao) return;
+            falhasSeguidas++;
+            tipoUltimoErro = e.codigo === "CANCELADA" ? "cancelada" : FB.tipoErro(e);
+            ultimoErro = e.codigo === "CANCELADA" ? "Cópia cancelada." : (["GBAK", "SEMCFG", "NAOACHOU"].indexOf(e.codigo) >= 0 ? e.message : FB.explicarErro(e));
+            reg.erro("Falha ao atualizar o estoque: " + String(e.message || e).slice(0, 400));
+            if (retrato) definir("pronto", "Mostrando o estoque de " + new Date(retrato.carregadoEm).toLocaleString("pt-BR") + " — " + ultimoErro);
+            else definir("erro", ultimoErro);
+            agendar(e.codigo === "CANCELADA" ? Math.max(intervaloNormal(), 30 * 60000) : intervaloErro());
+        } finally {
+            ocupado = false;
+            emitir();
+            if (pedidoPendente && !encerrado) { pedidoPendente = false; setImmediate(() => ciclo().catch(() => {})); }
+        }
+    }
+
+    // ── Busca ─────────────────────────────────────────────────────────────────
+    /** Item que deve abrir sozinho após Enter/leitura: 1 resultado, ou 1 exato em barras/código/referência. */
+    const escolherAutoAbrir = (r, res, q) => {
+        if (res.length === 1) return res[0].i;
+        const alvo = String(q || "").replace(/\s+/g, "").toUpperCase();
+        if (!alvo) return -1;
+        const soDig = /^\d+$/.test(alvo);
+        const dig = s => String(s == null ? "" : s).replace(/\D+/g, "");
+        let achado = -1, n = 0;
+        for (const x of res) {
+            const ok = ["barras", "codigo", "referencia"].some(p => {
+                const k = r.idxPapel[p];
+                if (k < 0) return false;
+                const v = r.linhas[x.i][k];
+                if (v == null || v === "") return false;
+                const s = String(v).replace(/\s+/g, "").toUpperCase();
+                return s === alvo || (soDig && dig(v) === alvo) || (soDig && p === "codigo" && /^\d+$/.test(s) && Number(s) === Number(alvo));
+            });
+            if (ok) { n++; achado = x.i; if (n > 1) return -1; }
+        }
+        return n === 1 ? achado : -1;
+    };
+
+    function pesquisar(p) {
+        const par = p || {};
+        if (!retrato) return { ok: false, semDados: true, mensagem: mensagem, itens: [], total: 0, totalItens: 0 };
+        const fonte = Dados.fonteDe(retrato);
+        const res = Busca.pesquisar(fonte, {
+            q: String(par.q || "").slice(0, 300), estoque: ["todos", "com", "sem", "negativo", "abaixo"].indexOf(par.estoque) >= 0 ? par.estoque : "todos",
+            ordem: ["", "descricao", "codigo", "qtd", "qtdAsc", "preco", "precoAsc"].indexOf(par.ordem || "") >= 0 ? (par.ordem || "") : "",
+            ativos: !!par.ativos, contem: par.contem !== false, pagina: par.pagina, limite: par.limite || cfg.limitePagina
+        }, i => Dados.resumo(retrato, i));
+        let abrir = null;
+        if (par.enter && String(par.q || "").trim()) {
+            let i = escolherAutoAbrir(retrato, res._res, par.q);
+            // Leitura sem resultado por causa de um filtro (ex.: "Só ativos" e o
+            // produto está inativo): o produto lido aparece mesmo assim.
+            if (i < 0 && res.total === 0 && (par.ativos || (par.estoque && par.estoque !== "todos") || par.contem === false)) {
+                const semFiltro = Busca.pesquisar(fonte, { q: String(par.q).slice(0, 300), limite: 1 }, () => null);
+                i = escolherAutoAbrir(retrato, semFiltro._res, par.q);
+                if (i >= 0) { abrir = Dados.resumo(retrato, i); abrir.foraDoFiltro = true; }
+            } else if (i >= 0) abrir = Dados.resumo(retrato, i);
+        }
+        delete res._res;
+        res.abrir = abrir;
+        res.versao = retrato.versao;
+        res.carregadoEm = retrato.carregadoEm;
+        return res;
+    }
+
+    async function item(pedido) {
+        if (!retrato) return { ok: false, mensagem: "Estoque ainda não carregado." };
+        const r = retrato;
+        const i = Dados.acharIndice(r, pedido);
+        if (i < 0) return { ok: false, mensagem: "Item não encontrado (o estoque foi atualizado — refaça a pesquisa)." };
+        const det = Dados.detalhe(r, i);
+        det.aoVivo = false;
+        // Modo direto: estoque e preço do instante, relidos do banco principal.
+        if (cfg.modo === "direto" && cfg.diretoItemAoVivo && Firebird && cfg.fdbPath && r.idxPapel.codigo >= 0) {
+            const cod = r.linhas[i][r.idxPapel.codigo];
+            try {
+                const db = await obterConexaoViva();
+                if (conexaoVivaTimer) clearTimeout(conexaoVivaTimer);
+                conexaoVivaTimer = setTimeout(fecharConexaoViva, 30000);
+                if (conexaoVivaTimer.unref) conexaoVivaTimer.unref();
+                const lin = await Dados.lerItem(db, r, cod);
+                if (lin && retrato === r && Dados.aplicarLinha(r, i, lin)) {
+                    const novo = Dados.detalhe(r, i);
+                    novo.aoVivo = true;
+                    return novo;
+                }
+            } catch (e) {
+                if (conexaoViva) { const c = conexaoViva; conexaoViva = null; c.p.then(db => FB.matarConexao(db), () => {}); }
+                det.avisoAoVivo = "Não foi possível reler este item ao vivo: " + FB.explicarErro(e);
+            }
+        }
+        return det;
+    }
+
+    function exportarCsv(p) {
+        if (!retrato) return null;
+        const fonte = Dados.fonteDe(retrato);
+        const par = p || {};
+        const res = Busca.ordenar(fonte, Busca.filtrar(fonte, par.q, { estoque: par.estoque, ativos: !!par.ativos, contem: par.contem !== false }), String(par.ordem || ""));
+        return { texto: Dados.csv(retrato, res.map(x => x.i)), linhas: res.length };
+    }
+
+    // ── Configuração ──────────────────────────────────────────────────────────
+    function salvarConfig(parcial) {
+        const antes = cfg;
+        const p = Object.assign({}, parcial || {});
+        delete p.fbHostAuto; // só o próprio aplicativo marca o endereço como "automático"
+        delete p.senhaAdmin; // a senha só muda por definirSenhaAdmin
+        // Servidor trocado e caminho não mexido: o caminho será procurado no servidor novo.
+        if (p.fbHost !== undefined && Config.validarValor("fbHost", p.fbHost) !== antes.fbHost &&
+            (p.fdbPath === undefined || Config.validarValor("fdbPath", p.fdbPath) === antes.fdbPath)) p.fdbPath = "";
+        const novo = Config.mesclar(antes, p);
+        // Endereço trocado pelo usuário: vale como escolha dele (não é mais "automático").
+        if (novo.fbHost !== antes.fbHost || novo.fdbPath !== antes.fdbPath) novo.fbHostAuto = false;
+        cfg = novo;
+        Config.salvar(d.arquivoConfig, cfg);
+        reg.info("Configuração salva: " + JSON.stringify(Config.semSenha(cfg)));
+        const mudouConexao = CHAVES_CONEXAO.some(k => antes[k] !== cfg[k]);
+        if (mudouConexao) {
+            geracao++;
+            if (copia) { copia.cancelar(); copia = null; }
+            if (antes.gbakPath !== cfg.gbakPath) { gbak = ""; gbakProcurado = false; }
+            fecharConexaoViva();
+            falhasSeguidas = 0;
+            ultimaBuscaAutomatica = 0;
+            agendar(200);
+        } else if (antes.copiaACadaMin !== cfg.copiaACadaMin || antes.diretoRecarregarSeg !== cfg.diretoRecarregarSeg) {
+            if (!ocupado && estado === "pronto") agendar(intervaloNormal());
+        }
+        emitir();
+        return cfg;
+    }
+
+    return {
+        VERSAO,
+        async iniciar() {
+            const doDisco = await lerCacheDisco();
+            if (doDisco && !retrato) {
+                retrato = doDisco;
+                reg.info("Estoque salvo em disco carregado: " + doDisco.linhas.length + " itens de " + new Date(doDisco.carregadoEm).toLocaleString("pt-BR") + ".");
+                definir("pronto", "Mostrando o estoque salvo — atualizando...");
+                if (typeof d.aoDadosNovos === "function") { try { d.aoDadosNovos({ versao: doDisco.versao, itens: doDisco.linhas.length }); } catch (_) {} }
+            } else {
+                definir("carregando", "Carregando o estoque...");
+            }
+            if (!Firebird) {
+                ultimoErro = "O módulo node-firebird não foi carregado — reinstale o aplicativo.";
+                reg.erro(ultimoErro);
+                definir(retrato ? "pronto" : "erro", ultimoErro);
+                return;
+            }
+            agendar(50);
+        },
+        pesquisar,
+        item,
+        exportarCsv,
+        status: statusAtual,
+        config: () => Object.assign({}, cfg),
+        /** Grava o registro (hash) da senha do administrador. */
+        definirSenhaAdmin(registro) {
+            cfg = Config.mesclar(cfg, {});
+            cfg.senhaAdmin = Config.validarValor("senhaAdmin", registro);
+            Config.salvar(d.arquivoConfig, cfg);
+            reg.info(cfg.senhaAdmin ? "Senha do administrador definida." : "Senha do administrador removida.");
+            return !!cfg.senhaAdmin;
+        },
+        salvarConfig,
+        atualizarAgora() { falhasSeguidas = 0; if (ocupado) { pedidoPendente = true; return false; } agendar(0); return true; },
+        async procurarAgora() {
+            if (procurando) return false;
+            const ok = await procurarBanco("pedido pelo usuário");
+            if (ok) { geracao++; agendar(0); }
+            return ok;
+        },
+        cancelarCopia() { return copia ? copia.cancelar() : false; },
+        encerrar() {
+            encerrado = true;
+            if (timer) { clearTimeout(timer); timer = null; }
+            if (copia) copia.cancelar();
+            fecharConexaoViva();
+        },
+        _interno: () => ({ retrato, cfg, gbak, metodoEfetivo, falhasSeguidas })
+    };
+}
+
+module.exports = { VERSAO, criarMotor, ARQ_CACHE };

@@ -1,0 +1,294 @@
+<!doctype html>
+<!--
+  index.html — Consulta Estoque (tela)
+  @version 1.1.0
+  @author Ruda Gabriel
+  @changelog
+    (Histórico completo das versões: CHANGELOG.md no repositório.)
+    1.1.0 — Quiosque: sem botão de tela cheia; abas protegidas por senha (Consulta,
+            Banco de dados, Windows, Administrador); janela de senha; exportação e
+            "Mostrar custo" só para o administrador.
+-->
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Consulta Estoque</title>
+<link rel="stylesheet" href="estilo.css">
+</head>
+<body>
+<header class="topo">
+  <div class="marca">
+    <svg class="logo" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7l9-4 9 4v10l-9 4-9-4z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M3 7l9 4 9-4M12 11v10" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>
+    <div>
+      <div class="titulo">Consulta Estoque</div>
+      <div class="loja" id="loja"></div>
+    </div>
+  </div>
+  <button class="estado" id="estado" type="button" title="Situação do estoque — clique para ver detalhes">
+    <span class="ponto" id="estadoPonto"></span><span id="estadoTexto">Iniciando...</span>
+  </button>
+  <div class="acoes">
+    <button class="btn" id="bAtualizar" type="button" title="Atualizar o estoque agora (F5)">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.3 5.7M20 4v7h-7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Atualizar</span>
+    </button>
+    <button class="btn" id="bConfig" type="button" title="Configurações (F10)">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><span>Configurações</span>
+    </button>
+  </div>
+</header>
+
+<section class="busca">
+  <div class="campo">
+    <svg class="lupa" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="M20 20l-4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+    <input id="q" type="search" autocomplete="off" spellcheck="false" autofocus
+           placeholder="Passe o leitor ou digite nome, código, código de barras, referência...">
+    <button id="bLimpar" class="limpar" type="button" title="Limpar (Esc)" hidden>×</button>
+  </div>
+  <div class="filtros">
+    <label>Estoque
+      <select id="fEst">
+        <option value="todos">Todos</option>
+        <option value="com">Com estoque</option>
+        <option value="sem">Sem estoque</option>
+        <option value="negativo">Negativo</option>
+        <option value="abaixo">Abaixo do mínimo</option>
+      </select>
+    </label>
+    <label>Ordem
+      <select id="fOrd">
+        <option value="">Relevância</option>
+        <option value="descricao">Descrição (A-Z)</option>
+        <option value="codigo">Código</option>
+        <option value="preco">Maior preço</option>
+        <option value="precoAsc">Menor preço</option>
+        <option value="qtd">Maior estoque</option>
+        <option value="qtdAsc">Menor estoque</option>
+      </select>
+    </label>
+    <label class="chk" title="Desmarcado: o texto precisa estar no começo de algum campo"><input type="checkbox" id="fCon" checked> Contém</label>
+    <label class="chk"><input type="checkbox" id="fAtv"> Só ativos</label>
+  </div>
+</section>
+
+<div id="aviso" class="aviso" hidden></div>
+
+<main id="principal">
+  <article id="cartao" class="cartao" hidden aria-live="polite">
+    <button class="fechar" id="bFecharCartao" type="button" title="Fechar (Esc)">×</button>
+    <div class="cartao-topo">
+      <div class="cartao-cod" id="cCod"></div>
+      <div class="selo" id="cSelo" hidden></div>
+    </div>
+    <h1 class="cartao-desc" id="cDesc"></h1>
+    <div class="cartao-preco" id="cPreco"></div>
+    <div class="cartao-info">
+      <div><span>Estoque</span><strong id="cQtd"></strong></div>
+      <div><span>Unidade</span><strong id="cUn"></strong></div>
+      <div><span>Cód. barras</span><strong id="cBar"></strong></div>
+      <div id="cCustoBox" hidden><span>Custo</span><strong id="cCusto"></strong></div>
+      <div id="cMinBox" hidden><span>Mínimo</span><strong id="cMin"></strong></div>
+    </div>
+    <div class="cartao-aviso" id="cAviso" hidden></div>
+    <details class="cartao-mais" id="cMais">
+      <summary>Todos os campos do produto</summary>
+      <dl id="cCampos"></dl>
+    </details>
+  </article>
+
+  <div id="vazio" class="vazio" hidden>
+    <div class="vazio-icone">!</div>
+    <h2 id="vazioTitulo">Não foi possível carregar o estoque</h2>
+    <p id="vazioTexto"></p>
+    <div class="vazio-acoes">
+      <button class="btn primario" id="bVazioProcurar" type="button">Procurar o banco</button>
+      <button class="btn" id="bVazioTentar" type="button">Tentar de novo</button>
+      <button class="btn" id="bVazioConfig" type="button">Configurações</button>
+    </div>
+  </div>
+
+  <div id="res" class="res"></div>
+  <div class="tabela-box">
+    <table id="tab">
+      <thead><tr>
+        <th>Código</th><th>Descrição</th><th>Cód. barras / Ref.</th><th class="num">Estoque</th><th>Un</th><th class="num">Preço</th><th class="num cust">Custo</th>
+      </tr></thead>
+      <tbody id="corpo"></tbody>
+    </table>
+  </div>
+  <button id="bMais" class="btn mais" type="button" hidden>Carregar mais</button>
+</main>
+
+<!-- Configurações -->
+<div id="fundo" class="fundo" hidden></div>
+<aside id="painel" class="painel" hidden aria-label="Configurações">
+  <div class="painel-topo">
+    <h2>Configurações</h2>
+    <span class="cadeado" id="cadeado" title="Situação do administrador"></span>
+    <button class="fechar" id="bFecharPainel" type="button" title="Fechar (Esc)">×</button>
+  </div>
+  <nav class="abas" id="abas">
+    <button type="button" data-aba="tela" class="ativa">Tela</button>
+    <button type="button" data-aba="consulta" data-protegida="1">Consulta</button>
+    <button type="button" data-aba="banco" data-protegida="1">Banco de dados</button>
+    <button type="button" data-aba="windows" data-protegida="1">Windows</button>
+    <button type="button" data-aba="admin" data-protegida="1">Administrador</button>
+    <button type="button" data-aba="diag">Diagnóstico</button>
+  </nav>
+  <div class="painel-corpo">
+    <div id="trava" class="trava" hidden>
+      <div class="trava-icone">🔒</div>
+      <h3>Área do administrador</h3>
+      <p>Digite a senha do administrador para ver e mudar estas configurações.</p>
+      <div class="senha"><input type="password" id="travaSenha" autocomplete="off" placeholder="Senha"><button class="btn primario" id="bDesbloquear" type="button">Desbloquear</button></div>
+      <div class="trava-erro" id="travaErro"></div>
+    </div>
+
+    <section data-pagina="tela">
+      <div class="linha2">
+        <label>Tema
+          <select id="cfgTema"><option value="auto">Automático (do Windows)</option><option value="claro">Claro</option><option value="escuro">Escuro</option></select>
+        </label>
+        <label>Tamanho do texto <output id="oZoom"></output>
+          <input type="range" id="cfgZoom" min="0.6" max="2.5" step="0.05">
+        </label>
+      </div>
+      <label class="chk"><input type="checkbox" id="cfgSom"> Som ao ler um código (outro som quando não encontra)</label>
+      <label class="chk"><input type="checkbox" id="cfgTab"> Leitor que envia TAB no fim: tratar como Enter</label>
+      <label class="chk"><input type="checkbox" id="cfgLeve"> Modo leve (sem animações — PCs antigos)</label>
+    </section>
+
+    <section data-pagina="consulta" hidden>
+      <div class="opcoes-modo">
+        <label class="modo-card"><input type="radio" name="modo" value="copia">
+          <strong>Cópia do banco <em>recomendado</em></strong>
+          <span>Como o Relatórios FDB-FBK: a consulta não pesa no caixa. O estoque é copiado a cada intervalo e fica salvo neste computador — funciona mesmo com o servidor fora do ar.</span>
+        </label>
+        <label class="modo-card"><input type="radio" name="modo" value="direto">
+          <strong>Leitura direta</strong>
+          <span>Como o Relatórios SSH: lê o banco do servidor em somente leitura, recarrega a lista a cada intervalo e, ao abrir um produto, relê o estoque e o preço do instante.</span>
+        </label>
+      </div>
+      <div class="grupo" id="gCopia">
+        <label>Método da cópia
+          <select id="cfgMetodo">
+            <option value="auto">Automático (gbak quando disponível)</option>
+            <option value="gbak">gbak — backup e restauração (exige Firebird neste PC)</option>
+            <option value="instantaneo">Instantâneo — leitura única da tabela de produtos</option>
+          </select>
+        </label>
+        <label>Atualizar a cópia a cada (minutos — 180 = 3 horas)
+          <input type="number" id="cfgCopiaMin" min="1" max="1440" step="1">
+        </label>
+      </div>
+      <div class="grupo" id="gDireto">
+        <label>Recarregar a lista a cada (segundos)
+          <input type="number" id="cfgDiretoSeg" min="15" max="3600" step="5">
+        </label>
+        <label class="chk"><input type="checkbox" id="cfgAoVivo"> Ao abrir um produto, reler estoque e preço ao vivo</label>
+      </div>
+      <label>Nome da loja (aparece no topo)<input type="text" id="cfgLoja" maxlength="60"></label>
+      <label>Limpar a busca e o cartão após (segundos sem mexer; 0 = nunca)
+        <input type="number" id="cfgLimpar" min="0" max="3600">
+      </label>
+      <label class="chk"><input type="checkbox" id="cfgCusto"> Mostrar o custo (na lista e no cartão)</label>
+      <p class="dica">Nos dois modos o aplicativo <strong>nunca grava</strong> no banco do Small Commerce (só leitura).</p>
+    </section>
+
+    <section data-pagina="banco" hidden>
+      <div class="caixa-info" id="infoBanco"></div>
+      <div class="linha2">
+        <label>Servidor (nome ou IP)<input type="text" id="cfgHost" placeholder="ex.: SERVIDOR ou 192.168.0.10"></label>
+        <label class="curto">Porta<input type="number" id="cfgPorta" min="1" max="65535"></label>
+      </div>
+      <label>Caminho do SMALL.FDB no servidor (vazio = procurar sozinho)<input type="text" id="cfgPath" placeholder="automático"></label>
+      <div class="linha2">
+        <label>Usuário<input type="text" id="cfgUser" autocomplete="off"></label>
+        <label>Senha<span class="senha"><input type="password" id="cfgPass" autocomplete="off"><button type="button" id="bVerSenha" class="btn fino">Ver</button></span></label>
+      </div>
+      <label class="chk"><input type="checkbox" id="cfgFixo"> Não trocar o servidor sozinho (desliga a correção automática)</label>
+      <label class="chk"><input type="checkbox" id="cfgVarrer"> Procurar servidores na rede local</label>
+      <div class="botoes">
+        <button class="btn primario" id="bProcurar" type="button">Procurar o banco agora</button>
+        <button class="btn" id="bCancelarCopia" type="button" hidden>Cancelar a cópia em andamento</button>
+      </div>
+      <details class="avancado">
+        <summary>Avançado (cópia gbak)</summary>
+        <label>Caminho do gbak.exe (vazio = automático)<input type="text" id="cfgGbak" placeholder="C:\Program Files\Firebird\Firebird_3_0\gbak.exe"></label>
+        <label>Pasta das cópias (vazio = automático, sempre em disco local)<input type="text" id="cfgPasta"></label>
+        <label>Tempo máximo de cada cópia (minutos)<input type="number" id="cfgTimeout" min="1" max="360"></label>
+      </details>
+    </section>
+
+    <section data-pagina="windows" hidden>
+      <p class="dica">A tela fica <strong>sempre em tela cheia</strong> (modo quiosque). Para sair do aplicativo: <strong>Ctrl+Shift+Q</strong> ou <em>Administrador → Sair do aplicativo</em>, com a senha.</p>
+      <label class="chk"><input type="checkbox" id="cfgIniciar"> Abrir junto com o Windows</label>
+      <label class="chk"><input type="checkbox" id="cfgPersistente"> Persistência: se o aplicativo for fechado sem a senha (ou travar), ele abre de novo sozinho</label>
+      <label class="chk"><input type="checkbox" id="cfgTopo"> Sempre acima das outras janelas</label>
+      <label class="chk"><input type="checkbox" id="cfgFoco"> Manter em primeiro plano (volta para a frente se outra janela pegar o foco)</label>
+      <label class="chk"><input type="checkbox" id="cfgDescanso"> Impedir que a tela apague ou o PC entre em descanso</label>
+      <label class="chk"><input type="checkbox" id="cfgBarra"> Ocultar da barra de tarefas</label>
+      <label class="chk"><input type="checkbox" id="cfgCursor"> Esconder o cursor do mouse quando parado</label>
+      <div class="linha2">
+        <label>Reiniciar o aplicativo todo dia às (vazio = nunca)<input type="time" id="cfgReiniciar"></label>
+        <label>Abrir no monitor<select id="cfgMonitor"></select></label>
+      </div>
+      <label class="chk"><input type="checkbox" id="cfgGpu"> Aceleração gráfica (desmarque se a tela ficar preta ou piscando; reinicia o aplicativo)</label>
+      <p class="dica" id="dicaPersistir"></p>
+    </section>
+
+    <section data-pagina="admin" hidden>
+      <div class="caixa-info" id="infoAdmin"></div>
+      <h3 class="sub">Senha do administrador</h3>
+      <div class="linha2">
+        <label>Nova senha<input type="password" id="admNova" autocomplete="new-password" placeholder="mínimo 4 caracteres"></label>
+        <label>Repita a nova senha<input type="password" id="admNova2" autocomplete="new-password"></label>
+      </div>
+      <div class="botoes"><button class="btn" id="bTrocarSenha" type="button">Trocar a senha</button></div>
+      <h3 class="sub">Ferramentas</h3>
+      <div class="botoes">
+        <button class="btn" id="bCsv" type="button">Exportar a lista (planilha CSV)</button>
+        <button class="btn" id="bPasta" type="button">Abrir a pasta de dados</button>
+        <button class="btn" id="bManutencao" type="button">Modo manutenção (sair da tela cheia)</button>
+      </div>
+      <div class="botoes">
+        <button class="btn" id="bReiniciarApp" type="button">Reiniciar o aplicativo</button>
+        <button class="btn perigo" id="bSairApp" type="button">Sair do aplicativo</button>
+        <button class="btn" id="bBloquear" type="button">Bloquear agora</button>
+      </div>
+      <p class="dica">O desbloqueio vale por 5 minutos e termina ao fechar as configurações.</p>
+    </section>
+
+    <section data-pagina="diag" hidden>
+      <div class="caixa-info" id="infoApp"></div>
+      <div class="botoes">
+        <button class="btn" id="bCopiarLog" type="button">Copiar o log</button>
+      </div>
+      <pre id="log" class="log"></pre>
+    </section>
+  </div>
+  <div class="painel-rodape">
+    <button class="btn" id="bCancelar" type="button">Cancelar</button>
+    <button class="btn primario" id="bSalvar" type="button">Salvar</button>
+  </div>
+</aside>
+
+<!-- Janela de senha / confirmação -->
+<div id="modalFundo" class="fundo alto" hidden></div>
+<div id="modal" class="modal" hidden role="dialog" aria-modal="true">
+  <h2 id="modalTitulo"></h2>
+  <p id="modalTexto"></p>
+  <input type="password" id="modalSenha" autocomplete="off" placeholder="Senha">
+  <input type="password" id="modalSenha2" autocomplete="off" placeholder="Repita a senha" hidden>
+  <div class="trava-erro" id="modalErro"></div>
+  <div class="botoes direita">
+    <button class="btn" id="modalCancelar" type="button">Cancelar</button>
+    <button class="btn primario" id="modalOk" type="button">OK</button>
+  </div>
+</div>
+
+<div id="toast" class="toast" hidden></div>
+<script src="app.js"></script>
+</body>
+</html>
