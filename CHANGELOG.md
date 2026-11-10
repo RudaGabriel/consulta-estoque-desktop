@@ -23,7 +23,7 @@ Versões em uso hoje:
 | [`src/demo.js`](#srcdemojs) | 1.0.0 |
 | [`electron-builder.config.js`](#electron-builderconfigjs) | 1.0.0 |
 | [`gerar-instalador.bat`](#gerar-instaladorbat) | 1.0.0 |
-| [`.github/workflows/build.yml`](#githubworkflowsbuildyml) | 1.1.0 |
+| [`.github/workflows/build.yml`](#githubworkflowsbuildyml) | 1.2.0 |
 
 ---
 
@@ -245,6 +245,10 @@ Gera os instaladores com dois cliques.
 ## `.github/workflows/build.yml`
 
 CI.
+
+### 1.2.0 — 2026-11-10
+
+**Release automática a cada versão nova na `main`:** cria a tag `v<versão do package.json>` e publica os instaladores e as versões portáteis, se a Release ainda não existir (uma tag `v*` enviada à mão continua publicando).
 
 ### 1.1.0 — 2026-11-10
 

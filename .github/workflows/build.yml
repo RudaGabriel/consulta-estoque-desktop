@@ -1,11 +1,12 @@
 # build.yml — testes e instaladores do Consulta Estoque (Windows)
-# v1.1.0 — Autor: Ruda Gabriel
+# v1.2.0 — Autor: Ruda Gabriel
 # Gera, a cada push e PR:
 #   - moderno: Windows 10/11, 64 bits (Electron 44)
 #   - legado:  Windows 7 a 11, 64 e 32 bits (Electron 22)
 # Os arquivos ficam em "Artifacts" de cada execução (aba Actions).
-# Tag "v*" (ex.: v1.1.0): publica uma Release com os instaladores e as versões
-# portáteis (aba Releases do repositório).
+# Publicação (aba Releases do repositório): a cada push na main com uma versão
+# nova no package.json, cria a tag "v<versão>" e publica a Release com os
+# instaladores e as versões portáteis. Uma tag "v*" enviada à mão também publica.
 name: build
 
 on:
@@ -95,21 +96,41 @@ jobs:
           if-no-files-found: error
 
   publicar:
-    if: startsWith(github.ref, 'refs/tags/v')
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v'))
     needs: instaladores
     runs-on: ubuntu-latest
     permissions:
       contents: write
     steps:
+      - uses: actions/checkout@v4
+      - name: Versão a publicar
+        id: versao
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then tag="${GITHUB_REF_NAME}"; else tag="v$(node -p "require('./package.json').version")"; fi
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          if gh release view "$tag" >/dev/null 2>&1; then
+            echo "A Release $tag já existe — nada a publicar."
+            echo "publicar=nao" >> "$GITHUB_OUTPUT"
+          else
+            echo "Publicando a Release $tag."
+            echo "publicar=sim" >> "$GITHUB_OUTPUT"
+          fi
       - uses: actions/download-artifact@v4
+        if: steps.versao.outputs.publicar == 'sim'
         with:
           path: arquivos
           merge-multiple: true
       - name: Listar os arquivos
+        if: steps.versao.outputs.publicar == 'sim'
         run: find arquivos -type f -name "*.exe" -printf "%f  %s bytes\n"
       - uses: softprops/action-gh-release@v2
+        if: steps.versao.outputs.publicar == 'sim'
         with:
-          name: Consulta Estoque ${{ github.ref_name }}
+          tag_name: ${{ steps.versao.outputs.tag }}
+          target_commitish: ${{ github.sha }}
+          name: Consulta Estoque ${{ steps.versao.outputs.tag }}
           body: |
             **Qual baixar?**
             - Windows 10/11 64 bits: `...-win10-11-x64-instalador.exe` (instala) ou `...-win10-11-x64-portatil.exe` (sem instalar).

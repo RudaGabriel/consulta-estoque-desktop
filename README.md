@@ -418,7 +418,7 @@ npm test
 | `src/demo.js` | Firebird simulado (testes e `--demo`) |
 | `electron-builder.config.js` | Variantes moderna e legado do instalador |
 | `gerar-instalador.bat` | Gera os instaladores com dois cliques |
-| `.github/workflows/build.yml` | CI: testes e instaladores; com tag `v*`, publica a Release |
+| `.github/workflows/build.yml` | CI: testes e instaladores; a cada versão nova na `main`, publica a Release sozinho |
 | `CHANGELOG.md`, `CLAUDE.md` | Histórico de versões e regras do projeto |
 
 ---
