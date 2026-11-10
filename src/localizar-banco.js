@@ -1,7 +1,7 @@
 "use strict";
 /**
  * localizar-banco.js
- * @version 1.1.0
+ * @version 1.2.0
  * @author Ruda Gabriel
  * @description Descobre sozinho ONDE está o banco do Small Commerce (servidor +
  *              caminho do SMALL.FDB), sem o usuário digitar nada.
@@ -13,6 +13,10 @@
  *      unidades de rede mapeadas e dos compartilhamentos do servidor (o Small
  *      costuma rodar de \\SERVIDOR\SmallSoft\Small Commerce) e os atalhos do
  *      Small na Área de Trabalho/Menu Iniciar — com o servidor citado neles;
+ *   1b. o SMALL.FDB procurado nas pastas compartilhadas da rede (atalhos do
+ *      Small, unidades mapeadas, \\SERVIDOR\SmallSoft...). A pasta serve só
+ *      para ACHAR o arquivo e o servidor: o banco é aberto pelo Firebird do
+ *      servidor (SERVIDOR:C:\...\SMALL.FDB), nunca pela pasta compartilhada;
  *   2. os servidores da rede: os citados nessas pistas (pelo NOME, que não
  *      muda quando o IP muda), o configurado, o nome "SERVIDOR" e os achados
  *      na varredura (LAN 192.168 > 10 > 172.16-31 > Tailscale 100.64 > outras >
@@ -20,12 +24,15 @@
  *   3. por último, o Firebird desta máquina, com o SMALL.FDB do disco local.
  * Uma combinação só é aceita quando o banco ABRE e tem a tabela de produtos
  * (a validação é feita por quem chama, sempre em somente leitura). Servidor que
- * não responde na porta é descartado na hora. Unidades de rede e de CD nunca
- * entram na busca em disco (abrir .FDB por compartilhamento corrompe o banco).
+ * não responde na porta é descartado na hora. O .FDB achado num compartilhamento
+ * nunca é aberto pela pasta (abrir .FDB por compartilhamento corrompe o banco):
+ * só a lista da pasta é lida, com prazo, e só em servidor com a porta 445 aberta.
+ * A busca em disco desta máquina continua ignorando unidades de rede e de CD.
  *
  * @changelog
  *   (Histórico completo das versões: CHANGELOG.md no repositório.)
- *   1.1.0 — caminhoNoServidor: procura o SMALL.FDB só num servidor já conhecido.
+ *   1.2.0 — SMALL.FDB procurado nas pastas compartilhadas da rede (busca geral e
+ *           caminhoNoServidor) e convertido no caminho do disco do servidor.
  */
 
 const fs = require("fs");
@@ -33,7 +40,7 @@ const path = require("path");
 const os = require("os");
 const { execFile } = require("child_process");
 
-const VERSAO = "1.0.0";
+const VERSAO = "1.2.0";
 
 // Pastas que nunca têm o banco do Small Commerce (ou são cópias de sistemas de consulta).
 const PASTAS_IGNORADAS = new Set([
@@ -58,6 +65,38 @@ function ehArquivoSmall(caminho) {
 function hostDeUnc(unc) {
     const m = /^\\\\([A-Za-z0-9][\w.\-]*)\\/.exec(String(unc || "").trim() + "\\");
     return m ? m[1] : null;
+}
+
+// Puro: partes de um caminho UNC ("\\SRV\SmallSoft\Small Commerce\SMALL.FDB"
+// → { host: "SRV", compart: "SmallSoft", resto: "\Small Commerce\SMALL.FDB" }).
+function partesDeUnc(unc) {
+    const s = String(unc || "").trim().replace(/\//g, "\\").replace(/\\+$/, "");
+    const m = /^\\\\([A-Za-z0-9][\w.\-]*)\\([^\\\x00-\x1f"<>|*?:]+)((?:\\[^\\\x00-\x1f"<>|*?:]+)*)$/.exec(s);
+    if (!m) return null;
+    return { host: m[1], compart: m[2], resto: m[3] || "" };
+}
+
+/**
+ * Puro: caminhos prováveis, NO DISCO DO SERVIDOR, de um SMALL.FDB achado num
+ * compartilhamento. O Windows não diz para que pasta o compartilhamento aponta,
+ * então são testadas as instalações típicas de C: a H: (o Firebird do servidor
+ * recusa um caminho errado em milissegundos). Compartilhamento administrativo
+ * (\\SRV\C$\...) dá o caminho exato.
+ */
+function caminhosDoCompartilhamento(unc) {
+    const p = partesDeUnc(unc);
+    if (!p || !ehArquivoSmall(p.resto)) return [];
+    const lista = [];
+    const vistos = new Set();
+    const add = c => { const k = c.toUpperCase(); if (!vistos.has(k)) { vistos.add(k); lista.push(c); } };
+    const adm = /^([A-Za-z])\$$/.exec(p.compart);
+    if (adm) { add(adm[1].toUpperCase() + ":" + p.resto); return lista; }
+    const pais = ["\\Program Files (x86)\\SmallSoft", "\\Program Files\\SmallSoft", "\\SmallSoft", "\\Program Files (x86)", "\\Program Files", ""];
+    for (const u of ["C", "D", "E", "F", "G", "H"]) {
+        for (const pai of pais) add(u + ":" + pai + "\\" + p.compart + p.resto);
+        add(u + ":" + p.resto); // compartilhamento = raiz da unidade
+    }
+    return lista;
 }
 
 // Puro: caminhos UNC citados num atalho (.lnk) do Small Commerce. O .lnk é
@@ -382,6 +421,76 @@ async function buscarFdbLocais(raizes, opcoes) {
     return achados.map(a => ({ caminho: a.caminho, mtime: a.mtime }));
 }
 
+/**
+ * Procura o SMALL.FDB nas pastas COMPARTILHADAS da rede (caminhos UNC). Só lê a
+ * lista das pastas — o arquivo nunca é aberto por aqui. Cada leitura tem prazo,
+ * servidor sem a porta 445 (compartilhamento) é pulado sem tocar na pasta, e há
+ * limite de profundidade, de pastas e de tempo total. Devolve os UNC achados.
+ * opcoes: { hostAcessivel(host) → Promise<bool>, log, maxProf, maxPastas,
+ *           maxArquivos, prazoMs, prazoPastaMs, lerPasta (testes) }
+ */
+async function buscarFdbNaRede(pastas, opcoes) {
+    const o = opcoes || {};
+    const lerPasta = typeof o.lerPasta === "function" ? o.lerPasta
+        : (process.platform === "win32" ? (p => fs.promises.readdir(p, { withFileTypes: true })) : null);
+    if (!lerPasta) return [];
+    const log = typeof o.log === "function" ? o.log : null;
+    const maxProf = o.maxProf != null ? o.maxProf : 3;
+    const maxPastas = o.maxPastas || 150;
+    const maxArq = o.maxArquivos || 5;
+    const prazo = Date.now() + (o.prazoMs || 20000);
+    const prazoPasta = o.prazoPastaMs || 4000;
+    const hostOk = typeof o.hostAcessivel === "function" ? o.hostAcessivel : async () => true;
+    const statusHost = new Map();
+    const achados = [];
+    const vistos = new Set();
+    const fila = [];
+    for (const p of (pastas || [])) {
+        const s = String(p || "").trim().replace(/\//g, "\\").replace(/\\+$/, "");
+        if (partesDeUnc(s)) fila.push({ dir: s, prof: 0 });
+    }
+    const prioritaria = nome => /small|dados|banco|fdb|commerce/i.test(nome);
+    let visitadas = 0;
+    while (fila.length && achados.length < maxArq && visitadas < maxPastas && Date.now() < prazo) {
+        const { dir, prof } = fila.shift();
+        const k = dir.toUpperCase();
+        if (vistos.has(k)) continue;
+        vistos.add(k);
+        const host = hostDeUnc(dir);
+        if (!host) continue;
+        const hk = host.toLowerCase();
+        if (!statusHost.has(hk)) {
+            const ok = await comPrazo(Promise.resolve().then(() => hostOk(host)), 3000, false);
+            statusHost.set(hk, ok === true);
+            if (ok !== true && log) log("Pastas compartilhadas de " + host + " fora do alcance (porta 445) — puladas.");
+        }
+        if (!statusHost.get(hk)) continue;
+        visitadas++;
+        const ents = await comPrazo(Promise.resolve().then(() => lerPasta(dir)), prazoPasta, null);
+        if (!Array.isArray(ents)) continue;
+        const subPrio = [], subNormal = [];
+        for (const e of ents) {
+            const nome = e && typeof e.name === "string" ? e.name : "";
+            if (!nome) continue;
+            let arquivo = false, pasta = false;
+            try { arquivo = e.isFile(); pasta = e.isDirectory(); } catch (_) { continue; }
+            const caminho = dir + "\\" + nome;
+            if (arquivo && /\.fdb$/i.test(nome)) {
+                if (FDB_IGNORADOS.test(nome) || !ehArquivoSmall(nome)) continue;
+                if (achados.every(a => a.toUpperCase() !== caminho.toUpperCase())) achados.push(caminho);
+                if (achados.length >= maxArq) break;
+            } else if (pasta && prof < maxProf && !nome.endsWith("$")) {
+                if (PASTAS_IGNORADAS.has(nome.toLowerCase())) continue;
+                (prioritaria(nome) ? subPrio : subNormal).push({ dir: caminho, prof: prof + 1 });
+            }
+        }
+        fila.unshift(...subPrio);
+        fila.push(...subNormal);
+    }
+    if (achados.length && log) log("SMALL.FDB encontrado na pasta compartilhada: " + achados.join(" | ") + " — será aberto pelo Firebird do servidor, nunca pela pasta.");
+    return achados;
+}
+
 /** Lê os .ini/.cfg das pastas do Small Commerce (típicas + `pastasExtras`). */
 async function lerConfiguracoesSmall(pastasExtras, log, hostDaPasta) {
     const pastas = [];
@@ -455,7 +564,17 @@ async function caminhoNoServidor(dep) {
     let aberta = false;
     try { aberta = await d.portaAberta(host, porta, 2000); } catch (_) {}
     if (!aberta) return { achado: null, falhas: [], mensagem: "O servidor " + host + " não respondeu na porta " + porta + "." };
-    const combos = caminhosConhecidos(cfg.fdbPath, d.extras).map(c => ({ host, caminho: c }));
+    // Pastas compartilhadas DESSE servidor: o SMALL.FDB achado lá vira o caminho no disco dele.
+    let doCompart = [];
+    try {
+        doCompart = await (d.buscarRede || buscarFdbNaRede)(
+            ["\\SmallSoft\\Small Commerce", "\\Small Commerce", "\\SmallSoft"].map(x => "\\\\" + host + x),
+            { log: d.log, prazoMs: 10000, hostAcessivel: h => d.portaAberta(h, 445, 1500) });
+    } catch (_) {}
+    const extras = [];
+    (Array.isArray(doCompart) ? doCompart : []).forEach(u => caminhosDoCompartilhamento(u).forEach(c => extras.push(c)));
+    (Array.isArray(d.extras) ? d.extras : []).forEach(c => extras.push(c));
+    const combos = caminhosConhecidos(cfg.fdbPath, extras).map(c => ({ host, caminho: c }));
     const r = await primeiraQueAbre(combos, d.validar, 60000);
     if (r.combo) return { achado: r.combo, falhas: r.falhas, mensagem: "SMALL.FDB encontrado em " + host + ":" + r.combo.caminho + "." };
     const auth = r.falhas.find(f => f.auth);
@@ -479,6 +598,7 @@ async function caminhoNoServidor(dep) {
  *   lerIni         (opcional) substitui lerConfiguracoesSmall (testes)
  *   unidadesRede   (opcional) substitui unidadesDeRede (testes)
  *   atalhos        (opcional) substitui pistasDeAtalhos (testes)
+ *   buscarRede     (opcional) substitui buscarFdbNaRede (testes)
  *   cancelado()    (opcional) → true interrompe entre as etapas
  * Resolve { achado: {host, caminho} | null, falhas, mensagem }.
  */
@@ -572,6 +692,31 @@ async function localizar(dep) {
         }
     }
 
+    // (1b) SMALL.FDB nas pastas compartilhadas da rede: a pasta só diz QUAL
+    // servidor tem o banco e onde; ele é aberto pelo Firebird desse servidor.
+    if (!achado && !cancelado()) {
+        const pastasFdb = [];
+        atalhos.pastas.forEach(p => pastasFdb.push(p));
+        unidRede.forEach(u => { if (u.unc) pastasFdb.push(u.unc); });
+        hostsRede.concat(["SERVIDOR"]).forEach(h => ["\\SmallSoft\\Small Commerce", "\\Small Commerce", "\\SmallSoft"].forEach(x => pastasFdb.push("\\\\" + h + x)));
+        let naRede = [];
+        try {
+            log("Procurando o SMALL.FDB nas pastas compartilhadas da rede...");
+            naRede = await (d.buscarRede || buscarFdbNaRede)(pastasFdb, { log, hostAcessivel: h => portaAberta(h, 445, 1500) });
+        } catch (_) {}
+        const combos = [];
+        for (const unc of (Array.isArray(naRede) ? naRede : [])) {
+            const h = hostDeUnc(unc);
+            if (!h || daMaquina(h)) continue;
+            addHostRede(h);
+            for (const c of caminhosDoCompartilhamento(unc)) adicionar(combos, h, c);
+        }
+        if (combos.length) {
+            log("Testando, pelo Firebird do servidor, o SMALL.FDB achado na pasta compartilhada...");
+            await tentar(combos, 90000);
+        }
+    }
+
     const extras = ini.bancos.map(b => b.caminho).concat(noDisco.map(x => x.caminho));
     const caminhos = caminhosConhecidos(cfg.fdbPath, extras);
 
@@ -621,5 +766,5 @@ async function localizar(dep) {
 module.exports = {
     VERSAO, classificarRedes, ipsLocais, caminhosConhecidos, extrairBancosDeIni, compararLocais, primeiraQueAbre,
     unidadesSeguras, buscarFdbLocais, lerConfiguracoesSmall, escanearSubnet, localizar, ehLocal, FDB_IGNORADOS,
-    caminhoNoServidor, ehArquivoSmall, hostDeUnc, extrairUncDeAtalho, identidadesDestaMaquina, bancoAutoSuspeito, comPrazo, unidadesDeRede, pistasDeAtalhos
+    caminhoNoServidor, ehArquivoSmall, hostDeUnc, partesDeUnc, caminhosDoCompartilhamento, buscarFdbNaRede, extrairUncDeAtalho, identidadesDestaMaquina, bancoAutoSuspeito, comPrazo, unidadesDeRede, pistasDeAtalhos
 };
