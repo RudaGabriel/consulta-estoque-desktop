@@ -190,3 +190,71 @@ test("caminhoNoServidor: acha o SMALL.FDB no servidor informado, sem trocar o se
     const auth = await L.caminhoNoServidor({ host: "S", cfg: {}, portaAberta: async () => true, validar: async () => ({ ok: false, auth: true }) });
     assert.match(auth.mensagem, /usuário\/senha/);
 });
+
+test("compartilhamento: UNC vira o caminho no disco do servidor; C$ dá o caminho exato", () => {
+    assert.deepStrictEqual(L.partesDeUnc("\\\\SERVIDOR\\SmallSoft\\Small Commerce\\SMALL.FDB"),
+        { host: "SERVIDOR", compart: "SmallSoft", resto: "\\Small Commerce\\SMALL.FDB" });
+    assert.strictEqual(L.partesDeUnc("C:\\SmallSoft\\SMALL.FDB"), null, "caminho local não é UNC");
+    assert.strictEqual(L.partesDeUnc("\\\\SERVIDOR"), null, "sem compartilhamento");
+    const c = L.caminhosDoCompartilhamento("\\\\SERVIDOR\\Small Commerce\\SMALL.FDB");
+    assert.strictEqual(c[0], "C:\\Program Files (x86)\\SmallSoft\\Small Commerce\\SMALL.FDB");
+    assert.ok(c.includes("D:\\Small Commerce\\SMALL.FDB") && c.includes("C:\\SMALL.FDB"));
+    assert.ok(c.every(x => /^[C-H]:\\/.test(x) && /\\SMALL\.FDB$/.test(x)), "nunca um caminho de rede");
+    assert.strictEqual(new Set(c.map(x => x.toUpperCase())).size, c.length);
+    assert.deepStrictEqual(L.caminhosDoCompartilhamento("\\\\SERVIDOR\\d$\\Banco\\SMALL.FDB"), ["D:\\Banco\\SMALL.FDB"]);
+    assert.deepStrictEqual(L.caminhosDoCompartilhamento("\\\\SERVIDOR\\Dados\\padrao.fdb"), [], "só SMALL.FDB");
+});
+
+// Pastas falsas da rede para buscarFdbNaRede (o arquivo nunca é aberto, só listado).
+function pastaFalsa(mapa, lidas) {
+    const ent = (name, dir) => ({ name, isFile: () => !dir, isDirectory: () => dir });
+    return async p => {
+        lidas.push(p);
+        const v = mapa[p.toUpperCase()];
+        if (v === "trava") return new Promise(() => {});
+        if (!v) throw new Error("ENOENT");
+        return v.map(x => x.endsWith("\\") ? ent(x.slice(0, -1), true) : ent(x, false));
+    };
+}
+
+test("rede: acha o SMALL.FDB na pasta compartilhada, pula servidor fora do ar e pasta travada", async () => {
+    const lidas = [];
+    const lerPasta = pastaFalsa({
+        "\\\\SERVIDOR\\SMALLSOFT": ["Small Commerce\\", "Lixo\\", "leiame.txt"],
+        "\\\\SERVIDOR\\SMALLSOFT\\SMALL COMMERCE": ["padrao.fdb", "SMALL.FDB", "Small.exe"],
+        "\\\\SERVIDOR\\SMALLSOFT\\LIXO": "trava"
+    }, lidas);
+    const inicio = Date.now();
+    const r = await L.buscarFdbNaRede(["\\\\DESLIGADO\\SmallSoft", "\\\\SERVIDOR\\SmallSoft\\", "C:\\local"], {
+        lerPasta, prazoPastaMs: 200, hostAcessivel: async h => h === "SERVIDOR"
+    });
+    assert.deepStrictEqual(r, ["\\\\SERVIDOR\\SmallSoft\\Small Commerce\\SMALL.FDB"]);
+    assert.ok(!lidas.some(p => /DESLIGADO/i.test(p)), "servidor sem a porta 445 nem é tocado");
+    assert.ok(!lidas.some(p => /^C:/i.test(p)), "caminho local não entra na busca da rede");
+    assert.ok(Date.now() - inicio < 3000, "pasta travada não segura a busca");
+});
+
+test("localizar: SMALL.FDB da pasta compartilhada é aberto pelo Firebird do servidor, nunca pela pasta", async () => {
+    const testados = [];
+    const r = await L.localizar(Object.assign({}, semDisco, {
+        cfg: { varrerRede: false }, interfaces: IFACES,
+        buscarRede: async () => ["\\\\loja-srv\\Dados\\SMALL.FDB", "\\\\estemicro\\x\\SMALL.FDB"],
+        portaAberta: async h => h === "loja-srv",
+        validar: async (h, c) => { testados.push(h + "|" + c); return { ok: h === "loja-srv" && c === "E:\\Dados\\SMALL.FDB" }; }
+    }));
+    assert.deepStrictEqual(r.achado, { host: "loja-srv", caminho: "E:\\Dados\\SMALL.FDB" });
+    assert.ok(testados.every(t => !t.includes("\\\\")), "nenhum caminho de rede chega ao Firebird");
+    assert.ok(!testados.some(t => /^estemicro\|/i.test(t)), "compartilhamento desta máquina não vira servidor");
+});
+
+test("caminhoNoServidor: usa o SMALL.FDB achado na pasta compartilhada desse servidor", async () => {
+    let pastas = null;
+    const r = await L.caminhoNoServidor({
+        host: "SERVIDOR", cfg: {},
+        buscarRede: async p => { pastas = p; return ["\\\\SERVIDOR\\SmallSoft\\Banco Novo\\SMALL.FDB"]; },
+        portaAberta: async () => true,
+        validar: async (h, c) => ({ ok: c === "F:\\SmallSoft\\Banco Novo\\SMALL.FDB" })
+    });
+    assert.deepStrictEqual(r.achado, { host: "SERVIDOR", caminho: "F:\\SmallSoft\\Banco Novo\\SMALL.FDB" });
+    assert.ok(pastas.every(p => p.startsWith("\\\\SERVIDOR\\")), "só as pastas desse servidor");
+});

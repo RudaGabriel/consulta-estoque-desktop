@@ -7,7 +7,7 @@ Versões em uso hoje:
 
 | Arquivo | Versão |
 |---|---|
-| Aplicativo (`package.json`) | [1.1.0](#aplicativo) |
+| Aplicativo (`package.json`) | [1.2.0](#aplicativo) |
 | [`main.js`](#mainjs) | 1.1.0 |
 | [`preload.js`](#preloadjs) | 1.1.0 |
 | [`ui/index.html`, `ui/estilo.css`, `ui/app.js`](#ui) | 1.1.0 |
@@ -15,7 +15,7 @@ Versões em uso hoje:
 | [`src/firebird.js`](#srcfirebirdjs) | 1.0.0 |
 | [`src/estoque-dados.js`](#srcestoque-dadosjs) | 1.0.0 |
 | [`src/estoque-busca.js`](#srcestoque-buscajs) | 1.0.0 |
-| [`src/localizar-banco.js`](#srclocalizar-bancojs) | 1.1.0 |
+| [`src/localizar-banco.js`](#srclocalizar-bancojs) | 1.2.0 |
 | [`src/copia-gbak.js`](#srccopia-gbakjs) | 1.0.0 |
 | [`src/config.js`](#srcconfigjs) | 1.1.0 |
 | [`src/vigia.js`](#srcvigiajs) | 1.0.0 |
@@ -32,6 +32,16 @@ Versões em uso hoje:
 ## Aplicativo
 
 Versão do Consulta Estoque (a que aparece no instalador e em *Configurações → Diagnóstico*).
+
+### 1.2.0 — 2026-11-10
+
+**SMALL.FDB procurado nas pastas compartilhadas da rede.**
+
+- O `SMALL.FDB` agora é procurado nas pastas compartilhadas (atalhos do Small, unidades de rede, `\\SERVIDOR\SmallSoft`...) e o servidor achado é usado.
+- O arquivo nunca é aberto pela pasta: o banco é lido pelo Firebird do servidor, no caminho do disco dele.
+- Com só o servidor informado, as pastas compartilhadas dele são procuradas antes dos caminhos típicos.
+- Pasta de rede com prazo e servidor desligado pulado na hora: nada trava.
+- 51 testes.
 
 ### 1.1.0 — 2026-11-10
 
@@ -157,6 +167,10 @@ Regras da busca.
 ## `src/localizar-banco.js`
 
 Descoberta automática do banco.
+
+### 1.2.0 — 2026-11-10
+
+**SMALL.FDB nas pastas compartilhadas.** `buscarFdbNaRede` lista as pastas compartilhadas (UNC) atrás do `SMALL.FDB` — só a lista, nunca o arquivo —, com prazo por pasta (4 s), tempo total (20 s), limite de profundidade e de pastas, e só em servidor com a porta 445 aberta. `caminhosDoCompartilhamento` converte o UNC achado nos caminhos prováveis do disco do servidor (`\\SRV\C$\...` dá o exato), testados pelo Firebird dele. Nova etapa 1b em `localizar` e busca nas pastas do servidor em `caminhoNoServidor`. Compartilhamento desta máquina não vira servidor.
 
 ### 1.1.0 — 2026-11-10
 

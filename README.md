@@ -6,13 +6,13 @@
 
 ### Consulta de preço e estoque para lojas que usam o Small Commerce (Firebird), feita para o leitor de código de barras
 
-<img alt="aplicativo: v1.1.0" src="https://img.shields.io/badge/aplicativo-v1.1.0-2563EB?style=flat">
+<img alt="aplicativo: v1.2.0" src="https://img.shields.io/badge/aplicativo-v1.2.0-2563EB?style=flat">
 <img alt="plataforma: Windows 7 a 11" src="https://img.shields.io/badge/plataforma-Windows%207%20%7C%208%20%7C%2010%20%7C%2011-0078D4?style=flat&logo=data%3Aimage%2Fsvg%2Bxml%3Bbase64%2CPHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHZpZXdCb3g9JzAgMCAyNCAyNCcgZmlsbD0nd2hpdGUnPjxyZWN0IHg9JzMnIHk9JzMnIHdpZHRoPSc4JyBoZWlnaHQ9JzgnLz48cmVjdCB4PScxMycgeT0nMycgd2lkdGg9JzgnIGhlaWdodD0nOCcvPjxyZWN0IHg9JzMnIHk9JzEzJyB3aWR0aD0nOCcgaGVpZ2h0PSc4Jy8%2BPHJlY3QgeD0nMTMnIHk9JzEzJyB3aWR0aD0nOCcgaGVpZ2h0PSc4Jy8%2BPC9zdmc%2B&logoColor=white">
 <img alt="arquitetura: 64 e 32 bits" src="https://img.shields.io/badge/arquitetura-64%20e%2032%20bits-0E7490?style=flat">
 <img alt="idioma: pt-BR" src="https://img.shields.io/badge/idioma-pt--BR-16A34A?style=flat">
 <img alt="banco: somente leitura" src="https://img.shields.io/badge/banco-somente%20leitura-DC2626?style=flat&logo=data%3Aimage%2Fsvg%2Bxml%3Bbase64%2CPHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHZpZXdCb3g9JzAgMCAyNCAyNCcgZmlsbD0nbm9uZScgc3Ryb2tlPSd3aGl0ZScgc3Ryb2tlLXdpZHRoPScyLjInIHN0cm9rZS1saW5lY2FwPSdyb3VuZCcgc3Ryb2tlLWxpbmVqb2luPSdyb3VuZCc%2BPHBhdGggZD0nTTEyIDIyczgtNCA4LTEwVjVsLTgtMy04IDN2N2MwIDYgOCAxMCA4IDEweicvPjxwYXRoIGQ9J205IDEyIDIgMiA0LTQnLz48L3N2Zz4%3D&logoColor=white">
 <img alt="funciona: sem internet" src="https://img.shields.io/badge/funciona-sem%20internet-0891B2?style=flat">
-<img alt="testes: 47 passando" src="https://img.shields.io/badge/testes-47%20passando-22C55E?style=flat&logo=data%3Aimage%2Fsvg%2Bxml%3Bbase64%2CPHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHZpZXdCb3g9JzAgMCAyNCAyNCcgZmlsbD0nbm9uZScgc3Ryb2tlPSd3aGl0ZScgc3Ryb2tlLXdpZHRoPScyLjInIHN0cm9rZS1saW5lY2FwPSdyb3VuZCcgc3Ryb2tlLWxpbmVqb2luPSdyb3VuZCc%2BPHBhdGggZD0nTTkgMnY2TDQgMTlhMiAyIDAgMCAwIDEuOCAzaDEyLjRhMiAyIDAgMCAwIDEuOC0zTDE1IDhWMicvPjxwYXRoIGQ9J004IDJoOCcvPjxwYXRoIGQ9J003IDE1aDEwJy8%2BPC9zdmc%2B&logoColor=white">
+<img alt="testes: 51 passando" src="https://img.shields.io/badge/testes-51%20passando-22C55E?style=flat&logo=data%3Aimage%2Fsvg%2Bxml%3Bbase64%2CPHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHZpZXdCb3g9JzAgMCAyNCAyNCcgZmlsbD0nbm9uZScgc3Ryb2tlPSd3aGl0ZScgc3Ryb2tlLXdpZHRoPScyLjInIHN0cm9rZS1saW5lY2FwPSdyb3VuZCcgc3Ryb2tlLWxpbmVqb2luPSdyb3VuZCc%2BPHBhdGggZD0nTTkgMnY2TDQgMTlhMiAyIDAgMCAwIDEuOCAzaDEyLjRhMiAyIDAgMCAwIDEuOC0zTDE1IDhWMicvPjxwYXRoIGQ9J004IDJoOCcvPjxwYXRoIGQ9J003IDE1aDEwJy8%2BPC9zdmc%2B&logoColor=white">
 <img alt="licença: proprietária" src="https://img.shields.io/badge/licen%C3%A7a-propriet%C3%A1ria-6B7280?style=flat">
 
 <img alt="Electron: 44.9.3" src="https://img.shields.io/badge/Electron-44.9.3-47848F?style=flat&logo=electron&logoColor=white">
@@ -241,17 +241,19 @@ Escolha em *Configurações → Modo de leitura*. Nos dois modos o aplicativo **
 Na primeira vez, e sempre que o banco configurado falhar (servidor desligado, IP trocado, caminho errado), o aplicativo **procura o banco sozinho e atualiza a configuração**. A meta é ler **pela rede**; este computador é a última opção.
 
 1. **A configuração do próprio Small Commerce.** Lê os `.ini`/`.cfg` deste computador, das **unidades de rede** (ex.: `H:` → `\\SERVIDOR\SmallSoft`), do compartilhamento `\\SERVIDOR\SmallSoft\Small Commerce` e dos **atalhos do Small** na Área de Trabalho e no Menu Iniciar. Ali está o endereço que o próprio Small usa, como `SERVIDOR:C:\Program Files (x86)\SmallSoft\Small Commerce\small.fdb`.
-2. **Os servidores da rede.** Tenta os servidores citados nessas pistas, **pelo nome** (que não muda quando o IP muda), o configurado, o nome `SERVIDOR` e os que a varredura da rede encontrar com a porta 3050 aberta. A varredura cobre a rede local, a Tailscale e o cabo direto `169.254`.
-3. **Por último, este computador** (`127.0.0.1`), se ele tiver o Firebird e um `SMALL.FDB`.
+2. **O `SMALL.FDB` nas pastas compartilhadas da rede.** Procura o arquivo nas pastas para onde apontam os atalhos do Small, nas **unidades de rede** e em `\\SERVIDOR\SmallSoft`, `\\SERVIDOR\Small Commerce` (e nos servidores citados nas pistas). Achou `\\SERVIDOR\SmallSoft\Small Commerce\SMALL.FDB`? Então o banco está no `SERVIDOR`, e o aplicativo o abre **pelo Firebird do servidor** (ex.: `SERVIDOR:C:\Program Files (x86)\SmallSoft\Small Commerce\SMALL.FDB`), testando as pastas de instalação típicas. Pasta de servidor desligado é pulada na hora.
+3. **Os servidores da rede.** Tenta os servidores citados nessas pistas, **pelo nome** (que não muda quando o IP muda), o configurado, o nome `SERVIDOR` e os que a varredura da rede encontrar com a porta 3050 aberta. A varredura cobre a rede local, a Tailscale e o cabo direto `169.254`.
+4. **Por último, este computador** (`127.0.0.1`), se ele tiver o Firebird e um `SMALL.FDB`.
 
 Regras:
 
 - Só aceita arquivos chamados **`SMALL.FDB`**. `padrao.fdb`, `exemplo.fdb`, `off.fdb`, `monitor.fdb` e cópias de consulta ficam de fora.
 - Só adota um banco que **abre** e tem a **tabela de produtos** do Small Commerce.
 - Servidor que não responde é descartado em 1,5 s.
-- Unidades de rede e de CD nunca entram na busca de arquivos `.FDB`. Abrir um banco por compartilhamento pode corrompê-lo; só o `.ini` é lido pela rede.
+- O `SMALL.FDB` **pode ser procurado nas pastas compartilhadas**, mas nunca é **aberto** pela pasta: abrir um banco por compartilhamento pode corrompê-lo. A pasta só mostra onde ele está; quem lê o banco é sempre o Firebird do servidor. Cada pasta de rede tem prazo de 4 s e a busca inteira, de 20 s.
+- A busca de `.FDB` no disco **deste computador** continua sem entrar nas unidades de rede e de CD (a rede é procurada pela etapa 2).
 - Banco local escolhido sozinho continua sendo reavaliado: a cada atualização bem-sucedida o aplicativo volta a procurar o servidor da rede, no máximo a cada 5 minutos.
-- **Servidor informado, caminho não:** digitando só o servidor (nome ou IP) em *Banco de dados*, o caminho do `SMALL.FDB` é procurado sozinho **nesse servidor** (caminhos típicos de `C:` a `H:`). Trocar o servidor apaga o caminho antigo, que é procurado de novo no novo servidor. Se o caminho configurado parar de funcionar, o aplicativo também procura primeiro no mesmo servidor.
+- **Servidor informado, caminho não:** digitando só o servidor (nome ou IP) em *Banco de dados*, o caminho do `SMALL.FDB` é procurado sozinho **nesse servidor** (primeiro nas pastas compartilhadas dele, depois nos caminhos típicos de `C:` a `H:`). Trocar o servidor apaga o caminho antigo, que é procurado de novo no novo servidor. Se o caminho configurado parar de funcionar, o aplicativo também procura primeiro no mesmo servidor.
 - Para travar o endereço e desligar a correção automática: *Configurações → Banco de dados → Não trocar o servidor sozinho*. O caminho continua sendo procurado nesse servidor.
 
 ---
@@ -370,7 +372,7 @@ Uma única biblioteca em uso pelo aplicativo (`node-firebird`); o resto é o pr�
 | Instalador | [electron-builder](https://www.electron.build) | 26.18.0 | Instalador NSIS e versão portátil, x64 e ia32 |
 | Tela | HTML5, CSS e JavaScript sem framework | — | Leve para PCs fracos; temas claro e escuro |
 | Som | Web Audio API | — | Bipe da leitura, sem arquivos de áudio |
-| Testes | `node:test` + `node:assert` | Node 20+ | 47 testes com Firebird, gbak e aplicativo simulados |
+| Testes | `node:test` + `node:assert` | Node 20+ | 51 testes com Firebird, gbak e aplicativo simulados |
 | Senha | `crypto.pbkdf2` (Node) | — | *Hash* da senha do administrador com sal, comparação em tempo constante |
 | Teste da tela | Playwright + Electron | — | Fluxo do leitor, cartão, configurações, tema e Electron 22 |
 | Build | GitHub Actions | — | Testes + instaladores a cada push |
@@ -383,14 +385,14 @@ Uma única biblioteca em uso pelo aplicativo (`node-firebird`); o resto é o pr�
 npm test
 ```
 
-- **47 testes**, sem Firebird real:
+- **51 testes**, sem Firebird real:
   - **Firebird simulado** (`src/demo.js`): registra toda SQL e transação, para provar que nada de escrita sai;
   - **gbak simulado** (`test/mock-gbak.js`): backup, restauração, falhas e atraso.
 - **Trava de somente leitura:** comandos recusados, transação somente leitura, `node-firebird` 0.x e 1.x+.
 - **Leitura do banco:** acentos, papéis das colunas (EAN em `REFERENCIA`), `OCTETS` recusado, banco sem tabela.
 - **Busca:** acentos, EAN, zeros à esquerda, exclusão e filtros.
 - **Cache em disco:** ida e volta; CSV protegido.
-- **Descoberta:** rede antes do local, só `SMALL.FDB`, unidade mapeada, `.ini` do compartilhamento, atalho `.lnk`, servidor fora do ar, senha errada.
+- **Descoberta:** rede antes do local, só `SMALL.FDB`, unidade mapeada, `.ini` do compartilhamento, `SMALL.FDB` achado na pasta compartilhada (aberto só pelo Firebird do servidor), servidor de compartilhamento fora do ar e pasta travada, atalho `.lnk`, servidor fora do ar, senha errada.
 - **Motor:** auto-correção do endereço, `fbHostFixo`, dados salvos sem rede, item ao vivo na leitura direta, troca de modo, gbak ausente.
 - **Cópia gbak:** senha por variável de ambiente, cópia nova atômica, limpeza segura, falha mantém a anterior, cancelamento.
 - **Administrador:** senha só como *hash*, chaves sensíveis, padrões do quiosque, cópia a cada 3 horas.
