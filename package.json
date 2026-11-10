@@ -1,0 +1,27 @@
+{
+  "name": "consulta-estoque-desktop",
+  "productName": "Consulta Estoque",
+  "version": "1.0.0",
+  "description": "Consulta de preço e estoque do Small Commerce para Windows: acha o banco sozinho na rede, leitor de código de barras USB/Bluetooth, modo cópia ou leitura direta.",
+  "private": true,
+  "main": "main.js",
+  "author": "Ruda Gabriel",
+  "license": "UNLICENSED",
+  "scripts": {
+    "start": "electron .",
+    "demo": "electron . --demo",
+    "test": "node --test test/nucleo.test.js test/localizar.test.js test/motor.test.js",
+    "dist": "electron-builder --config electron-builder.config.js --win --x64",
+    "dist:legado": "node -e \"process.env.VARIANTE='legado';require('child_process').execFileSync(process.execPath,[require.resolve('electron-builder/cli.js'),'--config','electron-builder.config.js','--win','--x64','--ia32'],{stdio:'inherit',env:process.env})\""
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "node-firebird": "2.19.1"
+  },
+  "devDependencies": {
+    "electron": "44.9.3",
+    "electron-builder": "26.18.0"
+  }
+}

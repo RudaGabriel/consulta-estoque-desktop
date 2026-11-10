@@ -1,0 +1,75 @@
+# build.yml — testes e instaladores do Consulta Estoque (Windows)
+# v1.0.0 — Autor: Ruda Gabriel
+# Gera, a cada push e PR:
+#   - moderno: Windows 10/11, 64 bits (Electron 44)
+#   - legado:  Windows 7 a 11, 64 e 32 bits (Electron 22)
+# Os arquivos ficam em "Artifacts" de cada execução (aba Actions).
+name: build
+
+on:
+  push:
+    branches: [main, "claude/**"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  testes:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+        env:
+          ELECTRON_SKIP_BINARY_DOWNLOAD: "1"
+      - run: npm test
+
+  instaladores:
+    needs: testes
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - variante: moderno
+            archs: --x64
+          - variante: legado
+            archs: --x64 --ia32
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Gerar instalador e versão portátil
+        shell: bash
+        env:
+          VARIANTE: ${{ matrix.variante }}
+          CSC_IDENTITY_AUTO_DISCOVERY: "false"
+        run: npx electron-builder --config electron-builder.config.js --win nsis portable ${{ matrix.archs }} --publish never
+      - name: Conferir que o aplicativo empacotado abre (modo demonstração)
+        shell: pwsh
+        run: |
+          $exe = Get-ChildItem -Path dist -Recurse -Filter "Consulta Estoque.exe" | Where-Object { $_.FullName -match "win-unpacked" } | Select-Object -First 1
+          if (-not $exe) { throw "executável não encontrado" }
+          $env:CONSULTA_DESKTOP_DADOS = "$env:RUNNER_TEMP\dados-teste"
+          $p = Start-Process -FilePath $exe.FullName -ArgumentList "--demo" -PassThru
+          Start-Sleep -Seconds 20
+          if ($p.HasExited) { throw "o aplicativo fechou sozinho (código $($p.ExitCode))" }
+          Stop-Process -Id $p.Id -Force
+          Get-Content "$env:CONSULTA_DESKTOP_DADOS\consulta-estoque.log"
+          if (-not (Select-String -Path "$env:CONSULTA_DESKTOP_DADOS\consulta-estoque.log" -Pattern "Estoque carregado" -Quiet)) { throw "o estoque de demonstração não carregou" }
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ConsultaEstoque-${{ matrix.variante }}
+          path: |
+            dist/**/*.exe
+            !dist/**/win-unpacked/**
+            !dist/**/win-ia32-unpacked/**
+          if-no-files-found: error
