@@ -1,7 +1,7 @@
 "use strict";
 /**
  * motor.js
- * @version 1.3.0
+ * @version 1.4.0
  * @author Ruda Gabriel
  * @description O coração do aplicativo: mantém o estoque em memória e atualizado
  *              conforme o modo escolhido, acha o banco sozinho e responde às
@@ -27,12 +27,8 @@
  *
  * @changelog
  *   (Histórico completo das versões: CHANGELOG.md no repositório.)
- *   1.3.0 — Abertura rápida: o estoque salvo é lido sem travar e, se a cópia salva
- *           ainda está no prazo (e é do mesmo banco), a próxima cópia fica para quando
- *           o prazo vencer — nada de gbak pesado a cada abertura; a primeira
- *           atualização espera 1,5 s para a tela abrir primeiro. Procura do gbak
- *           compartilhada (uma por vez). Status com ocupadoDesde e o andamento da
- *           cópia (início, etapa, estimativa da última cópia).
+ *   1.4.0 — Estimativa da cópia gbak no status mesmo antes da primeira cópia desta
+ *           abertura (lida do copia.json uma vez), para a tela avisar quanto leva.
  */
 
 const fs = require("fs");
@@ -45,7 +41,7 @@ const Config = require("./config.js");
 const Localizar = require("./localizar-banco.js");
 const Copia = require("./copia-gbak.js");
 
-const VERSAO = "1.3.0";
+const VERSAO = "1.4.0";
 const ARQ_CACHE = "estoque-cache.json.gz";
 const CHAVES_CONEXAO = ["modo", "metodoCopia", "fbHost", "fbPorta", "fdbPath", "fbUser", "fbPass", "gbakPath", "pastaCopias", "copiaTimeoutMin"];
 
@@ -86,11 +82,12 @@ function criarMotor(dep) {
     let conexaoViva = null;            // { p: Promise<db> } reaproveitada para o item ao vivo (modo direto)
     let conexaoVivaTimer = null;
     let geracao = 0;                   // invalida ciclos antigos quando a configuração muda
-    let semSmall = null;               // { quando, outros: [...] } — última busca sem SMALL.FDB em lugar nenhum
+    let semSmall = null;
+    let estimativaDisco;               // duração da última cópia gbak (copia.json); undefined = não lida               // { quando, outros: [...] } — última busca sem SMALL.FDB em lugar nenhum
 
     // ── Status para a tela ────────────────────────────────────────────────────
     const statusAtual = () => {
-        const cst = copia ? copia.status() : { emAndamento: false, etapa: "", decorridoMs: 0 };
+        const cst = copia ? copia.status() : { emAndamento: false, etapa: "", decorridoMs: 0, estimativaMs: estimativaSalva() };
         return {
             estado, mensagem, ocupado, ocupadoDesde: ocupado ? ocupadoDesde : 0, procurando,
             modo: cfg.modo, metodoCopia: cfg.metodoCopia, metodoEfetivo: metodoEfetivo || (retrato && retrato.modo) || null,
@@ -108,6 +105,17 @@ function criarMotor(dep) {
             buscaSemSmall: semSmall && semSmall.outros.length ? { quando: semSmall.quando, outros: semSmall.outros.length } : null,
             copia: cst
         };
+    };
+    /** Duração da última cópia gbak guardada no copia.json (lida uma vez; null se não houver). */
+    const estimativaSalva = () => {
+        if (estimativaDisco === undefined) {
+            estimativaDisco = null;
+            try {
+                const m = JSON.parse(fs.readFileSync(path.join(cfg.pastaCopias || Copia.pastaPadrao(), "copia.json"), "utf8"));
+                if (Number(m.duracaoMs) > 0) estimativaDisco = Number(m.duracaoMs);
+            } catch (_) {}
+        }
+        return estimativaDisco;
     };
     const emitir = () => { if (typeof d.aoStatus === "function") { try { d.aoStatus(statusAtual()); } catch (_) {} } };
     const definir = (e, msg) => { estado = e; mensagem = msg; emitir(); };
@@ -506,6 +514,7 @@ function criarMotor(dep) {
             geracao++;
             if (copia) { copia.cancelar(); copia = null; }
             if (antes.gbakPath !== cfg.gbakPath) { gbak = ""; gbakProcurado = false; }
+            if (antes.pastaCopias !== cfg.pastaCopias) estimativaDisco = undefined;
             fecharConexaoViva();
             falhasSeguidas = 0;
             ultimaBuscaAutomatica = 0;

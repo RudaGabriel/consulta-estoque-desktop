@@ -26,12 +26,16 @@ function preparar(cfg, atrasoPidMs) {
     return { pasta, vigia, aberturas: () => { try { return fs.readFileSync(path.join(pasta, "aberturas.txt"), "utf8").length; } catch (_) { return 0; } } };
 }
 const matarApp = pasta => { try { process.kill(parseInt(fs.readFileSync(path.join(pasta, "app.pid"), "utf8"), 10), "SIGKILL"); } catch (_) {} };
+// O "aplicativo" anota a abertura antes de gravar o PID: espera o PID dele antes de matar.
+const pidDoApp = pasta => { try { return parseInt(fs.readFileSync(path.join(pasta, "app.pid"), "utf8"), 10) || 0; } catch (_) { return 0; } };
+const esperarPid = async pasta => { await esperar(() => { const p = pidDoApp(pasta); return p > 0 && vivo(p); }, 8000); };
 const fimVigia = v => new Promise(res => { if (v.exitCode !== null) return res(v.exitCode); v.once("exit", c => res(c)); });
 
 test("vigia: reabre o aplicativo fechado sem a senha", async () => {
     const t = preparar();
     try {
         await esperar(() => t.aberturas() === 1, 8000);           // app.pid inexistente → abre
+        await esperarPid(t.pasta);
         matarApp(t.pasta);                                         // "fechado pelo Gerenciador de Tarefas"
         await esperar(() => t.aberturas() === 2, 8000);
         assert.ok(fs.readFileSync(path.join(t.pasta, "consulta-estoque.log"), "utf8").includes("reaberto"));
@@ -78,6 +82,7 @@ test("vigia: reabre rápido, sem abrir duas vezes enquanto o aplicativo novo ain
         await esperar(() => t.aberturas() === 1, 8000);
         await new Promise(r => setTimeout(r, 1200));
         assert.strictEqual(t.aberturas(), 1, "não abriu de novo enquanto o PID não estava gravado");
+        await esperarPid(t.pasta);
         const antes = Date.now();
         matarApp(t.pasta);
         await esperar(() => t.aberturas() === 2, 8000);
@@ -89,6 +94,7 @@ test("vigia: aplicativo que avisou que está reiniciando ganha tempo antes de se
     const t = preparar();
     try {
         await esperar(() => t.aberturas() === 1, 8000);
+        await esperarPid(t.pasta);
         fs.writeFileSync(path.join(t.pasta, "reiniciando"), String(Date.now()));
         matarApp(t.pasta);
         await new Promise(r => setTimeout(r, 900));

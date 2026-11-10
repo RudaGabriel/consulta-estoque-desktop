@@ -293,3 +293,13 @@ test("motor: busca usa as opções de coringa e preço do config", async () => {
     assert.strictEqual(motor.pesquisar({ q: "racao >100" }).total, 0);
     motor.encerrar();
 });
+
+test("motor: estimativa da última cópia gbak no status, mesmo antes de copiar nesta abertura", async () => {
+    const pastaCopias = tmp();
+    fs.writeFileSync(path.join(pastaCopias, "copia.json"), JSON.stringify({ arquivo: "x", duracaoMs: 240000 }));
+    const { motor } = montar({}, { pastaCopias });
+    assert.strictEqual(motor.status().copia.estimativaMs, 240000);
+    const sem = montar({}, { pastaCopias: tmp() });
+    assert.strictEqual(sem.motor.status().copia.estimativaMs, null, "sem cópia anterior: sem estimativa");
+    motor.encerrar(); sem.motor.encerrar();
+});

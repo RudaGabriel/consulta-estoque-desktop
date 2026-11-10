@@ -1,6 +1,6 @@
 /**
  * app.js — Consulta Estoque (tela)
- * @version 1.3.0
+ * @version 1.4.0
  * @author Ruda Gabriel
  * @description Tela de consulta de preço e estoque. Pensada para o leitor de
  *              código de barras USB/Bluetooth (que "digita" o código e manda
@@ -10,11 +10,9 @@
  *              Compatível com o Chromium 108 (versão para Windows 7/8).
  * @changelog
  *   (Histórico completo das versões: CHANGELOG.md no repositório.)
- *   1.3.0 — Barra de andamento da cópia com porcentagem e tempo que falta (estimativa
- *           pela última cópia; sem histórico, barra indeterminada com o tempo
- *           decorrido); configuração inicial com nome da loja e senha do
- *           administrador opcional (sem senha, tudo fica livre); remover a senha;
- *           cópia salva em dia aparece como "Atualizado em".
+ *   1.4.0 — Atualizar/F5 no modo cópia pede confirmação antes de fazer uma nova
+ *           cópia do banco (o que acontece, quanto tempo leva pela última cópia e
+ *           quando seria a próxima automática); com cópia em andamento só avisa.
  */
 (function () {
     "use strict";
@@ -921,7 +919,32 @@
     });
     $("bFecharCartao").addEventListener("click", function () { fecharCartao(false); focarBusca(true); });
 
-    $("bAtualizar").addEventListener("click", function () { api.atualizar(); toast("Atualizando o estoque..."); focarBusca(false); });
+    /**
+     * Atualizar/F5. No modo cópia, uma nova cópia do banco só sai depois de
+     * confirmada (cópia gbak pesa no servidor do caixa e leva minutos).
+     */
+    async function atualizarAgora() {
+        var s = estado.status || {};
+        if (s.copia && s.copia.emAndamento) { toast("Já existe uma cópia do banco em andamento — acompanhe pela barra abaixo do topo.", 4000); return; }
+        if (s.ocupado) { toast("O estoque já está sendo atualizado.", 3000); return; }
+        if (s.modo !== "direto" && s.itens) {
+            var gbak = s.metodoEfetivo === "gbak";
+            var est = s.copia && s.copia.estimativaMs > 0 ? s.copia.estimativaMs : 0;
+            var proxima = s.proximaEm && s.proximaEm > Date.now() ? new Date(s.proximaEm) : null;
+            var hora = proxima ? String(proxima.getHours()).padStart(2, "0") + ":" + String(proxima.getMinutes()).padStart(2, "0") : "";
+            var texto = gbak
+                ? "Isto faz agora uma CÓPIA COMPLETA do banco do Small Commerce: backup no servidor do caixa e restauração neste computador. " +
+                  (est ? "A última cópia levou cerca de " + fmtDuracao(est) + ". " : "Pode levar alguns minutos. ") +
+                  "Enquanto copia, o servidor do caixa fica um pouco mais lento; a consulta continua funcionando com o estoque atual."
+                : "Isto lê agora a tabela de produtos no servidor do Small Commerce (cópia instantânea). Leva alguns segundos e a consulta continua funcionando.";
+            if (hora) texto += " A próxima cópia automática já está marcada para as " + hora + ".";
+            var ok = await perguntar({ titulo: "Fazer uma nova cópia do banco agora?", texto: texto, ok: "Sim, copiar agora", cancelar: "Não" });
+            if (!ok) return;
+        }
+        api.atualizar();
+        toast("Atualizando o estoque...");
+    }
+    $("bAtualizar").addEventListener("click", function () { focarBusca(false); atualizarAgora(); });
     $("bConfig").addEventListener("click", function () { abrirPainel(); });
     $("estado").addEventListener("click", function () { abrirPainel("banco"); });
     $("bVazioProcurar").addEventListener("click", function () { abrirPainel("banco"); });
@@ -1008,7 +1031,7 @@
             return;
         }
         if ((e.ctrlKey || e.metaKey) && e.shiftKey && (k === "q" || k === "Q")) { e.preventDefault(); pedirSaida(); return; }
-        if (k === "F5") { e.preventDefault(); api.atualizar(); toast("Atualizando o estoque..."); return; }
+        if (k === "F5") { e.preventDefault(); atualizarAgora(); return; }
         if (k === "F10" || (e.ctrlKey && k === ",")) { e.preventDefault(); if (estado.painel) fecharPainel(); else abrirPainel(); return; }
         if (k === "F2" || k === "F3" || (e.ctrlKey && (k === "f" || k === "F"))) { e.preventDefault(); fecharPainel(); focarBusca(true); return; }
         if (e.ctrlKey && (k === "=" || k === "+" || k === "-" || k === "0")) {
