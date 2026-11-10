@@ -1,13 +1,12 @@
 /*
   estilo.css — Consulta Estoque (tela)
-  @version 1.2.0
+  @version 1.3.0
   @author Ruda Gabriel
   Compatível com o Chromium 108 (versão para Windows 7/8): sem CSS aninhado,
   sem color-mix, sem :has().
   @changelog
     (Histórico completo das versões: CHANGELOG.md no repositório.)
-    1.2.0 — Dica da busca (coringa e preço), lista de escolha e janela larga no modal,
-            texto de andamento (instalação do Firebird).
+    1.3.0 — Barra de andamento da cópia (com estimativa ou indeterminada).
 */
 :root {
   --fundo: #f4f6f8; --superficie: #ffffff; --superficie2: #eef1f4; --borda: #d9dee4;
@@ -243,6 +242,12 @@ h3.sub { margin: 8px 0 0; font-size: 15px; }
 .modal-item.marcado { border-color: var(--destaque); background: var(--superficie2); }
 .modal-item.desabilitado { opacity: .55; cursor: not-allowed; }
 .modal-item.desabilitado span { color: var(--ruim); }
+.andamento-copia { display: flex; align-items: center; gap: 12px; padding: 6px 20px 0; font-size: 13px; color: var(--texto2); }
+.andamento-copia[hidden] { display: none; }
+.andamento-trilho { position: relative; flex: 0 0 min(320px, 40vw); height: 8px; border-radius: 4px; background: var(--superficie2); overflow: hidden; }
+.andamento-barra { position: absolute; left: 0; top: 0; bottom: 0; width: 0; border-radius: 4px; background: var(--destaque); transition: width .8s linear; }
+.andamento-barra.indeterminada { width: 35%; animation: andamentoVai 1.4s ease-in-out infinite; }
+@keyframes andamentoVai { 0% { left: -35%; } 100% { left: 100%; } }
 .dica-busca { font-size: 12.5px; color: var(--texto2); margin-left: auto; }
 body.sem-cursor, body.sem-cursor * { cursor: none !important; }
 

@@ -6,13 +6,13 @@
 
 ### Consulta de preço e estoque para lojas que usam o Small Commerce (Firebird), feita para o leitor de código de barras
 
-<img alt="aplicativo: v1.3.0" src="https://img.shields.io/badge/aplicativo-v1.3.0-2563EB?style=flat">
+<img alt="aplicativo: v1.4.0" src="https://img.shields.io/badge/aplicativo-v1.4.0-2563EB?style=flat">
 <img alt="plataforma: Windows 7 a 11" src="https://img.shields.io/badge/plataforma-Windows%207%20%7C%208%20%7C%2010%20%7C%2011-0078D4?style=flat&logo=data%3Aimage%2Fsvg%2Bxml%3Bbase64%2CPHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHZpZXdCb3g9JzAgMCAyNCAyNCcgZmlsbD0nd2hpdGUnPjxyZWN0IHg9JzMnIHk9JzMnIHdpZHRoPSc4JyBoZWlnaHQ9JzgnLz48cmVjdCB4PScxMycgeT0nMycgd2lkdGg9JzgnIGhlaWdodD0nOCcvPjxyZWN0IHg9JzMnIHk9JzEzJyB3aWR0aD0nOCcgaGVpZ2h0PSc4Jy8%2BPHJlY3QgeD0nMTMnIHk9JzEzJyB3aWR0aD0nOCcgaGVpZ2h0PSc4Jy8%2BPC9zdmc%2B&logoColor=white">
 <img alt="arquitetura: 64 e 32 bits" src="https://img.shields.io/badge/arquitetura-64%20e%2032%20bits-0E7490?style=flat">
 <img alt="idioma: pt-BR" src="https://img.shields.io/badge/idioma-pt--BR-16A34A?style=flat">
 <img alt="banco: somente leitura" src="https://img.shields.io/badge/banco-somente%20leitura-DC2626?style=flat&logo=data%3Aimage%2Fsvg%2Bxml%3Bbase64%2CPHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHZpZXdCb3g9JzAgMCAyNCAyNCcgZmlsbD0nbm9uZScgc3Ryb2tlPSd3aGl0ZScgc3Ryb2tlLXdpZHRoPScyLjInIHN0cm9rZS1saW5lY2FwPSdyb3VuZCcgc3Ryb2tlLWxpbmVqb2luPSdyb3VuZCc%2BPHBhdGggZD0nTTEyIDIyczgtNCA4LTEwVjVsLTgtMy04IDN2N2MwIDYgOCAxMCA4IDEweicvPjxwYXRoIGQ9J205IDEyIDIgMiA0LTQnLz48L3N2Zz4%3D&logoColor=white">
 <img alt="funciona: sem internet" src="https://img.shields.io/badge/funciona-sem%20internet-0891B2?style=flat">
-<img alt="testes: 61 passando" src="https://img.shields.io/badge/testes-61%20passando-22C55E?style=flat&logo=data%3Aimage%2Fsvg%2Bxml%3Bbase64%2CPHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHZpZXdCb3g9JzAgMCAyNCAyNCcgZmlsbD0nbm9uZScgc3Ryb2tlPSd3aGl0ZScgc3Ryb2tlLXdpZHRoPScyLjInIHN0cm9rZS1saW5lY2FwPSdyb3VuZCcgc3Ryb2tlLWxpbmVqb2luPSdyb3VuZCc%2BPHBhdGggZD0nTTkgMnY2TDQgMTlhMiAyIDAgMCAwIDEuOCAzaDEyLjRhMiAyIDAgMCAwIDEuOC0zTDE1IDhWMicvPjxwYXRoIGQ9J004IDJoOCcvPjxwYXRoIGQ9J003IDE1aDEwJy8%2BPC9zdmc%2B&logoColor=white">
+<img alt="testes: 63 passando" src="https://img.shields.io/badge/testes-63%20passando-22C55E?style=flat&logo=data%3Aimage%2Fsvg%2Bxml%3Bbase64%2CPHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHZpZXdCb3g9JzAgMCAyNCAyNCcgZmlsbD0nbm9uZScgc3Ryb2tlPSd3aGl0ZScgc3Ryb2tlLXdpZHRoPScyLjInIHN0cm9rZS1saW5lY2FwPSdyb3VuZCcgc3Ryb2tlLWxpbmVqb2luPSdyb3VuZCc%2BPHBhdGggZD0nTTkgMnY2TDQgMTlhMiAyIDAgMCAwIDEuOCAzaDEyLjRhMiAyIDAgMCAwIDEuOC0zTDE1IDhWMicvPjxwYXRoIGQ9J004IDJoOCcvPjxwYXRoIGQ9J003IDE1aDEwJy8%2BPC9zdmc%2B&logoColor=white">
 <img alt="licença: proprietária" src="https://img.shields.io/badge/licen%C3%A7a-propriet%C3%A1ria-6B7280?style=flat">
 
 <img alt="Electron: 44.9.3" src="https://img.shields.io/badge/Electron-44.9.3-47848F?style=flat&logo=electron&logoColor=white">
@@ -49,9 +49,10 @@ Um aplicativo de Windows, de **janela própria** (não abre no navegador), para 
 | 🌐 **Acha o banco sozinho** | Pergunta se o banco fica **na rede** ou **neste computador**, começa por lá e **varre tudo**: disco deste computador, pastas compartilhadas e a rede inteira. Sem `SMALL.FDB` em lugar nenhum, mostra os outros arquivos `.FDB` achados para você escolher. |
 | 🔎 **Busca esperta** | Coringa `*` (`RAÇÃO*10KG`) e filtro de preço na própria busca: `RAÇÃO >50` (R$ 50 ou mais) e `RAÇÃO <50` (R$ 50 ou menos). |
 | 🔁 **Dois modos** | **Cópia** (padrão, como o Relatórios FDB-FBK): não pesa no caixa e funciona com o servidor fora do ar. **Leitura direta** (como o Relatórios SSH): preço e estoque do instante. |
-| 💾 **Abre na hora** | O último estoque carregado fica salvo no computador e aparece assim que o aplicativo abre, mesmo sem rede. |
+| 💾 **Abre na hora** | O último estoque carregado fica salvo no computador e aparece assim que o aplicativo abre, mesmo sem rede. Cópia ainda em dia não é refeita só porque o aplicativo abriu. |
+| 📊 **Andamento da cópia** | Barra com a porcentagem e o tempo que falta (estimado pela última cópia). |
 | 🔒 **Somente leitura** | Nunca grava nada no banco do Small Commerce. |
-| 🔐 **Quiosque com senha** | Abre em tela cheia e não sai dela; não fecha sem a senha do administrador e, se for fechado à força ou travar, **abre de novo sozinho**. Abre junto com o Windows. |
+| 🔐 **Quiosque** | Abre em tela cheia e não sai dela; com a senha do administrador (opcional), não fecha sem ela. Se for fechado à força ou travar, **abre de novo sozinho em 1 a 2 segundos**. Abre junto com o Windows, uma instância só. |
 | 🖥️ **PCs antigos e novos** | Versão moderna (Windows 10/11, 64 bits) e versão **legado** (Windows 7 a 11, 64 e 32 bits). Modo leve sem animações. |
 
 <a id="instalacao"></a>
@@ -72,7 +73,7 @@ Um aplicativo de Windows, de **janela própria** (não abre no navegador), para 
    > 💡 Não sabe se o Windows é 32 ou 64 bits? *Configurações → Sistema → Sobre → Tipo de sistema* (no Windows 7: *Painel de Controle → Sistema*).
 
 2. **Execute o instalador** e abra o **Consulta Estoque** pelo atalho da Área de Trabalho. Na primeira vez ele:
-   - pede para **criar a senha do administrador**;
+   - pede o **nome da loja** e a **senha do administrador** — os dois **opcionais** (sem senha, tudo fica livre);
    - pergunta **onde está o banco** do Small Commerce: **na rede** (em outro computador, o servidor) ou **neste computador**;
    - se este computador não tiver o **Firebird**, pergunta se você quer instalá-lo (veja [Firebird neste computador](#firebird));
    - procura o banco sozinho; em alguns segundos o estoque aparece.
@@ -118,10 +119,11 @@ Abra com o parâmetro `--demo` (ex.: um atalho para `"Consulta Estoque.exe" --de
 | Filtrar | **Estoque** (com, sem, negativo, abaixo do mínimo), **Só ativos**, **Contém** e **Ordem**. Os filtros ficam guardados. |
 | Exportar a lista | *Configurações → Administrador → Exportar a lista* (com a senha) → planilha CSV. |
 | Atualizar agora | **Atualizar** ou **F5**. |
+| Acompanhar a cópia do banco | Uma barra aparece abaixo do topo: etapa (copiando do servidor / restaurando aqui), porcentagem e **quanto falta**. A estimativa vem da duração da última cópia; na primeira, a barra corre sem porcentagem e mostra o tempo decorrido. |
 | Limpar a tela | Sozinha, **1 minuto** depois da última tecla ou leitura (busca e cartão somem). |
 | Sair do aplicativo | **Ctrl+Shift+Q** e a senha do administrador. |
 | Aumentar/diminuir o texto | **Ctrl + +** / **Ctrl + −** / **Ctrl + 0**, ou *Configurações → Tela*. |
-| Ver a situação do banco | Clique no indicador do topo (bolinha verde = atualizado, amarela = mostrando dados salvos, vermelha = sem conexão). |
+| Ver a situação do banco | Clique no indicador do topo (bolinha verde = atualizado, amarela = mostrando dados salvos porque o banco falhou, vermelha = sem conexão). |
 
 <details>
 <summary><b>Todos os atalhos de teclado</b></summary>
@@ -165,12 +167,15 @@ O leitor funciona como um teclado: "digita" o código e manda **Enter**. O aplic
 O aplicativo foi feito para ficar sozinho num computador da loja, com clientes mexendo. Por isso:
 
 - **Tela cheia permanente.** Abre em tela cheia e não sai dela: não há botão de tela cheia, F11 não funciona e a janela não minimiza.
-- **Não fecha sem a senha.** Alt+F4, o "X" e Ctrl+W são ignorados. Para sair: **Ctrl+Shift+Q** (ou *Configurações → Administrador → Sair do aplicativo*) e a senha.
-- **Persistência.** Um processo pequeno, o **vigia**, reabre o aplicativo se ele for fechado sem a senha (pelo Gerenciador de Tarefas, por exemplo) ou se travar e cair.
+- **Não fecha sem a senha.** Alt+F4, o "X" e Ctrl+W são ignorados. Para sair: **Ctrl+Shift+Q** (ou *Configurações → Administrador → Sair do aplicativo*) e a senha (sem senha definida, só confirma).
+- **Persistência.** Um processo pequeno, o **vigia**, reabre o aplicativo se ele for fechado sem a senha (pelo Gerenciador de Tarefas, por exemplo) ou se travar e cair — **em 1 a 2 segundos**.
   - Saindo com a senha, o vigia termina junto.
   - Ele aparece no Gerenciador de Tarefas como "Consulta Estoque".
-- **Senha do administrador.**
-  - É criada na primeira abertura e guardada só como *hash* PBKDF2; a senha em si nunca é gravada.
+- **Uma instância só.** Abrir de novo (atalho, Windows, vigia) não cria outra cópia na memória: a que já está aberta vem para a frente e a nova sai na hora.
+- **Senha do administrador (opcional).**
+  - Na primeira abertura o aplicativo pede o nome da loja e a senha; os dois podem ficar em branco.
+  - **Sem senha, tudo fica livre**: qualquer pessoa pode mudar as configurações e sair. Dá para criar a senha depois (*Administrador → Criar a senha*) e para removê-la (*Administrador → Remover a senha*).
+  - Guardada só como *hash* PBKDF2; a senha em si nunca é gravada.
   - Protege as abas **Consulta**, **Banco de dados**, **Windows** e **Administrador**, a exportação, a pasta de dados e a saída.
   - A consulta de preço e as opções visuais (tema, tamanho do texto, som) continuam livres.
   - O desbloqueio vale 5 minutos e termina ao fechar as configurações.
@@ -238,7 +243,9 @@ Escolha em *Configurações → Modo de leitura*. Nos dois modos o aplicativo **
 - Usuário e senha vão ao gbak por **variável de ambiente** (`ISC_USER`/`ISC_PASSWORD`), nunca na linha de comando.
 - O gbak roda com **prioridade abaixo do normal** (o caixa tem preferência).
 - O intervalo entre cópias cresce para **3× a duração da última cópia**: o banco do caixa nunca fica ocupado mais que 1/3 do tempo.
-- O gbak é procurado sozinho: configurado → serviço do Firebird em execução (mesma versão) → pastas conhecidas → `PATH`.
+- O gbak é procurado sozinho: configurado → serviço do Firebird (pelo registro do Windows, rápido; mesma versão) → pastas conhecidas → `PATH`.
+- **Andamento:** a barra abaixo do topo mostra a etapa, a porcentagem e quanto falta, pela duração da última cópia (guardada em `copia.json`).
+- **Ao abrir o aplicativo** a cópia não é refeita se a última ainda está no prazo (padrão 3 horas) e é do mesmo banco: a próxima fica para quando o prazo vencer. *Atualizar*/F5 faz na hora.
 </details>
 
 ---
@@ -333,7 +340,8 @@ Tudo pode ser feito na tela (*Configurações*, **F10**). As chaves marcadas com
 | `zoom` | `1` | Tamanho do texto (0,6 a 2,5) |
 | `som` / `tabComoEnter` | `true` / `true` | Bipe na leitura / TAB do leitor vale como Enter |
 | `modoLeve` | `false` | Sem animações (PCs antigos) |
-| `senhaAdmin` | — | *Hash* da senha do administrador (criado pela tela; nunca a senha) |
+| `senhaAdmin` | — | *Hash* da senha do administrador (criado pela tela; nunca a senha). Vazio = sem senha, tudo livre |
+| `configInicial` | `false` | Marcado depois da configuração inicial (nome da loja e senha) |
 | `versaoConfig` | `2` | Versão do arquivo (interna; migrações feitas uma vez só) |
 
 > Valor inválido ou fora da faixa volta ao padrão. `config.json` estragado é guardado como `config.json.corrompido-AAAAMMDD-HHMMSS` e o aplicativo abre com os padrões.
@@ -418,7 +426,7 @@ Uma única biblioteca em uso pelo aplicativo (`node-firebird`); o resto é o pr�
 | Instalador | [electron-builder](https://www.electron.build) | 26.18.0 | Instalador NSIS e versão portátil, x64 e ia32 |
 | Tela | HTML5, CSS e JavaScript sem framework | — | Leve para PCs fracos; temas claro e escuro |
 | Som | Web Audio API | — | Bipe da leitura, sem arquivos de áudio |
-| Testes | `node:test` + `node:assert` | Node 20+ | 61 testes com Firebird, gbak e aplicativo simulados |
+| Testes | `node:test` + `node:assert` | Node 20+ | 63 testes com Firebird, gbak e aplicativo simulados |
 | Senha | `crypto.pbkdf2` (Node) | — | *Hash* da senha do administrador com sal, comparação em tempo constante |
 | Teste da tela | Playwright + Electron | — | Fluxo do leitor, cartão, configurações, tema e Electron 22 |
 | Build | GitHub Actions | — | Testes + instaladores a cada push |
@@ -431,7 +439,7 @@ Uma única biblioteca em uso pelo aplicativo (`node-firebird`); o resto é o pr�
 npm test
 ```
 
-- **61 testes**, sem Firebird real:
+- **63 testes**, sem Firebird real:
   - **Firebird simulado** (`src/demo.js`): registra toda SQL e transação, para provar que nada de escrita sai;
   - **gbak simulado** (`test/mock-gbak.js`): backup, restauração, falhas e atraso.
 - **Trava de somente leitura:** comandos recusados, transação somente leitura, `node-firebird` 0.x e 1.x+.
@@ -444,8 +452,9 @@ npm test
 - **Cópia gbak:** senha por variável de ambiente, cópia nova atômica, limpeza segura, falha mantém a anterior, cancelamento.
 - **Administrador:** senha só como *hash*, chaves sensíveis, padrões do quiosque (barra de tarefas oculta, também em config antigo), cópia a cada 3 horas.
 - **Caminho no servidor:** servidor informado sem o caminho, troca de servidor apaga o caminho antigo.
-- **Vigia (processos de verdade):** reabre o aplicativo fechado à força, encerra com a saída autorizada e com a persistência desligada, um vigia só.
-- **Tela (Playwright, Electron 44 e 22):** criação da senha, pergunta da meta, foco de volta na busca após 30 s, coringa e preço, leitura, limpeza após inatividade, fechar bloqueado, trava das abas, desbloqueio, ações sensíveis recusadas sem a senha, saída com Ctrl+Shift+Q, instalação do Firebird e escolha de outro `.FDB`.
+- **Vigia (processos de verdade):** reabre o aplicativo fechado à força (rápido, sem abrir duas vezes enquanto o novo grava o PID), espera o reinício avisado, encerra com a saída autorizada e com a persistência desligada, um vigia só.
+- **Abertura:** cópia salva em dia não toca no banco ao abrir; estimativa da cópia pela duração de cada etapa.
+- **Tela (Playwright, Electron 44 e 22):** configuração inicial (nome da loja, senha opcional, sem senha tudo livre, criar e remover a senha depois), barra de andamento da cópia, pergunta da meta, foco de volta na busca após 30 s, coringa e preço, leitura, limpeza após inatividade, fechar bloqueado, trava das abas, desbloqueio, ações sensíveis recusadas sem a senha, saída com Ctrl+Shift+Q, instalação do Firebird e escolha de outro `.FDB`.
 
 ---
 
@@ -490,6 +499,7 @@ npm test
 | A busca não aceita `*` ou `>` | *Configurações → Consulta*: ligue **Busca com coringa** e **Filtro de preço na busca** |
 | "Versão do Firebird local incompatível" | O Firebird deste computador precisa ser da mesma versão ou mais novo que o do servidor; ou use **Instantâneo** |
 | Tela preta ou piscando | Desmarque **Aceleração gráfica** ou abra com `--sem-gpu` |
+| Demora para abrir | Use o **instalador** (a versão portátil descompacta o aplicativo inteiro a cada abertura). A cópia do banco não roda mais a cada abertura; antivírus examinando o aplicativo também atrasa — adicione a pasta do aplicativo às exceções |
 | Fechou sozinho logo ao abrir (PC antigo) | Abra de novo (com a persistência ele reabre sozinho): a abertura seguinte vem sem aceleração gráfica automaticamente. Se acontecer sempre, desmarque **Aceleração gráfica** |
 | Windows 7/8 ou 32 bits não abre | Use a versão **legado** |
 | Como fechar o aplicativo? | **Ctrl+Shift+Q** e a senha do administrador |

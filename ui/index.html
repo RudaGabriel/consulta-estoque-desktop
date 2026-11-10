@@ -1,14 +1,13 @@
 <!doctype html>
 <!--
   index.html — Consulta Estoque (tela)
-  @version 1.2.0
+  @version 1.3.0
   @author Ruda Gabriel
   @changelog
     (Histórico completo das versões: CHANGELOG.md no repositório.)
-    1.2.0 — Busca com coringa "*" e preço ">valor"/"<valor" (dica no campo e opções
-            na aba Consulta); meta da busca automática, instalar o Firebird e escolher
-            outro .FDB na aba Banco de dados; janela de pergunta com terceira opção e
-            lista de escolha.
+    1.3.0 — Barra de andamento da cópia com estimativa; campo de texto na janela de
+            pergunta (nome da loja na configuração inicial); "Remover a senha" na aba
+            Administrador.
 -->
 <html lang="pt-BR">
 <head>
@@ -39,6 +38,11 @@
     </button>
   </div>
 </header>
+
+<div id="andamento" class="andamento-copia" hidden aria-live="polite">
+  <div class="andamento-trilho"><div class="andamento-barra" id="andamentoBarra"></div></div>
+  <span id="andamentoTexto"></span>
+</div>
 
 <section class="busca">
   <div class="campo">
@@ -260,7 +264,8 @@
         <label>Nova senha<input type="password" id="admNova" autocomplete="new-password" placeholder="mínimo 4 caracteres"></label>
         <label>Repita a nova senha<input type="password" id="admNova2" autocomplete="new-password"></label>
       </div>
-      <div class="botoes"><button class="btn" id="bTrocarSenha" type="button">Trocar a senha</button></div>
+      <div class="botoes"><button class="btn" id="bTrocarSenha" type="button">Trocar a senha</button>
+        <button class="btn perigo" id="bRemoverSenha" type="button">Remover a senha (tudo fica livre)</button></div>
       <h3 class="sub">Ferramentas</h3>
       <div class="botoes">
         <button class="btn" id="bCsv" type="button">Exportar a lista (planilha CSV)</button>
@@ -294,6 +299,7 @@
 <div id="modal" class="modal" hidden role="dialog" aria-modal="true">
   <h2 id="modalTitulo"></h2>
   <p id="modalTexto"></p>
+  <input type="text" id="modalCampo" autocomplete="off" maxlength="60" hidden>
   <input type="password" id="modalSenha" autocomplete="off" placeholder="Senha">
   <input type="password" id="modalSenha2" autocomplete="off" placeholder="Repita a senha" hidden>
   <div class="modal-lista" id="modalLista" hidden></div>

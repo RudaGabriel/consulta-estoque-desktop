@@ -1,7 +1,7 @@
 "use strict";
 /**
  * config.js
- * @version 1.2.0
+ * @version 1.3.0
  * @author Ruda Gabriel
  * @description Configuração do aplicativo (config.json na pasta de dados):
  *              valores padrão, validação de cada chave e gravação atômica.
@@ -12,16 +12,14 @@
  *
  * @changelog
  *   (Histórico completo das versões: CHANGELOG.md no repositório.)
- *   1.2.0 — buscaCoringa e buscaPreco (busca com "*" e com ">valor"/"<valor"),
- *           metaBusca (onde procurar primeiro: rede ou este computador),
- *           perguntarFirebird, ocultarBarraTarefas ligada por padrão (também nos
- *           config.json antigos, uma vez só, pela versaoConfig 2).
+ *   1.3.0 — configInicial (interna): a configuração inicial (nome da loja e senha
+ *           opcional) já foi feita.
  */
 
 const fs = require("fs");
 const path = require("path");
 
-const VERSAO = "1.2.0";
+const VERSAO = "1.3.0";
 // Versão do formato do config.json (migrações feitas uma vez só).
 const VERSAO_CONFIG = 2;
 
@@ -73,6 +71,7 @@ const ESQUEMA = {
     buscaPreco:          [true, "bool"],
     // Administrador: "pbkdf2$iteracoes$sal$hash" (nunca a senha em texto)
     senhaAdmin:          ["", "hash"],
+    configInicial:       [false, "bool"],     // primeira abertura já configurada (nome da loja, senha opcional)
     // Formato do arquivo (interno)
     versaoConfig:        [VERSAO_CONFIG, "int", 0, 99]
 };
@@ -80,7 +79,7 @@ const ESQUEMA = {
 // Chaves que só mudam com a senha do administrador (a tela de consulta fica
 // aberta ao público: cliente não pode trocar o banco, sair do quiosque etc.).
 const PUBLICAS = ["tema", "modoLeve", "som", "zoom", "tabComoEnter"];
-const INTERNAS = ["senhaAdmin", "fbHostAuto", "versaoConfig"];
+const INTERNAS = ["senhaAdmin", "fbHostAuto", "versaoConfig", "configInicial"];
 const SENSIVEIS = Object.keys(ESQUEMA).filter(k => PUBLICAS.indexOf(k) < 0 && INTERNAS.indexOf(k) < 0);
 
 function padrao() {

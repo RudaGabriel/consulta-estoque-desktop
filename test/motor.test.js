@@ -120,6 +120,11 @@ test("motor: estoque salvo em disco aparece na hora ao reabrir, mesmo com o banc
     assert.strictEqual(m2.status().itens, 15);
     assert.strictEqual(m2.status().dadosDoDisco, true);
     assert.strictEqual(m2.pesquisar({ q: "areia" }).total, 1);
+    // Cópia salva ainda no prazo (3 h) e do mesmo banco: abrir não refaz a cópia.
+    await new Promise(r => setTimeout(r, 1800));
+    assert.strictEqual(falso.attaches.length, 0, "abrir com a cópia em dia não toca no banco");
+    assert.ok(m2.status().proximaEm - Date.now() > 60 * 60000, "próxima cópia agendada para o fim do prazo");
+    m2.atualizarAgora();
     await esperar(() => m2.status().erro);
     assert.strictEqual(m2.status().estado, "pronto", "com dados salvos, uma falha não derruba a consulta");
     m2.encerrar();
@@ -176,7 +181,12 @@ test("gbak: backup + restauração somente leitura, senha por variável de ambie
     process.env.MOCK_GBAK_LOG = logGbak;
     try {
         const c = criarCopiaGbak({ pasta, gbak: MOCK, usuario: "SYSDBA", senha: "segredo" });
+        assert.strictEqual(c.status().estimativaMs, null, "primeira cópia: sem estimativa");
         const r1 = await c.executar({ host: "127.0.0.1", caminho: origem });
+        const st = c.status();
+        assert.ok(st.estimativaMs > 0 && st.estimativaBackupMs > 0 && st.estimativaRestauracaoMs > 0, "depois da cópia: estimativa pela duração de cada etapa");
+        const man = JSON.parse(fs.readFileSync(path.join(pasta, "copia.json"), "utf8"));
+        assert.strictEqual(man.duracaoBackupMs + man.duracaoRestauracaoMs, man.duracaoMs);
         assert.ok(RE_COPIA.test(path.basename(r1.arquivo)));
         assert.strictEqual(fs.readFileSync(r1.arquivo, "utf8"), "BANCO-1");
         assert.strictEqual(c.ativa(), r1.arquivo);
