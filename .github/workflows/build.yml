@@ -61,14 +61,30 @@ jobs:
         run: |
           $exe = Get-ChildItem -Path dist -Recurse -Filter "Consulta Estoque.exe" | Where-Object { $_.FullName -match "win-unpacked" } | Select-Object -First 1
           if (-not $exe) { throw "executável não encontrado" }
-          $env:CONSULTA_DESKTOP_DADOS = "$env:RUNNER_TEMP\dados-teste"
+          $dados = "$env:RUNNER_TEMP\dados-teste"
+          $env:CONSULTA_DESKTOP_DADOS = $dados
           $env:CONSULTA_SEM_QUIOSQUE = "1"
-          $p = Start-Process -FilePath $exe.FullName -ArgumentList "--demo" -PassThru
-          Start-Sleep -Seconds 20
-          if ($p.HasExited) { throw "o aplicativo fechou sozinho (código $($p.ExitCode))" }
-          Stop-Process -Id $p.Id -Force
-          Get-Content "$env:CONSULTA_DESKTOP_DADOS\consulta-estoque.log"
-          if (-not (Select-String -Path "$env:CONSULTA_DESKTOP_DADOS\consulta-estoque.log" -Pattern "Estoque carregado" -Quiet)) { throw "o estoque de demonstração não carregou" }
+          $log = "$dados\consulta-estoque.log"
+          function Abrir($n) {
+            $chromium = "$env:RUNNER_TEMP\chromium-$n.log"
+            $p = Start-Process -FilePath $exe.FullName -ArgumentList "--demo", "--enable-logging=file", "--log-file=$chromium" -PassThru
+            Start-Sleep -Seconds 25
+            $caiu = $p.HasExited
+            if ($caiu) { Write-Host "Abertura $n caiu (código $($p.ExitCode)). Log do Chromium:"; if (Test-Path $chromium) { Get-Content $chromium -Tail 40 } }
+            else { Stop-Process -Id $p.Id -Force; Start-Sleep -Seconds 2 }
+            return -not $caiu
+          }
+          $ok = Abrir 1
+          # Se a 1ª abertura cair (máquina virtual sem placa de vídeo), a 2ª tem
+          # de abrir sozinha no modo seguro — o mesmo que acontece no cliente,
+          # onde o vigia reabre o aplicativo.
+          if (-not $ok) {
+            $ok = Abrir 2
+            if ($ok -and -not (Select-String -Path $log -Pattern "sem aceleração gráfica" -Quiet)) { throw "a 2ª abertura não usou o modo seguro" }
+          }
+          if (Test-Path $log) { Get-Content $log }
+          if (-not $ok) { throw "o aplicativo não abriu nem no modo seguro" }
+          if (-not (Select-String -Path $log -Pattern "Estoque carregado" -Quiet)) { throw "o estoque de demonstração não carregou" }
       - uses: actions/upload-artifact@v4
         with:
           name: ConsultaEstoque-${{ matrix.variante }}

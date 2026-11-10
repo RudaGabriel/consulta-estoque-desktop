@@ -437,6 +437,7 @@ npm test
 | Método gbak: "gbak não encontrado" / "Firebird desta máquina não está rodando" | Use **Automático** ou **Instantâneo**, ou instale o Firebird (mesma versão do servidor) |
 | "Versão do Firebird local incompatível" | O Firebird deste computador precisa ser da mesma versão ou mais novo que o do servidor; ou use **Instantâneo** |
 | Tela preta ou piscando | Desmarque **Aceleração gráfica** ou abra com `--sem-gpu` |
+| Fechou sozinho logo ao abrir (PC antigo) | Abra de novo (com a persistência ele reabre sozinho): a abertura seguinte vem sem aceleração gráfica automaticamente. Se acontecer sempre, desmarque **Aceleração gráfica** |
 | Windows 7/8 ou 32 bits não abre | Use a versão **legado** |
 | Como fechar o aplicativo? | **Ctrl+Shift+Q** e a senha do administrador |
 | Esqueci a senha do administrador | Veja [Esqueci a senha](#quiosque) |
