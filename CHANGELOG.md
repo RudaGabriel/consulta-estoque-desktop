@@ -46,6 +46,7 @@ Versão do Consulta Estoque (a que aparece no instalador e em *Configurações �
 - **Aba Windows:** abrir junto com o Windows (padrão ligado), persistência, sempre acima, manter em primeiro plano, impedir descanso, ocultar da barra de tarefas, esconder o cursor parado, reinício diário, monitor, aceleração gráfica.
 - **Modo manutenção** para o administrador sair da tela cheia temporariamente.
 - **Limpeza automática:** busca e cartão somem 1 minuto após a última tecla/leitura.
+- **Abertura segura:** se o aplicativo cair ao abrir por causa da placa de vídeo, a próxima abertura (feita sozinha pelo vigia) vem sem aceleração gráfica.
 - **Cópia a cada 3 horas** por padrão (antes 10 min).
 - **Caminho do SMALL.FDB procurado no servidor informado:** servidor sem caminho, troca de servidor ou caminho que parou de funcionar.
 - **Release no GitHub** com instalador e versão portátil a cada tag `v*`.
@@ -71,7 +72,7 @@ Processo principal (janela, instância única, pasta de dados, IPC).
 
 ### 1.1.0 — 2026-11-10
 
-**Quiosque, administrador e Windows.** Janela em quiosque (tela cheia que não sai; fechar, minimizar, F11, Alt+F4, Ctrl+W e Ctrl+R desfeitos ou ignorados), senha do administrador no processo principal (todas as ações sensíveis conferidas aqui, não só na tela), Ctrl+Shift+Q, modo manutenção, vigia de persistência, iniciar com o Windows, sempre acima, manter em foco, impedir descanso, ocultar da barra de tarefas, reinício diário, monitor; desligar o Windows nunca é bloqueado; `CONSULTA_SEM_QUIOSQUE=1` para desenvolvimento e testes.
+**Quiosque, administrador e Windows.** Janela em quiosque (tela cheia que não sai; fechar, minimizar, F11, Alt+F4, Ctrl+W e Ctrl+R desfeitos ou ignorados), senha do administrador no processo principal (todas as ações sensíveis conferidas aqui, não só na tela), Ctrl+Shift+Q, modo manutenção, vigia de persistência, iniciar com o Windows, sempre acima, manter em foco, impedir descanso, ocultar da barra de tarefas, reinício diário, monitor; desligar o Windows nunca é bloqueado; `CONSULTA_SEM_QUIOSQUE=1` para desenvolvimento e testes. **Abertura segura:** se a abertura anterior caiu antes de mostrar a tela (placa de vídeo/driver: "GPU process isn't usable"), a próxima abre sem aceleração gráfica sozinha; quedas do processo de vídeo vão para o log.
 
 ### 1.0.0 — 2026-11-09
 
@@ -247,7 +248,7 @@ CI.
 
 ### 1.1.0 — 2026-11-10
 
-**Release automática:** com tag `v*`, publica os instaladores e as versões portáteis (moderna e legado) numa Release do GitHub.
+**Release automática:** com tag `v*`, publica os instaladores e as versões portáteis (moderna e legado) numa Release do GitHub. O teste de abertura grava o log do Chromium e, se a 1ª abertura cair (máquina virtual sem placa de vídeo), exige que a 2ª abra no modo seguro.
 
 ### 1.0.0 — 2026-11-09
 

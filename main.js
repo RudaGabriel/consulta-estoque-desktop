@@ -26,6 +26,8 @@
  *           opções do Windows: iniciar com o Windows, sempre acima, manter em
  *           foco, impedir descanso de tela, ocultar da barra de tarefas, reinício
  *           diário e monitor. Desligar/reiniciar o Windows nunca é bloqueado.
+ *           Abertura segura: se a abertura anterior caiu antes de mostrar a tela
+ *           (placa de vídeo/driver), esta abre sem aceleração gráfica.
  */
 
 const { app, BrowserWindow, ipcMain, dialog, shell, screen, powerSaveBlocker } = require("electron");
@@ -76,13 +78,28 @@ const reg = criarRegistro(PASTA_DADOS, { console: !app.isPackaged });
 // Configuração lida ANTES do "ready" (aceleração gráfica só pode ser desligada aqui).
 const lido = Config.carregar(ARQ_CONFIG);
 if (lido.aviso) reg.aviso(lido.aviso);
-if (process.argv.includes("--sem-gpu") || !lido.cfg.aceleracaoGrafica) app.disableHardwareAcceleration();
+
+// Abertura segura: "partida-pendente" é criado ao abrir e apagado quando a tela
+// aparece. Se ele ainda existe, a abertura anterior caiu antes de mostrar a tela
+// (típico de placa de vídeo/driver antigo: "GPU process isn't usable") — esta
+// abertura vem sem aceleração gráfica. Só a instância principal mexe no arquivo.
+const ARQ_PARTIDA = path.join(PASTA_DADOS, "partida-pendente");
+const INSTANCIA_PRINCIPAL = app.requestSingleInstanceLock();
+let partidaAnteriorFalhou = false;
+if (INSTANCIA_PRINCIPAL) {
+    partidaAnteriorFalhou = fs.existsSync(ARQ_PARTIDA);
+    try { fs.writeFileSync(ARQ_PARTIDA, String(Date.now())); } catch (_) {}
+}
+const SEM_GPU = process.argv.includes("--sem-gpu") || !lido.cfg.aceleracaoGrafica || partidaAnteriorFalhou;
+if (SEM_GPU) app.disableHardwareAcceleration();
+if (partidaAnteriorFalhou) reg.aviso("A abertura anterior não chegou a mostrar a tela (falha da placa de vídeo?) — abrindo sem aceleração gráfica.");
+const partidaConcluida = () => { try { fs.unlinkSync(ARQ_PARTIDA); } catch (_) {} };
 
 process.on("uncaughtException", e => reg.erro("Erro inesperado: " + (e && e.stack || e)));
 process.on("unhandledRejection", e => reg.erro("Promessa rejeitada sem tratamento: " + (e && e.stack || e)));
 
 // ── Instância única ──────────────────────────────────────────────────────────
-if (!app.requestSingleInstanceLock()) {
+if (!INSTANCIA_PRINCIPAL) {
     app.quit();
 } else {
     let janela = null;
@@ -109,6 +126,10 @@ if (!app.requestSingleInstanceLock()) {
         if (statusTimer) return;
         statusTimer = setTimeout(() => { statusTimer = null; enviar("estoque:status", statusPendente); }, 120);
     };
+
+    app.on("child-process-gone", (_e, d) => {
+        if (d && d.type === "GPU") reg.aviso("O processo de vídeo (GPU) caiu (" + d.reason + ", código " + d.exitCode + "). Se a tela ficar preta ou o aplicativo fechar, desmarque Aceleração gráfica.");
+    });
 
     app.on("second-instance", () => {
         if (!janela) return;
@@ -246,7 +267,11 @@ if (!app.requestSingleInstanceLock()) {
             }
         });
         janela.setMenu(null);
-        janela.once("ready-to-show", () => { janela.show(); janela.focus(); aplicarJanela(motor.config()); });
+        janela.once("ready-to-show", () => {
+            janela.show(); janela.focus(); aplicarJanela(motor.config());
+            // A tela apareceu e ficou de pé: a abertura deu certo.
+            setTimeout(partidaConcluida, 8000);
+        });
         // Nunca navega para fora da tela do aplicativo nem abre janelas novas.
         janela.webContents.on("will-navigate", e => e.preventDefault());
         janela.webContents.setWindowOpenHandler(() => ({ action: "deny" }));
@@ -414,6 +439,7 @@ if (!app.requestSingleInstanceLock()) {
     app.whenReady().then(async () => {
         reg.info("Consulta Estoque " + VERSAO + " (" + VARIANTE + ") iniciado — Electron " + process.versions.electron +
             ", " + os.type() + " " + os.release() + " " + process.arch + (DEMO ? " — MODO DEMONSTRAÇÃO" : "") +
+            (SEM_GPU ? " — sem aceleração gráfica" : "") +
             (QUIOSQUE ? " — quiosque" : "") + ". Dados em " + PASTA_DADOS);
         try { fs.writeFileSync(ARQ.appPid, String(process.pid)); } catch (_) {}
         let dep = {};
@@ -470,6 +496,7 @@ if (!app.requestSingleInstanceLock()) {
         encerrando = true;
         try { if (motor) motor.encerrar(); } catch (_) {}
         try { if (lerPid(ARQ.appPid) === process.pid) fs.unlinkSync(ARQ.appPid); } catch (_) {}
+        partidaConcluida();
         reg.info("Consulta Estoque encerrado.");
     });
 }
