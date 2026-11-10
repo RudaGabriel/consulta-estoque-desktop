@@ -146,7 +146,7 @@ test("localizar: local só como última opção, e nunca um arquivo que não sej
     }));
     assert.deepStrictEqual(r.achado, { host: "127.0.0.1", caminho: "C:\\Small Commerce\\SMALL.FDB" });
     assert.ok(!testados.some(c => /padrao/i.test(c)));
-    assert.match(r.mensagem, /nesta máquina/);
+    assert.match(r.mensagem, /neste computador/);
 });
 
 test("localizar: unidade mapeada → servidor pelo NOME, e .ini do compartilhamento aponta o disco dele", async () => {
@@ -257,4 +257,72 @@ test("caminhoNoServidor: usa o SMALL.FDB achado na pasta compartilhada desse ser
     });
     assert.deepStrictEqual(r.achado, { host: "SERVIDOR", caminho: "F:\\SmallSoft\\Banco Novo\\SMALL.FDB" });
     assert.ok(pastas.every(p => p.startsWith("\\\\SERVIDOR\\")), "só as pastas desse servidor");
+});
+
+test("localizar: meta \"local\" testa este computador primeiro; meta \"rede\" deixa por último", async () => {
+    const base = {
+        interfaces: IFACES, raizesDisco: [], unidadesRede: async () => [], atalhos: async () => ({ hosts: [], pastas: [] }), identidades: new Set(),
+        lerIni: async () => ({ bancos: [], hosts: [] }), buscarRede: async () => [],
+        portaAberta: async h => h === "127.0.0.1" || h === "SERVIDOR",
+        validar: async (h, c) => ({ ok: /^C:\\Small Commerce\\SMALL\.FDB$/i.test(c) })
+    };
+    const local = await L.localizar(Object.assign({}, base, { cfg: { metaBusca: "local", varrerRede: false } }));
+    assert.strictEqual(local.achado.host, "127.0.0.1");
+    assert.strictEqual(local.meta, "local");
+    const rede = await L.localizar(Object.assign({}, base, { cfg: { metaBusca: "rede", varrerRede: false } }));
+    assert.strictEqual(rede.achado.host, "SERVIDOR");
+    assert.strictEqual(L.bancoAutoSuspeito({ fbHostAuto: true, metaBusca: "local", fbHost: "SERVIDOR", fdbPath: "C:\\SMALL.FDB" }), true, "rede adotada com meta local");
+    assert.strictEqual(L.bancoAutoSuspeito({ fbHostAuto: true, metaBusca: "local", fbHost: "127.0.0.1", fdbPath: "C:\\SMALL.FDB" }), false);
+});
+
+test("localizar: sem SMALL.FDB em lugar nenhum → mensagem de varredura completa e os outros .FDB para escolher", async () => {
+    let compartilhamentosPedidos = [];
+    const r = await L.localizar(Object.assign({}, semDisco, {
+        cfg: { varrerRede: false }, interfaces: IFACES,
+        buscarDisco: async (raizes, o) => { o.outros.push("D:\\Antigo\\LOJA.FDB"); return []; },
+        lerIni: async () => ({ bancos: [{ host: "SERVIDOR", caminho: "C:\\Dados\\BANCO.FDB" }, { host: null, caminho: "C:\\x\\security3.fdb" }], hosts: [] }),
+        compartilhamentos: async h => { compartilhamentosPedidos.push(h); return ["\\\\" + h + "\\Dados"]; },
+        buscarRede: async (pastas, o) => {
+            assert.ok(pastas.includes("\\\\SERVIDOR\\Dados"), "pastas listadas pelo servidor entram na busca");
+            o.outros.push("\\\\SERVIDOR\\Dados\\EMPRESA.FDB");
+            return [];
+        },
+        portaAberta: async h => h === "SERVIDOR",
+        validar: async () => ({ ok: false, motivo: "não existe" })
+    }));
+    assert.strictEqual(r.achado, null);
+    assert.match(r.mensagem, /não foi encontrado em lugar nenhum/);
+    assert.match(r.mensagem, /3 outro/);
+    assert.deepStrictEqual(compartilhamentosPedidos, ["SERVIDOR"]);
+    assert.deepStrictEqual(r.outros.map(o => o.origem), ["config", "rede", "disco"]);
+    assert.ok(!r.outros.some(o => /security/i.test(o.exibir)), "bancos do próprio Firebird ficam de fora");
+    assert.ok(r.outros[1].caminhos.includes("C:\\Program Files (x86)\\SmallSoft\\Dados\\EMPRESA.FDB"));
+    const v = await L.validarOutros({
+        outros: r.outros, portaAberta: async h => h === "SERVIDOR",
+        validar: async (h, c) => c === "C:\\Dados\\BANCO.FDB" ? { ok: true } : c === "D:\\Dados\\EMPRESA.FDB" ? { ok: false, motivo: "o banco abriu, mas não tem a tabela de produtos" } : { ok: false, motivo: "I/O error" }
+    });
+    assert.deepStrictEqual(v.map(x => x.ok), [true, false, false]);
+    assert.strictEqual(v[0].caminho, "C:\\Dados\\BANCO.FDB");
+    assert.match(v[1].motivo, /tabela de produtos/);
+    assert.match(v[2].motivo, /não tem o Firebird ligado/);
+});
+
+test("rede: nomes dos compartilhamentos no \"net view\" (português e inglês) e outros .FDB na pasta", async () => {
+    const pt = [
+        "Recursos compartilhados em \\\\SERVIDOR", "", "Nome do compartilhamento  Tipo  Usado como  Comentário", "",
+        "-------------------------------------------------------------------------------",
+        "ADMIN$                    Disco             Administração remota", "C$                        Disco             Recurso compartilhado padrão",
+        "IPC$                      IPC               IPC remoto", "Small Commerce            Disco", "Impressora                Impressão", "SmallSoft                 Disco",
+        "Comando concluído com êxito.", ""
+    ].join("\r\n");
+    assert.deepStrictEqual(L.extrairCompartilhamentos(pt), ["C$", "Small Commerce", "SmallSoft"]);
+    assert.deepStrictEqual(L.extrairCompartilhamentos("Share name  Type  Used as  Comment\n\n------------------------------------\nDados       Disk\nThe command completed successfully.\n"), ["Dados"]);
+    assert.deepStrictEqual(L.extrairCompartilhamentos("Erro de sistema 53."), []);
+    const outros = [];
+    const r = await L.buscarFdbNaRede(["\\\\SRV\\Dados"], {
+        outros, hostAcessivel: async () => true,
+        lerPasta: async () => [{ name: "LOJA.FDB", isFile: () => true, isDirectory: () => false }, { name: "employee.fdb", isFile: () => true, isDirectory: () => false }]
+    });
+    assert.deepStrictEqual(r, []);
+    assert.deepStrictEqual(outros, ["\\\\SRV\\Dados\\LOJA.FDB"]);
 });

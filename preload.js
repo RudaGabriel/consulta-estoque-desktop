@@ -1,15 +1,15 @@
 "use strict";
 /**
  * preload.js
- * @version 1.1.0
+ * @version 1.2.0
  * @author Ruda Gabriel
  * @description Ponte segura entre a tela e o processo principal: expõe só as
  *              funções da consulta (window.consulta), nunca o Node inteiro.
  *
  * @changelog
  *   (Histórico completo das versões: CHANGELOG.md no repositório.)
- *   1.1.0 — Funções do administrador (senha, desbloqueio, manutenção, sair) e
- *           aviso de pedido de saída (Ctrl+Shift+Q); sem o botão de tela cheia.
+ *   1.2.0 — Firebird deste computador (estado, instalar, não perguntar mais, etapas
+ *           da instalação) e outros .FDB (listar e usar o escolhido).
  */
 const { contextBridge, ipcRenderer } = require("electron");
 
@@ -41,6 +41,12 @@ contextBridge.exposeInMainWorld("consulta", {
     bloquear: () => ipcRenderer.invoke("admin:bloquear"),
     definirSenha: d => ipcRenderer.invoke("admin:definir-senha", d),
     manutencao: ligar => ipcRenderer.invoke("admin:manutencao", ligar),
+    firebirdEstado: () => ipcRenderer.invoke("firebird:estado"),
+    instalarFirebird: () => ipcRenderer.invoke("firebird:instalar"),
+    firebirdNaoPerguntar: () => ipcRenderer.invoke("firebird:nao-perguntar"),
+    outrosFdb: () => ipcRenderer.invoke("banco:outros"),
+    usarBanco: p => ipcRenderer.invoke("banco:usar", p),
+    aoEtapaFirebird: f => ouvir("firebird:etapa", f),
     aoPedirSaida: f => ouvir("admin:pedir-saida", f),
     aoStatus: f => ouvir("estoque:status", f),
     aoDadosNovos: f => ouvir("estoque:dados-novos", f),

@@ -1,7 +1,7 @@
 "use strict";
 /**
  * main.js
- * @version 1.1.0
+ * @version 1.2.0
  * @author Ruda Gabriel
  * @description Processo principal do Consulta Estoque (Electron): janela em
  *              modo quiosque, senha do administrador, módulo de persistência
@@ -17,17 +17,12 @@
  *
  * @changelog
  *   (Histórico completo das versões: CHANGELOG.md no repositório.)
- *   1.1.0 — Modo quiosque permanente (tela cheia que não sai, sem botão de tela
- *           cheia, Alt+F4 e fechar ignorados), senha do administrador (protege as
- *           configurações sensíveis, a saída, a exportação e a pasta de dados;
- *           tentativas erradas com espera crescente), saída com Ctrl+Shift+Q ou
- *           pelo botão "Sair do aplicativo", modo manutenção temporário, módulo de
- *           persistência (vigia que reabre o aplicativo fechado sem a senha) e
- *           opções do Windows: iniciar com o Windows, sempre acima, manter em
- *           foco, impedir descanso de tela, ocultar da barra de tarefas, reinício
- *           diário e monitor. Desligar/reiniciar o Windows nunca é bloqueado.
- *           Abertura segura: se a abertura anterior caiu antes de mostrar a tela
- *           (placa de vídeo/driver), esta abre sem aceleração gráfica.
+ *   1.2.0 — Instalação automática do Firebird neste computador (pedida na tela,
+ *           com a senha do administrador; a janela sai de "sempre acima" enquanto o
+ *           Windows pede a permissão); outros .FDB para escolher quando não há
+ *           SMALL.FDB em lugar nenhum (listar e usar, com a senha); "não perguntar
+ *           mais" do Firebird sem senha (só desliga a pergunta); foco do teclado na
+ *           tela ao abrir.
  */
 
 const { app, BrowserWindow, ipcMain, dialog, shell, screen, powerSaveBlocker } = require("electron");
@@ -39,6 +34,7 @@ const Config = require("./src/config.js");
 const { criarRegistro } = require("./src/registro.js");
 const { criarMotor } = require("./src/motor.js");
 const FB = require("./src/firebird.js");
+const InstalarFirebird = require("./src/instalar-firebird.js");
 const pacote = require("./package.json");
 
 const VERSAO = pacote.version;
@@ -112,7 +108,8 @@ if (!INSTANCIA_PRINCIPAL) {
     let esperaSenhaAte = 0;
     let bloqueadorDescanso = null;
     let ultimoReinicioDiario = "";
-    let dialogoAberto = false;        // janela do Windows (salvar arquivo) aberta: não roubar o foco
+    let dialogoAberto = false;        // janela do Windows (salvar arquivo, permissão) aberta: não roubar o foco
+    let instalandoFirebird = null;    // Promise da instalação em andamento (uma por vez)
 
     const enviar = (canal, dado) => {
         if (janela && !janela.isDestroyed() && !janela.webContents.isDestroyed()) {
@@ -269,6 +266,8 @@ if (!INSTANCIA_PRINCIPAL) {
         janela.setMenu(null);
         janela.once("ready-to-show", () => {
             janela.show(); janela.focus(); aplicarJanela(motor.config());
+            // Teclado direto na tela (o campo de busca recebe o foco dela).
+            try { janela.webContents.focus(); } catch (_) {}
             // A tela apareceu e ficou de pé: a abertura deu certo.
             setTimeout(partidaConcluida, 8000);
         });
@@ -433,6 +432,46 @@ if (!INSTANCIA_PRINCIPAL) {
             return z;
         });
         tratar("app:reiniciar", () => { exigirAdmin(); reiniciarApp("pedido do administrador"); return true; });
+
+        // ── Firebird deste computador ──
+        tratar("firebird:estado", async () => {
+            const suportado = process.platform === "win32" && !DEMO;
+            const base = { suportado, perguntar: !!motor.config().perguntarFirebird, instalando: !!instalandoFirebird };
+            if (!suportado) return Object.assign(base, { instalado: true, ligado: false });
+            return Object.assign(base, await motor.firebirdLocal());
+        });
+        tratar("firebird:nao-perguntar", () => {
+            // Só desliga a pergunta (não abre nada nem muda o banco): não precisa da senha.
+            motor.salvarConfig({ perguntarFirebird: false });
+            reg.info("Pergunta sobre instalar o Firebird desligada.");
+            return { ok: true };
+        });
+        tratar("firebird:instalar", async () => {
+            exigirAdmin();
+            if (process.platform !== "win32" || DEMO) return { ok: false, mensagem: "A instalação automática do Firebird só funciona no aplicativo instalado no Windows." };
+            if (instalandoFirebird) return instalandoFirebird;
+            reg.info("Instalação do Firebird pedida pelo administrador.");
+            // A pergunta de permissão do Windows (UAC) precisa aparecer por cima do quiosque.
+            dialogoAberto = true;
+            try { janela.setAlwaysOnTop(false); } catch (_) {}
+            instalandoFirebird = InstalarFirebird.instalar({
+                portaAberta: FB.portaAberta,
+                etapa: t => { reg.info("Firebird: " + t); enviar("firebird:etapa", t); }
+            }).then(r => {
+                if (r.ok) reg.info("Firebird: " + r.mensagem); else reg.aviso("Firebird: " + r.mensagem);
+                if (r.ok) motor.redetectarFirebird();
+                return r;
+            }).finally(() => {
+                instalandoFirebird = null;
+                dialogoAberto = false;
+                aplicarJanela(motor.config());
+            });
+            return instalandoFirebird;
+        });
+
+        // ── Outros .FDB (quando não há SMALL.FDB em lugar nenhum) ──
+        tratar("banco:outros", () => { exigirAdmin(); return motor.outrosFdb(); });
+        tratar("banco:usar", p => { exigirAdmin(); return motor.usarBanco(objeto(p)); });
     }
 
     // ── Início ───────────────────────────────────────────────────────────────

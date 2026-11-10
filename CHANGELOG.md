@@ -7,17 +7,18 @@ Versões em uso hoje:
 
 | Arquivo | Versão |
 |---|---|
-| Aplicativo (`package.json`) | [1.2.0](#aplicativo) |
-| [`main.js`](#mainjs) | 1.1.0 |
-| [`preload.js`](#preloadjs) | 1.1.0 |
-| [`ui/index.html`, `ui/estilo.css`, `ui/app.js`](#ui) | 1.1.0 |
-| [`src/motor.js`](#srcmotorjs) | 1.1.0 |
+| Aplicativo (`package.json`) | [1.3.0](#aplicativo) |
+| [`main.js`](#mainjs) | 1.2.0 |
+| [`preload.js`](#preloadjs) | 1.2.0 |
+| [`ui/index.html`, `ui/estilo.css`, `ui/app.js`](#ui) | 1.2.0 |
+| [`src/motor.js`](#srcmotorjs) | 1.2.0 |
 | [`src/firebird.js`](#srcfirebirdjs) | 1.0.0 |
 | [`src/estoque-dados.js`](#srcestoque-dadosjs) | 1.0.0 |
-| [`src/estoque-busca.js`](#srcestoque-buscajs) | 1.0.0 |
-| [`src/localizar-banco.js`](#srclocalizar-bancojs) | 1.2.0 |
+| [`src/estoque-busca.js`](#srcestoque-buscajs) | 1.1.0 |
+| [`src/localizar-banco.js`](#srclocalizar-bancojs) | 1.3.0 |
+| [`src/instalar-firebird.js`](#srcinstalar-firebirdjs) | 1.0.0 |
 | [`src/copia-gbak.js`](#srccopia-gbakjs) | 1.0.0 |
-| [`src/config.js`](#srcconfigjs) | 1.1.0 |
+| [`src/config.js`](#srcconfigjs) | 1.2.0 |
 | [`src/vigia.js`](#srcvigiajs) | 1.0.0 |
 | [`src/registro.js`](#srcregistrojs) | 1.0.0 |
 | [`src/demo.js`](#srcdemojs) | 1.0.0 |
@@ -32,6 +33,19 @@ Versões em uso hoje:
 ## Aplicativo
 
 Versão do Consulta Estoque (a que aparece no instalador e em *Configurações → Diagnóstico*).
+
+### 1.3.0 — 2026-11-10
+
+**Busca com coringa e preço, foco garantido, varredura completa do banco e Firebird automático.**
+
+- **Foco na busca:** abre com o foco no campo; perdido na tela principal, volta 30 s depois da última ação (e é conferido a cada 30 s).
+- **Coringa `*`:** `RAÇÃO*10KG` acha as partes na ordem, no mesmo campo (opção em *Consulta*, ligada).
+- **Preço na busca:** `RAÇÃO >50` = R$ 50 ou mais; `RAÇÃO <50` = R$ 50 ou menos; `>=`, `<=`, centavos e os dois juntos (opção em *Consulta*, ligada).
+- **Ocultar da barra de tarefas** ligado por padrão (também em quem já usava, uma vez só).
+- **Meta da busca automática:** pergunta na primeira abertura se o banco fica na rede ou neste computador; a busca começa por lá e varre tudo (disco local mais a fundo, pastas compartilhadas de todos os servidores via "net view", rede inteira).
+- **Sem `SMALL.FDB` em lugar nenhum:** avisa que varreu tudo e oferece os outros `.FDB` achados; cada um é aberto (só leitura) e o administrador escolhe o certo.
+- **Firebird neste computador:** quando falta, pergunta se quer instalar; baixa o Firebird 3.0.13 oficial, confere o SHA-256 e instala sozinho como serviço (com a permissão do Windows).
+- 61 testes; tela validada no Electron 44 e 22.
 
 ### 1.2.0 — 2026-11-10
 
@@ -80,6 +94,10 @@ Versão do Consulta Estoque (a que aparece no instalador e em *Configurações �
 
 Processo principal (janela, instância única, pasta de dados, IPC).
 
+### 1.2.0 — 2026-11-10
+
+**Firebird e outros .FDB.** Canais `firebird:estado`, `firebird:instalar` (com a senha; a janela sai de "sempre acima" enquanto o Windows pede a permissão; uma instalação por vez), `firebird:nao-perguntar` (sem senha: só desliga a pergunta), `banco:outros` e `banco:usar` (com a senha). Foco do teclado na tela ao abrir.
+
 ### 1.1.0 — 2026-11-10
 
 **Quiosque, administrador e Windows.** Janela em quiosque (tela cheia que não sai; fechar, minimizar, F11, Alt+F4, Ctrl+W e Ctrl+R desfeitos ou ignorados), senha do administrador no processo principal (todas as ações sensíveis conferidas aqui, não só na tela), Ctrl+Shift+Q, modo manutenção, vigia de persistência, iniciar com o Windows, sempre acima, manter em foco, impedir descanso, ocultar da barra de tarefas, reinício diário, monitor; desligar o Windows nunca é bloqueado; `CONSULTA_SEM_QUIOSQUE=1` para desenvolvimento e testes. **Abertura segura:** se a abertura anterior caiu antes de mostrar a tela (placa de vídeo/driver: "GPU process isn't usable"), a próxima abre sem aceleração gráfica sozinha; quedas do processo de vídeo vão para o log.
@@ -93,6 +111,10 @@ Processo principal (janela, instância única, pasta de dados, IPC).
 ## `preload.js`
 
 Ponte segura entre a tela e o processo principal.
+
+### 1.2.0 — 2026-11-10
+
+**Firebird e outros .FDB:** `firebirdEstado`, `instalarFirebird`, `firebirdNaoPerguntar`, `aoEtapaFirebird`, `outrosFdb` e `usarBanco`.
 
 ### 1.1.0 — 2026-11-10
 
@@ -110,6 +132,10 @@ Ponte segura entre a tela e o processo principal.
 
 A tela.
 
+### 1.2.0 — 2026-11-10
+
+**Foco, busca esperta e configuração inicial.** Foco de volta na busca 30 s após a última ação (tela principal); dica da busca e destaque das partes do coringa (filtro de preço não é destacado); opções de coringa e preço (*Consulta*), meta da busca, "Ver outros arquivos .FDB" e "Instalar o Firebird" (*Banco de dados*); na primeira abertura: senha → onde está o banco → Firebird, e só então a tela volta a ser pública; janela de pergunta com terceiro botão, lista de escolha e andamento sem botões.
+
 ### 1.1.0 — 2026-11-10
 
 **Senha do administrador e quiosque.** Criação da senha na primeira abertura, abas protegidas com trava, janela de senha/confirmação, aba Windows, aba Administrador (trocar senha, exportar, pasta de dados, manutenção, reiniciar, sair), limpeza automática após 1 minuto sem mexer, cursor oculto quando parado, sem o botão de tela cheia, abas em duas linhas.
@@ -123,6 +149,10 @@ A tela.
 ## `src/motor.js`
 
 Modos, atualização, cache em disco e auto-correção do banco.
+
+### 1.2.0 — 2026-11-10
+
+**Busca, meta e outros .FDB.** Coringa e preço vindos do config na busca e na exportação; `status.buscaSemSmall`; `outrosFdb()` testa os outros `.FDB` e `usarBanco()` adota o escolhido (confere antes que abre e tem a tabela de produtos; vira escolha do usuário); `firebirdLocal()` e `redetectarFirebird()`; meta trocada procura de novo; busca de fundo de banco fora da meta no máximo a cada 30 min.
 
 ### 1.1.0 — 2026-11-10
 
@@ -158,6 +188,10 @@ Leitura da tabela de produtos.
 
 Regras da busca.
 
+### 1.1.0 — 2026-11-10
+
+**Coringa e preço.** `*` vale qualquer coisa dentro do mesmo campo (também sem "Contém" e na exclusão); `>valor`/`<valor` (e `>=`/`<=`) filtram pelo preço com o próprio valor incluído, aceitando `49,90`, `49.90`, `1.500,00` e `R$`; opções `coringa` e `preco`; `separarPreco` e `lerValor` exportados.
+
 ### 1.0.0 — 2026-11-09
 
 **Primeira versão.** Mesmas regras do `estoque-busca.js` 1.0.0 do Relatórios FDB-FBK.
@@ -167,6 +201,10 @@ Regras da busca.
 ## `src/localizar-banco.js`
 
 Descoberta automática do banco.
+
+### 1.3.0 — 2026-11-10
+
+**Meta e varredura completa.** `cfg.metaBusca` ("local" testa esta máquina primeiro); subnet varrida antes das pastas compartilhadas, que incluem as listadas por `net view` de cada servidor (`compartilhamentosDe`/`extrairCompartilhamentos`); disco local mais fundo (10 níveis, 60 s); outros `.FDB` coletados no disco, nas pastas e no `.ini` (`montarOutros`) e abertos por `validarOutros`; `bancoAutoSuspeito` respeita a meta; `caminhosDoCompartilhamento` aceita qualquer `.FDB`.
 
 ### 1.2.0 — 2026-11-10
 
@@ -179,6 +217,16 @@ Descoberta automática do banco.
 ### 1.0.0 — 2026-11-09
 
 **Primeira versão.** Rede primeiro e `127.0.0.1` por último; só `SMALL.FDB`; pistas: `.ini`/`.cfg` locais, das unidades de rede e do compartilhamento do servidor, atalhos `.lnk` do Small Commerce, nome `SERVIDOR`, varredura (LAN, Tailscale, 169.254); IPs e nome desta máquina nunca contam como servidor; leituras de rede com prazo; unidades de rede/CD fora da busca de `.FDB`.
+
+---
+
+## `src/instalar-firebird.js`
+
+Instalação automática do Firebird neste computador.
+
+### 1.0.0 — 2026-11-10
+
+**Primeira versão.** Baixa o Firebird 3.0.13 oficial (x64 ou Win32, conforme o Windows) seguindo redirecionamentos, com prazo sem dados e prazo total; confere tamanho e SHA-256 fixados; instala em silêncio como serviço (SuperServer, SYSDBA/masterkey, autenticação antiga liberada) pedindo a permissão do Windows; confere a porta 3050; reaproveita o instalador já baixado e íntegro.
 
 ---
 
@@ -195,6 +243,10 @@ Cópia por gbak.
 ## `src/config.js`
 
 Configuração validada.
+
+### 1.2.0 — 2026-11-10
+
+**Chaves novas:** `buscaCoringa`, `buscaPreco`, `metaBusca`, `perguntarFirebird` e `versaoConfig` (interna). `ocultarBarraTarefas` ligada por padrão e migrada uma vez em config.json antigo.
 
 ### 1.1.0 — 2026-11-10
 

@@ -6,13 +6,13 @@
 
 ### Consulta de preço e estoque para lojas que usam o Small Commerce (Firebird), feita para o leitor de código de barras
 
-<img alt="aplicativo: v1.2.0" src="https://img.shields.io/badge/aplicativo-v1.2.0-2563EB?style=flat">
+<img alt="aplicativo: v1.3.0" src="https://img.shields.io/badge/aplicativo-v1.3.0-2563EB?style=flat">
 <img alt="plataforma: Windows 7 a 11" src="https://img.shields.io/badge/plataforma-Windows%207%20%7C%208%20%7C%2010%20%7C%2011-0078D4?style=flat&logo=data%3Aimage%2Fsvg%2Bxml%3Bbase64%2CPHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHZpZXdCb3g9JzAgMCAyNCAyNCcgZmlsbD0nd2hpdGUnPjxyZWN0IHg9JzMnIHk9JzMnIHdpZHRoPSc4JyBoZWlnaHQ9JzgnLz48cmVjdCB4PScxMycgeT0nMycgd2lkdGg9JzgnIGhlaWdodD0nOCcvPjxyZWN0IHg9JzMnIHk9JzEzJyB3aWR0aD0nOCcgaGVpZ2h0PSc4Jy8%2BPHJlY3QgeD0nMTMnIHk9JzEzJyB3aWR0aD0nOCcgaGVpZ2h0PSc4Jy8%2BPC9zdmc%2B&logoColor=white">
 <img alt="arquitetura: 64 e 32 bits" src="https://img.shields.io/badge/arquitetura-64%20e%2032%20bits-0E7490?style=flat">
 <img alt="idioma: pt-BR" src="https://img.shields.io/badge/idioma-pt--BR-16A34A?style=flat">
 <img alt="banco: somente leitura" src="https://img.shields.io/badge/banco-somente%20leitura-DC2626?style=flat&logo=data%3Aimage%2Fsvg%2Bxml%3Bbase64%2CPHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHZpZXdCb3g9JzAgMCAyNCAyNCcgZmlsbD0nbm9uZScgc3Ryb2tlPSd3aGl0ZScgc3Ryb2tlLXdpZHRoPScyLjInIHN0cm9rZS1saW5lY2FwPSdyb3VuZCcgc3Ryb2tlLWxpbmVqb2luPSdyb3VuZCc%2BPHBhdGggZD0nTTEyIDIyczgtNCA4LTEwVjVsLTgtMy04IDN2N2MwIDYgOCAxMCA4IDEweicvPjxwYXRoIGQ9J205IDEyIDIgMiA0LTQnLz48L3N2Zz4%3D&logoColor=white">
 <img alt="funciona: sem internet" src="https://img.shields.io/badge/funciona-sem%20internet-0891B2?style=flat">
-<img alt="testes: 51 passando" src="https://img.shields.io/badge/testes-51%20passando-22C55E?style=flat&logo=data%3Aimage%2Fsvg%2Bxml%3Bbase64%2CPHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHZpZXdCb3g9JzAgMCAyNCAyNCcgZmlsbD0nbm9uZScgc3Ryb2tlPSd3aGl0ZScgc3Ryb2tlLXdpZHRoPScyLjInIHN0cm9rZS1saW5lY2FwPSdyb3VuZCcgc3Ryb2tlLWxpbmVqb2luPSdyb3VuZCc%2BPHBhdGggZD0nTTkgMnY2TDQgMTlhMiAyIDAgMCAwIDEuOCAzaDEyLjRhMiAyIDAgMCAwIDEuOC0zTDE1IDhWMicvPjxwYXRoIGQ9J004IDJoOCcvPjxwYXRoIGQ9J003IDE1aDEwJy8%2BPC9zdmc%2B&logoColor=white">
+<img alt="testes: 61 passando" src="https://img.shields.io/badge/testes-61%20passando-22C55E?style=flat&logo=data%3Aimage%2Fsvg%2Bxml%3Bbase64%2CPHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHZpZXdCb3g9JzAgMCAyNCAyNCcgZmlsbD0nbm9uZScgc3Ryb2tlPSd3aGl0ZScgc3Ryb2tlLXdpZHRoPScyLjInIHN0cm9rZS1saW5lY2FwPSdyb3VuZCcgc3Ryb2tlLWxpbmVqb2luPSdyb3VuZCc%2BPHBhdGggZD0nTTkgMnY2TDQgMTlhMiAyIDAgMCAwIDEuOCAzaDEyLjRhMiAyIDAgMCAwIDEuOC0zTDE1IDhWMicvPjxwYXRoIGQ9J004IDJoOCcvPjxwYXRoIGQ9J003IDE1aDEwJy8%2BPC9zdmc%2B&logoColor=white">
 <img alt="licença: proprietária" src="https://img.shields.io/badge/licen%C3%A7a-propriet%C3%A1ria-6B7280?style=flat">
 
 <img alt="Electron: 44.9.3" src="https://img.shields.io/badge/Electron-44.9.3-47848F?style=flat&logo=electron&logoColor=white">
@@ -46,7 +46,8 @@ Um aplicativo de Windows, de **janela própria** (não abre no navegador), para 
 | | |
 |---|---|
 | 🏷️ **Cartão de preço** | O produto lido abre num cartão com o preço em destaque, o estoque, a unidade e o código de barras. A próxima leitura já substitui a anterior. |
-| 🌐 **Acha o banco sozinho** | Procura o `SMALL.FDB` primeiro **na rede** (pelos atalhos e pela configuração do Small Commerce, pelas unidades de rede, pelo nome `SERVIDOR` e pela varredura) e só por último neste computador. Não precisa digitar nada. |
+| 🌐 **Acha o banco sozinho** | Pergunta se o banco fica **na rede** ou **neste computador**, começa por lá e **varre tudo**: disco deste computador, pastas compartilhadas e a rede inteira. Sem `SMALL.FDB` em lugar nenhum, mostra os outros arquivos `.FDB` achados para você escolher. |
+| 🔎 **Busca esperta** | Coringa `*` (`RAÇÃO*10KG`) e filtro de preço na própria busca: `RAÇÃO >50` (R$ 50 ou mais) e `RAÇÃO <50` (R$ 50 ou menos). |
 | 🔁 **Dois modos** | **Cópia** (padrão, como o Relatórios FDB-FBK): não pesa no caixa e funciona com o servidor fora do ar. **Leitura direta** (como o Relatórios SSH): preço e estoque do instante. |
 | 💾 **Abre na hora** | O último estoque carregado fica salvo no computador e aparece assim que o aplicativo abre, mesmo sem rede. |
 | 🔒 **Somente leitura** | Nunca grava nada no banco do Small Commerce. |
@@ -70,7 +71,13 @@ Um aplicativo de Windows, de **janela própria** (não abre no navegador), para 
 
    > 💡 Não sabe se o Windows é 32 ou 64 bits? *Configurações → Sistema → Sobre → Tipo de sistema* (no Windows 7: *Painel de Controle → Sistema*).
 
-2. **Execute o instalador** e abra o **Consulta Estoque** pelo atalho da Área de Trabalho. Na primeira vez ele **pede para criar a senha do administrador** e procura o banco sozinho; em alguns segundos o estoque aparece. Daí em diante ele abre junto com o Windows, em tela cheia.
+2. **Execute o instalador** e abra o **Consulta Estoque** pelo atalho da Área de Trabalho. Na primeira vez ele:
+   - pede para **criar a senha do administrador**;
+   - pergunta **onde está o banco** do Small Commerce: **na rede** (em outro computador, o servidor) ou **neste computador**;
+   - se este computador não tiver o **Firebird**, pergunta se você quer instalá-lo (veja [Firebird neste computador](#firebird));
+   - procura o banco sozinho; em alguns segundos o estoque aparece.
+
+   Daí em diante ele abre junto com o Windows, em tela cheia.
 
 > ⚠️ O Windows pode mostrar "O Windows protegeu o computador" porque o aplicativo não tem assinatura digital paga. Clique em **Mais informações → Executar assim mesmo**.
 
@@ -102,6 +109,8 @@ Abra com o parâmetro `--demo` (ex.: um atalho para `"Consulta Estoque.exe" --de
 |---|---|
 | Ver o preço de um produto | **Passe o leitor** no código de barras. O cartão de preço abre sozinho. |
 | Procurar pelo nome | Digite parte do nome (sem se preocupar com acentos ou maiúsculas): `racao gato`. |
+| Procurar com coringa | `*` vale "qualquer coisa": `racao*10kg` acha `RAÇÃO GATO 10KG` e `RAÇÃO CÃO 10KG` (as partes na ordem, no mesmo campo). |
+| Filtrar pelo preço | `racao >50` = rações de **R$ 50 ou mais**; `racao <50` = de **R$ 50 ou menos** (o próprio valor entra). Vale `>=`, `<=`, centavos (`<49,90`) e os dois juntos (`racao >50 <100`). |
 | Procurar pelo código interno | Digite o código: `123` também acha `00123`. |
 | Frase exata / excluir uma palavra | `"racao gato"` · `racao -filhote` |
 | Ver todos os campos do produto | No cartão, clique em **Todos os campos do produto**. |
@@ -136,7 +145,7 @@ Abra com o parâmetro `--demo` (ex.: um atalho para `"Consulta Estoque.exe" --de
 
 O leitor funciona como um teclado: "digita" o código e manda **Enter**. O aplicativo foi feito em volta disso:
 
-- **O campo de busca está sempre pronto.** Se o foco sair dele (um clique num botão, numa linha da lista), ele volta sozinho. Uma leitura com o foco em outro lugar também cai na busca.
+- **O campo de busca está sempre pronto.** O aplicativo já abre com o foco nele. Se o foco sair (um clique num botão, numa linha da lista), ele volta sozinho; se ficar num filtro ou em outro campo, volta **30 segundos depois da última ação** (e é conferido de novo a cada 30 s) — só na tela principal, nunca com as configurações ou uma janela de pergunta abertas. Uma leitura com o foco em outro lugar também cai na busca.
 - **Cada leitura substitui a anterior.** Depois do Enter o texto fica selecionado; o próximo código apaga o anterior, sem precisar limpar.
 - **Abre o produto sozinho** quando há 1 resultado ou exatamente 1 produto com aquele código de barras, código ou referência. Funciona com EAN cadastrado com pontos ou espaços.
 - **Produto fora dos filtros** (ex.: inativo com "Só ativos" ligado): a leitura mostra o produto mesmo assim, com um aviso.
@@ -178,7 +187,7 @@ Opções da aba **Windows** (com a senha):
 | Sempre acima das outras janelas | ligada | Fica por cima de tudo (*topmost*) |
 | Manter em primeiro plano | ligada | Se outra janela pegar o foco, o aplicativo volta para a frente |
 | Impedir descanso | ligada | A tela não apaga e o PC não entra em descanso |
-| Ocultar da barra de tarefas | desligada | Some da barra de tarefas |
+| Ocultar da barra de tarefas | **ligada** | Some da barra de tarefas (ligada também nos computadores que já usavam uma versão anterior, uma vez só) |
 | Esconder o cursor parado | desligada | O ponteiro do mouse some após 4 s sem mexer |
 | Reiniciar todo dia às… | vazio | Reinicia o aplicativo num horário (memória limpa em PCs fracos) |
 | Abrir no monitor | principal | Em PCs com duas telas, escolhe em qual o quiosque aparece |
@@ -238,21 +247,38 @@ Escolha em *Configurações → Modo de leitura*. Nos dois modos o aplicativo **
 
 ## 🌐 Banco encontrado automaticamente
 
-Na primeira vez, e sempre que o banco configurado falhar (servidor desligado, IP trocado, caminho errado), o aplicativo **procura o banco sozinho e atualiza a configuração**. A meta é ler **pela rede**; este computador é a última opção.
+Na primeira vez, e sempre que o banco configurado falhar (servidor desligado, IP trocado, caminho errado), o aplicativo **procura o banco sozinho e atualiza a configuração**.
+
+**Meta da busca.** Na primeira abertura o aplicativo pergunta onde o banco fica (dá para mudar em *Configurações → Banco de dados → Onde o banco deve estar*):
+
+| Meta | Ordem |
+|---|---|
+| **Na rede** (padrão) | Servidores da rede primeiro; este computador por último |
+| **Neste computador** | O Firebird deste computador primeiro; depois a rede |
+
+Nos dois casos a busca **varre tudo**: o disco deste computador (todas as unidades, a fundo), as pastas compartilhadas de todos os servidores encontrados e a rede inteira. As etapas:
 
 1. **A configuração do próprio Small Commerce.** Lê os `.ini`/`.cfg` deste computador, das **unidades de rede** (ex.: `H:` → `\\SERVIDOR\SmallSoft`), do compartilhamento `\\SERVIDOR\SmallSoft\Small Commerce` e dos **atalhos do Small** na Área de Trabalho e no Menu Iniciar. Ali está o endereço que o próprio Small usa, como `SERVIDOR:C:\Program Files (x86)\SmallSoft\Small Commerce\small.fdb`.
-2. **O `SMALL.FDB` nas pastas compartilhadas da rede.** Procura o arquivo nas pastas para onde apontam os atalhos do Small, nas **unidades de rede** e em `\\SERVIDOR\SmallSoft`, `\\SERVIDOR\Small Commerce` (e nos servidores citados nas pistas). Achou `\\SERVIDOR\SmallSoft\Small Commerce\SMALL.FDB`? Então o banco está no `SERVIDOR`, e o aplicativo o abre **pelo Firebird do servidor** (ex.: `SERVIDOR:C:\Program Files (x86)\SmallSoft\Small Commerce\SMALL.FDB`), testando as pastas de instalação típicas. Pasta de servidor desligado é pulada na hora.
-3. **Os servidores da rede.** Tenta os servidores citados nessas pistas, **pelo nome** (que não muda quando o IP muda), o configurado, o nome `SERVIDOR` e os que a varredura da rede encontrar com a porta 3050 aberta. A varredura cobre a rede local, a Tailscale e o cabo direto `169.254`.
-4. **Por último, este computador** (`127.0.0.1`), se ele tiver o Firebird e um `SMALL.FDB`.
+2. **Os servidores da rede.** Os citados nessas pistas, **pelo nome** (que não muda quando o IP muda), o configurado, o nome `SERVIDOR` e os que a varredura da rede encontrar com a porta 3050 aberta. A varredura cobre a rede local, a Tailscale e o cabo direto `169.254`.
+3. **O `SMALL.FDB` nas pastas compartilhadas** de todos esses servidores: as dos atalhos do Small, as **unidades de rede**, `\\SERVIDOR\SmallSoft`, `\\SERVIDOR\Small Commerce` e **todas as pastas que o próprio servidor compartilha** (a mesma lista do "Rede" do Windows). Achou `\\SERVIDOR\SmallSoft\Small Commerce\SMALL.FDB`? Então o banco está no `SERVIDOR`, e o aplicativo o abre **pelo Firebird do servidor** (ex.: `SERVIDOR:C:\Program Files (x86)\SmallSoft\Small Commerce\SMALL.FDB`), testando as pastas de instalação típicas. Servidor desligado é pulado na hora.
+4. **Os caminhos típicos** de instalação em cada servidor (`C:` a `H:`).
+5. **Este computador** (`127.0.0.1`), se ele tiver o Firebird e um `SMALL.FDB` — por último, ou primeiro quando a meta é **Neste computador**.
+
+**Não achou o `SMALL.FDB` em lugar nenhum?** O aplicativo avisa que varreu tudo (disco local, pastas compartilhadas e rede) e pergunta se você quer ver **os outros arquivos terminados em `.FDB`** que encontrou. Com a senha do administrador, cada um é aberto (só leitura) pelo Firebird do computador onde está, e aparece numa lista:
+
+- os que **abrem e têm a tabela de produtos** podem ser escolhidos — o escolhido vira o banco do aplicativo;
+- os outros aparecem com o motivo (não abre, não tem a tabela de produtos, Firebird desligado).
+
+O mesmo botão fica em *Configurações → Banco de dados → Ver outros arquivos .FDB* e na tela de erro.
 
 Regras:
 
-- Só aceita arquivos chamados **`SMALL.FDB`**. `padrao.fdb`, `exemplo.fdb`, `off.fdb`, `monitor.fdb` e cópias de consulta ficam de fora.
+- Sozinho, só adota arquivos chamados **`SMALL.FDB`**. Outro `.FDB` só entra se você escolher na lista acima. Bancos do próprio Firebird (`security`, `employee`) e cópias de consulta nunca aparecem.
 - Só adota um banco que **abre** e tem a **tabela de produtos** do Small Commerce.
 - Servidor que não responde é descartado em 1,5 s.
-- O `SMALL.FDB` **pode ser procurado nas pastas compartilhadas**, mas nunca é **aberto** pela pasta: abrir um banco por compartilhamento pode corrompê-lo. A pasta só mostra onde ele está; quem lê o banco é sempre o Firebird do servidor. Cada pasta de rede tem prazo de 4 s e a busca inteira, de 20 s.
-- A busca de `.FDB` no disco **deste computador** continua sem entrar nas unidades de rede e de CD (a rede é procurada pela etapa 2).
-- Banco local escolhido sozinho continua sendo reavaliado: a cada atualização bem-sucedida o aplicativo volta a procurar o servidor da rede, no máximo a cada 5 minutos.
+- O `SMALL.FDB` **pode ser procurado nas pastas compartilhadas**, mas nunca é **aberto** pela pasta: abrir um banco por compartilhamento pode corrompê-lo. A pasta só mostra onde ele está; quem lê o banco é sempre o Firebird do servidor. Cada pasta de rede tem prazo de 4 s, a lista de pastas de cada servidor 8 s e a varredura das pastas compartilhadas, 45 s.
+- A busca de `.FDB` no disco **deste computador** não entra nas unidades de rede e de CD (a rede é procurada pelas pastas compartilhadas).
+- Banco adotado sozinho **fora da meta** (deste computador com a meta "rede", ou da rede com a meta "este computador") continua sendo reavaliado em segundo plano, no máximo a cada 30 minutos.
 - **Servidor informado, caminho não:** digitando só o servidor (nome ou IP) em *Banco de dados*, o caminho do `SMALL.FDB` é procurado sozinho **nesse servidor** (primeiro nas pastas compartilhadas dele, depois nos caminhos típicos de `C:` a `H:`). Trocar o servidor apaga o caminho antigo, que é procurado de novo no novo servidor. Se o caminho configurado parar de funcionar, o aplicativo também procura primeiro no mesmo servidor.
 - Para travar o endereço e desligar a correção automática: *Configurações → Banco de dados → Não trocar o servidor sozinho*. O caminho continua sendo procurado nesse servidor.
 
@@ -284,13 +310,15 @@ Tudo pode ser feito na tela (*Configurações*, **F10**). As chaves marcadas com
 | `fbHostFixo` 🔒 | `false` | `true` = nunca trocar o servidor sozinho |
 | `fbHostAuto` | — | Marcado pelo aplicativo quando o endereço foi encontrado sozinho |
 | `varrerRede` 🔒 | `true` | Procurar servidores Firebird na rede |
+| `metaBusca` 🔒 | vazio (= rede) | Onde a busca automática começa: `rede` ou `local` (perguntado na primeira abertura) |
+| `perguntarFirebird` 🔒 | `true` | Perguntar ao abrir se quer instalar o Firebird quando este computador não tem |
 | `gbakPath` / `pastaCopias` 🔒 | automático | Caminho do `gbak.exe` / pasta das cópias (sempre disco local) |
 | `iniciarComWindows` 🔒 | `true` | Abrir junto com o Windows |
 | `persistente` 🔒 | `true` | Vigia que reabre o aplicativo fechado sem a senha |
 | `sempreNoTopo` 🔒 | `true` | Sempre acima das outras janelas |
 | `manterFoco` 🔒 | `true` | Voltar para a frente se outra janela pegar o foco |
 | `impedirDescanso` 🔒 | `true` | Tela sem apagar / PC sem descanso |
-| `ocultarBarraTarefas` 🔒 | `false` | Ocultar da barra de tarefas |
+| `ocultarBarraTarefas` 🔒 | `true` | Ocultar da barra de tarefas |
 | `ocultarCursor` 🔒 | `false` | Esconder o cursor parado |
 | `reiniciarDiario` 🔒 | vazio | Hora do reinício diário (`HH:MM`) |
 | `monitor` 🔒 | `0` | Monitor do quiosque (0 = primeiro) |
@@ -299,11 +327,14 @@ Tudo pode ser feito na tela (*Configurações*, **F10**). As chaves marcadas com
 | `mostrarCusto` 🔒 | `false` | Mostrar o custo na lista e no cartão |
 | `nomeLoja` 🔒 | vazio | Nome exibido no topo |
 | `limitePagina` 🔒 | `100` | Itens por página da lista (20 a 1000) |
+| `buscaCoringa` 🔒 | `true` | `*` na busca vale qualquer coisa |
+| `buscaPreco` 🔒 | `true` | `>valor` / `<valor` na busca filtram pelo preço |
 | `tema` | `auto` | `auto`, `claro` ou `escuro` |
 | `zoom` | `1` | Tamanho do texto (0,6 a 2,5) |
 | `som` / `tabComoEnter` | `true` / `true` | Bipe na leitura / TAB do leitor vale como Enter |
 | `modoLeve` | `false` | Sem animações (PCs antigos) |
 | `senhaAdmin` | — | *Hash* da senha do administrador (criado pela tela; nunca a senha) |
+| `versaoConfig` | `2` | Versão do arquivo (interna; migrações feitas uma vez só) |
 
 > Valor inválido ou fora da faixa volta ao padrão. `config.json` estragado é guardado como `config.json.corrompido-AAAAMMDD-HHMMSS` e o aplicativo abre com os padrões.
 
@@ -317,7 +348,21 @@ Tudo pode ser feito na tela (*Configurações*, **F10**). As chaves marcadas com
 - **Pouca memória:** a lista mostra 100 itens por vez (rolagem infinita). A busca roda numa lista já preparada na memória, rápida mesmo com dezenas de milhares de produtos.
 - **Modo leve** (*Configurações → Tela*): sem animações nem sombras.
 - **Tela preta ou piscando** (placa de vídeo antiga): desmarque **Aceleração gráfica** ou abra com `--sem-gpu`.
-- **Sem Firebird no computador:** o modo cópia usa o método instantâneo; não precisa instalar nada.
+- **Sem Firebird no computador:** o modo cópia usa o método instantâneo; não precisa instalar nada (mas dá para instalar sozinho, veja abaixo).
+
+<a id="firebird"></a>
+
+### Firebird neste computador (instalação automática)
+
+O Firebird **deste** computador é opcional: ele é usado na cópia completa do banco (**gbak**) e para abrir um `SMALL.FDB` que esteja neste computador. Quando ele não existe, o aplicativo pergunta ao abrir se você quer instalar (**Instalar**, **Agora não** ou **Não perguntar mais**). O botão também fica em *Configurações → Banco de dados → Instalar o Firebird neste computador*.
+
+1. Pede a senha do administrador.
+2. Baixa o instalador **oficial** do **Firebird 3.0.13** (64 ou 32 bits, conforme o Windows) do GitHub do projeto Firebird — precisa de internet (cerca de 8 a 11 MB).
+3. Confere o tamanho e a "impressão digital" (SHA-256) do arquivo; se não bater, nada é instalado.
+4. Instala sozinho, sem janelas, como serviço do Windows (usuário `SYSDBA`, senha `masterkey`). O **Windows pergunta "Deseja permitir que este aplicativo faça alterações?"**: clique em **Sim**.
+5. Confere que o serviço ficou de pé e passa a usá-lo (o método automático da cópia vira gbak).
+
+O Firebird do **servidor** e o banco do Small Commerce nunca são tocados. Firebird 3.0 roda do Windows 7 ao 11 e o gbak dele copia bancos dos servidores Firebird 2.5, 3, 4 e 5.
 
 ---
 
@@ -369,10 +414,11 @@ Uma única biblioteca em uso pelo aplicativo (`node-firebird`); o resto é o pr�
 | Aplicativo legado | Electron | 22.3.27 (Chromium 108, Node 16) | Windows 7/8/8.1 e 32 bits |
 | Banco | [node-firebird](https://www.npmjs.com/package/node-firebird) | 2.19.1 | Driver Firebird em JavaScript puro (sem DLL), com a trava somente leitura deste projeto |
 | Cópia | `gbak` do Firebird | do Firebird instalado | Backup sem coleta de lixo + restauração somente leitura |
+| Firebird local (opcional) | [Firebird](https://firebirdsql.org) | 3.0.13 (baixado só se você pedir) | Instalação automática neste computador, com SHA-256 conferido |
 | Instalador | [electron-builder](https://www.electron.build) | 26.18.0 | Instalador NSIS e versão portátil, x64 e ia32 |
 | Tela | HTML5, CSS e JavaScript sem framework | — | Leve para PCs fracos; temas claro e escuro |
 | Som | Web Audio API | — | Bipe da leitura, sem arquivos de áudio |
-| Testes | `node:test` + `node:assert` | Node 20+ | 51 testes com Firebird, gbak e aplicativo simulados |
+| Testes | `node:test` + `node:assert` | Node 20+ | 61 testes com Firebird, gbak e aplicativo simulados |
 | Senha | `crypto.pbkdf2` (Node) | — | *Hash* da senha do administrador com sal, comparação em tempo constante |
 | Teste da tela | Playwright + Electron | — | Fluxo do leitor, cartão, configurações, tema e Electron 22 |
 | Build | GitHub Actions | — | Testes + instaladores a cada push |
@@ -385,20 +431,21 @@ Uma única biblioteca em uso pelo aplicativo (`node-firebird`); o resto é o pr�
 npm test
 ```
 
-- **51 testes**, sem Firebird real:
+- **61 testes**, sem Firebird real:
   - **Firebird simulado** (`src/demo.js`): registra toda SQL e transação, para provar que nada de escrita sai;
   - **gbak simulado** (`test/mock-gbak.js`): backup, restauração, falhas e atraso.
 - **Trava de somente leitura:** comandos recusados, transação somente leitura, `node-firebird` 0.x e 1.x+.
 - **Leitura do banco:** acentos, papéis das colunas (EAN em `REFERENCIA`), `OCTETS` recusado, banco sem tabela.
-- **Busca:** acentos, EAN, zeros à esquerda, exclusão e filtros.
+- **Busca:** acentos, EAN, zeros à esquerda, exclusão, filtros, coringa `*` e preço `>`/`<` (com as opções desligadas também).
 - **Cache em disco:** ida e volta; CSV protegido.
-- **Descoberta:** rede antes do local, só `SMALL.FDB`, unidade mapeada, `.ini` do compartilhamento, `SMALL.FDB` achado na pasta compartilhada (aberto só pelo Firebird do servidor), servidor de compartilhamento fora do ar e pasta travada, atalho `.lnk`, servidor fora do ar, senha errada.
+- **Descoberta:** rede antes do local, só `SMALL.FDB`, unidade mapeada, `.ini` do compartilhamento, `SMALL.FDB` achado na pasta compartilhada (aberto só pelo Firebird do servidor), servidor de compartilhamento fora do ar e pasta travada, lista de pastas do `net view`, meta rede × este computador, outros `.FDB` quando não há `SMALL.FDB`, atalho `.lnk`, servidor fora do ar, senha errada.
+- **Instalação do Firebird:** 32 × 64 bits, arquivo que não confere recusado, permissão do Windows negada, download com redirecionamento e erro.
 - **Motor:** auto-correção do endereço, `fbHostFixo`, dados salvos sem rede, item ao vivo na leitura direta, troca de modo, gbak ausente.
 - **Cópia gbak:** senha por variável de ambiente, cópia nova atômica, limpeza segura, falha mantém a anterior, cancelamento.
-- **Administrador:** senha só como *hash*, chaves sensíveis, padrões do quiosque, cópia a cada 3 horas.
+- **Administrador:** senha só como *hash*, chaves sensíveis, padrões do quiosque (barra de tarefas oculta, também em config antigo), cópia a cada 3 horas.
 - **Caminho no servidor:** servidor informado sem o caminho, troca de servidor apaga o caminho antigo.
 - **Vigia (processos de verdade):** reabre o aplicativo fechado à força, encerra com a saída autorizada e com a persistência desligada, um vigia só.
-- **Tela (Playwright, Electron 44 e 22):** criação da senha, leitura, limpeza após inatividade, fechar bloqueado, trava das abas, desbloqueio, ações sensíveis recusadas sem a senha e saída com Ctrl+Shift+Q.
+- **Tela (Playwright, Electron 44 e 22):** criação da senha, pergunta da meta, foco de volta na busca após 30 s, coringa e preço, leitura, limpeza após inatividade, fechar bloqueado, trava das abas, desbloqueio, ações sensíveis recusadas sem a senha, saída com Ctrl+Shift+Q, instalação do Firebird e escolha de outro `.FDB`.
 
 ---
 
@@ -412,8 +459,9 @@ npm test
 | `src/motor.js` | Modos, atualização, cache em disco, auto-correção do banco |
 | `src/firebird.js` | Conexão Firebird com trava somente leitura, prazos e mensagens de erro |
 | `src/estoque-dados.js` | Leitura da tabela de produtos e papéis das colunas |
-| `src/estoque-busca.js` | Regras da busca (as mesmas do Relatórios FDB-FBK) |
-| `src/localizar-banco.js` | Descoberta automática do banco na rede e no computador |
+| `src/estoque-busca.js` | Regras da busca (as do Relatórios FDB-FBK, mais coringa `*` e preço `>`/`<`) |
+| `src/localizar-banco.js` | Descoberta automática do banco (meta, disco, pastas compartilhadas, rede) e os outros `.FDB` |
+| `src/instalar-firebird.js` | Instalação automática do Firebird 3.0 neste computador |
 | `src/copia-gbak.js` | Cópia por gbak (backup + restauração somente leitura) |
 | `src/config.js`, `src/registro.js` | Configuração validada e log |
 | `src/vigia.js` | Persistência: reabre o aplicativo fechado sem a senha |
@@ -436,7 +484,10 @@ npm test
 | "Usuário ou senha do Firebird recusados" | Ajuste usuário e senha em *Configurações → Banco de dados* |
 | Indicador amarelo "Dados salvos de…" | O servidor não respondeu; a consulta segue com o último estoque. Atualiza sozinho quando o servidor voltar |
 | Leitor não abre o produto | Confira se o leitor envia **Enter** (ou TAB, com a opção ligada). Teste num Bloco de Notas: o código deve aparecer e pular de linha |
-| Método gbak: "gbak não encontrado" / "Firebird desta máquina não está rodando" | Use **Automático** ou **Instantâneo**, ou instale o Firebird (mesma versão do servidor) |
+| Método gbak: "gbak não encontrado" / "Firebird desta máquina não está rodando" | Use **Automático** ou **Instantâneo**, ou *Banco de dados → Instalar o Firebird neste computador* |
+| "SMALL.FDB não encontrado em lugar nenhum" | Clique em **Ver outros arquivos .FDB** e escolha o banco certo (os que abrem com a tabela de produtos). Se a lista estiver vazia, confira se o servidor está ligado e na mesma rede |
+| A instalação do Firebird falhou | Sem internet, permissão do Windows negada ou antivírus bloqueando. Tente de novo ou instale o Firebird 3.0 à mão (firebirdsql.org) |
+| A busca não aceita `*` ou `>` | *Configurações → Consulta*: ligue **Busca com coringa** e **Filtro de preço na busca** |
 | "Versão do Firebird local incompatível" | O Firebird deste computador precisa ser da mesma versão ou mais novo que o do servidor; ou use **Instantâneo** |
 | Tela preta ou piscando | Desmarque **Aceleração gráfica** ou abra com `--sem-gpu` |
 | Fechou sozinho logo ao abrir (PC antigo) | Abra de novo (com a persistência ele reabre sozinho): a abertura seguinte vem sem aceleração gráfica automaticamente. Se acontecer sempre, desmarque **Aceleração gráfica** |

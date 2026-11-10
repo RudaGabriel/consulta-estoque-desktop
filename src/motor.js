@@ -1,7 +1,7 @@
 "use strict";
 /**
  * motor.js
- * @version 1.1.0
+ * @version 1.2.0
  * @author Ruda Gabriel
  * @description O coração do aplicativo: mantém o estoque em memória e atualizado
  *              conforme o modo escolhido, acha o banco sozinho e responde às
@@ -27,10 +27,11 @@
  *
  * @changelog
  *   (Histórico completo das versões: CHANGELOG.md no repositório.)
- *   1.1.0 — Servidor conhecido sem o caminho (ou com o caminho errado): o SMALL.FDB é
- *           procurado nesse servidor antes da busca geral (vale com fbHostFixo);
- *           trocar só o servidor nas configurações apaga o caminho antigo; senha do
- *           administrador gravada só por definirSenhaAdmin.
+ *   1.2.0 — Busca com coringa "*" e filtro de preço (buscaCoringa/buscaPreco); meta da
+ *           busca automática (metaBusca); sem SMALL.FDB em lugar nenhum, guarda os
+ *           outros .FDB achados (status.buscaSemSmall), outrosFdb() abre cada um e
+ *           usarBanco() adota o escolhido; firebirdLocal() e redetectarFirebird()
+ *           para a instalação automática; nova busca de fundo no máximo a cada 30 min.
  */
 
 const fs = require("fs");
@@ -43,7 +44,7 @@ const Config = require("./config.js");
 const Localizar = require("./localizar-banco.js");
 const Copia = require("./copia-gbak.js");
 
-const VERSAO = "1.0.0";
+const VERSAO = "1.2.0";
 const ARQ_CACHE = "estoque-cache.json.gz";
 const CHAVES_CONEXAO = ["modo", "metodoCopia", "fbHost", "fbPorta", "fdbPath", "fbUser", "fbPass", "gbakPath", "pastaCopias", "copiaTimeoutMin"];
 
@@ -82,6 +83,7 @@ function criarMotor(dep) {
     let conexaoViva = null;            // { p: Promise<db> } reaproveitada para o item ao vivo (modo direto)
     let conexaoVivaTimer = null;
     let geracao = 0;                   // invalida ciclos antigos quando a configuração muda
+    let semSmall = null;               // { quando, outros: [...] } — última busca sem SMALL.FDB em lugar nenhum
 
     // ── Status para a tela ────────────────────────────────────────────────────
     const statusAtual = () => {
@@ -99,6 +101,8 @@ function criarMotor(dep) {
             temCusto: !!(retrato && retrato.idxPapel.custo >= 0),
             proximaEm,
             erro: ultimoErro,
+            metaBusca: cfg.metaBusca,
+            buscaSemSmall: semSmall && semSmall.outros.length ? { quando: semSmall.quando, outros: semSmall.outros.length } : null,
             copia: cst
         };
     };
@@ -240,8 +244,10 @@ function criarMotor(dep) {
             if (!r.achado) {
                 reg.aviso(r.mensagem);
                 ultimoErro = r.mensagem;
+                semSmall = { quando: Date.now(), outros: Array.isArray(r.outros) ? r.outros : [] };
                 return false;
             }
+            semSmall = null;
             const { host, caminho } = r.achado;
             if (cfg.fbHost === host && cfg.fdbPath === caminho) { reg.busca("O banco configurado já é o correto (" + host + ":" + caminho + ")."); return true; }
             reg.busca("Banco encontrado em " + host + ":" + caminho + " — configuração atualizada automaticamente.");
@@ -351,11 +357,12 @@ function criarMotor(dep) {
             // Banco adotado sozinho NESTA máquina (ou que não é SMALL.FDB): a meta é
             // a rede — procura o servidor em segundo plano e troca se achar.
             const ident = Localizar.identidadesDestaMaquina();
-            if (buscaLiberada() && !procurando && Date.now() - ultimaBuscaAutomatica > 5 * 60000 &&
+            if (buscaLiberada() && !procurando && Date.now() - ultimaBuscaAutomatica > 30 * 60000 &&
                 Localizar.bancoAutoSuspeito(cfg, h => !String(h || "").trim() || Localizar.ehLocal(h) || ident.has(String(h).trim().toLowerCase()))) {
-                reg.busca("O banco em uso (" + (cfg.fbHost || "127.0.0.1") + ":" + cfg.fdbPath + ") foi escolhido automaticamente e não é o servidor da rede — procurando o servidor...");
+                reg.busca("O banco em uso (" + (cfg.fbHost || "127.0.0.1") + ":" + cfg.fdbPath + ") foi escolhido automaticamente e está fora da meta (" +
+                    (cfg.metaBusca === "local" ? "este computador" : "a rede") + ") — procurando de novo em segundo plano...");
                 const antes = cfg.fbHost + "|" + cfg.fdbPath;
-                setImmediate(() => procurarBanco("banco local adotado automaticamente").then(ok => {
+                setImmediate(() => procurarBanco("banco adotado fora da meta").then(ok => {
                     if (ok && antes !== cfg.fbHost + "|" + cfg.fdbPath && !encerrado) { geracao++; agendar(0); }
                 }).catch(() => {}));
             }
@@ -405,7 +412,8 @@ function criarMotor(dep) {
         const res = Busca.pesquisar(fonte, {
             q: String(par.q || "").slice(0, 300), estoque: ["todos", "com", "sem", "negativo", "abaixo"].indexOf(par.estoque) >= 0 ? par.estoque : "todos",
             ordem: ["", "descricao", "codigo", "qtd", "qtdAsc", "preco", "precoAsc"].indexOf(par.ordem || "") >= 0 ? (par.ordem || "") : "",
-            ativos: !!par.ativos, contem: par.contem !== false, pagina: par.pagina, limite: par.limite || cfg.limitePagina
+            ativos: !!par.ativos, contem: par.contem !== false, coringa: cfg.buscaCoringa, preco: cfg.buscaPreco,
+            pagina: par.pagina, limite: par.limite || cfg.limitePagina
         }, i => Dados.resumo(retrato, i));
         let abrir = null;
         if (par.enter && String(par.q || "").trim()) {
@@ -413,7 +421,7 @@ function criarMotor(dep) {
             // Leitura sem resultado por causa de um filtro (ex.: "Só ativos" e o
             // produto está inativo): o produto lido aparece mesmo assim.
             if (i < 0 && res.total === 0 && (par.ativos || (par.estoque && par.estoque !== "todos") || par.contem === false)) {
-                const semFiltro = Busca.pesquisar(fonte, { q: String(par.q).slice(0, 300), limite: 1 }, () => null);
+                const semFiltro = Busca.pesquisar(fonte, { q: String(par.q).slice(0, 300), limite: 1, coringa: cfg.buscaCoringa, preco: cfg.buscaPreco }, () => null);
                 i = escolherAutoAbrir(retrato, semFiltro._res, par.q);
                 if (i >= 0) { abrir = Dados.resumo(retrato, i); abrir.foraDoFiltro = true; }
             } else if (i >= 0) abrir = Dados.resumo(retrato, i);
@@ -458,7 +466,7 @@ function criarMotor(dep) {
         if (!retrato) return null;
         const fonte = Dados.fonteDe(retrato);
         const par = p || {};
-        const res = Busca.ordenar(fonte, Busca.filtrar(fonte, par.q, { estoque: par.estoque, ativos: !!par.ativos, contem: par.contem !== false }), String(par.ordem || ""));
+        const res = Busca.ordenar(fonte, Busca.filtrar(fonte, par.q, { estoque: par.estoque, ativos: !!par.ativos, contem: par.contem !== false, coringa: cfg.buscaCoringa, preco: cfg.buscaPreco }), String(par.ordem || ""));
         return { texto: Dados.csv(retrato, res.map(x => x.i)), linhas: res.length };
     }
 
@@ -468,6 +476,7 @@ function criarMotor(dep) {
         const p = Object.assign({}, parcial || {});
         delete p.fbHostAuto; // só o próprio aplicativo marca o endereço como "automático"
         delete p.senhaAdmin; // a senha só muda por definirSenhaAdmin
+        delete p.versaoConfig;
         // Servidor trocado e caminho não mexido: o caminho será procurado no servidor novo.
         if (p.fbHost !== undefined && Config.validarValor("fbHost", p.fbHost) !== antes.fbHost &&
             (p.fdbPath === undefined || Config.validarValor("fdbPath", p.fdbPath) === antes.fdbPath)) p.fdbPath = "";
@@ -486,6 +495,11 @@ function criarMotor(dep) {
             falhasSeguidas = 0;
             ultimaBuscaAutomatica = 0;
             agendar(200);
+        } else if (antes.metaBusca !== cfg.metaBusca) {
+            // Meta trocada: sem banco, procura já; com banco adotado sozinho, confere a meta logo após o próximo ciclo.
+            reg.busca("Meta da busca automática: " + (cfg.metaBusca === "local" ? "este computador primeiro." : "a rede primeiro."));
+            ultimaBuscaAutomatica = 0;
+            if (!cfg.fdbPath || cfg.fbHostAuto) agendar(200);
         } else if (antes.copiaACadaMin !== cfg.copiaACadaMin || antes.diretoRecarregarSeg !== cfg.diretoRecarregarSeg) {
             if (!ocupado && estado === "pronto") agendar(intervaloNormal());
         }
@@ -535,6 +549,44 @@ function criarMotor(dep) {
             return ok;
         },
         cancelarCopia() { return copia ? copia.cancelar() : false; },
+        /** Abre (somente leitura) cada .FDB achado na última busca sem SMALL.FDB, para o usuário escolher. */
+        async outrosFdb() {
+            const lista = semSmall ? semSmall.outros : [];
+            if (!lista.length) return [];
+            reg.busca("Testando os outros arquivos .FDB achados (" + lista.length + ")...");
+            const r = await Localizar.validarOutros({ outros: lista, validar, portaAberta, porta: cfg.fbPorta });
+            r.forEach(x => reg.busca((x.ok ? "Pode ser usado: " : "Não serve: ") + x.exibir + (x.ok ? " → " + x.host + ":" + x.caminho : " (" + x.motivo + ")")));
+            return r;
+        },
+        /** Adota o banco escolhido pelo usuário (confere antes que ele abre e tem a tabela de produtos). */
+        async usarBanco(escolha) {
+            const e = escolha && typeof escolha === "object" ? escolha : {};
+            const host = String(e.host || "").trim(), caminho = String(e.caminho || "").trim();
+            if (!host || !/\.fdb$/i.test(caminho) || host.length > 255 || caminho.length > 1000) return { ok: false, mensagem: "Escolha inválida." };
+            let aberta = false;
+            try { aberta = await portaAberta(host, cfg.fbPorta, 2000); } catch (_) {}
+            if (!aberta) return { ok: false, mensagem: "O Firebird de " + host + " não respondeu na porta " + cfg.fbPorta + "." };
+            const v = await validar(host, caminho);
+            if (!v.ok) return { ok: false, mensagem: "Não foi possível usar " + host + ":" + caminho + ": " + (v.motivo || "o banco não abriu") + "." };
+            reg.busca("Banco escolhido pelo usuário: " + host + ":" + caminho + ".");
+            semSmall = null;
+            salvarConfig({ fbHost: host, fdbPath: caminho });
+            return { ok: true };
+        },
+        /** Este computador tem Firebird (gbak ou serviço ligado na porta 3050)? */
+        async firebirdLocal() {
+            let ligado = false;
+            try { ligado = await portaAberta("127.0.0.1", 3050, 1500); } catch (_) {}
+            let gb = gbak;
+            if (!gb) { try { gb = await localizarGbak(cfg.gbakPath); } catch (_) { gb = ""; } }
+            return { instalado: !!(ligado || gb), ligado, gbak: gb || "" };
+        },
+        /** Firebird recém-instalado: esquece o gbak procurado antes e atualiza já. */
+        redetectarFirebird() {
+            gbak = ""; gbakProcurado = false;
+            ultimaBuscaAutomatica = 0;
+            if (!ocupado) agendar(500); else pedidoPendente = true;
+        },
         encerrar() {
             encerrado = true;
             if (timer) { clearTimeout(timer); timer = null; }
