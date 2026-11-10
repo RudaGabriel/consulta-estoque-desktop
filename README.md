@@ -6,13 +6,13 @@
 
 ### Consulta de preço e estoque para lojas que usam o Small Commerce (Firebird), feita para o leitor de código de barras
 
-<img alt="aplicativo: v1.4.1" src="https://img.shields.io/badge/aplicativo-v1.4.1-2563EB?style=flat">
+<img alt="aplicativo: v1.5.0" src="https://img.shields.io/badge/aplicativo-v1.5.0-2563EB?style=flat">
 <img alt="plataforma: Windows 7 a 11" src="https://img.shields.io/badge/plataforma-Windows%207%20%7C%208%20%7C%2010%20%7C%2011-0078D4?style=flat&logo=data%3Aimage%2Fsvg%2Bxml%3Bbase64%2CPHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHZpZXdCb3g9JzAgMCAyNCAyNCcgZmlsbD0nd2hpdGUnPjxyZWN0IHg9JzMnIHk9JzMnIHdpZHRoPSc4JyBoZWlnaHQ9JzgnLz48cmVjdCB4PScxMycgeT0nMycgd2lkdGg9JzgnIGhlaWdodD0nOCcvPjxyZWN0IHg9JzMnIHk9JzEzJyB3aWR0aD0nOCcgaGVpZ2h0PSc4Jy8%2BPHJlY3QgeD0nMTMnIHk9JzEzJyB3aWR0aD0nOCcgaGVpZ2h0PSc4Jy8%2BPC9zdmc%2B&logoColor=white">
 <img alt="arquitetura: 64 e 32 bits" src="https://img.shields.io/badge/arquitetura-64%20e%2032%20bits-0E7490?style=flat">
 <img alt="idioma: pt-BR" src="https://img.shields.io/badge/idioma-pt--BR-16A34A?style=flat">
 <img alt="banco: somente leitura" src="https://img.shields.io/badge/banco-somente%20leitura-DC2626?style=flat&logo=data%3Aimage%2Fsvg%2Bxml%3Bbase64%2CPHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHZpZXdCb3g9JzAgMCAyNCAyNCcgZmlsbD0nbm9uZScgc3Ryb2tlPSd3aGl0ZScgc3Ryb2tlLXdpZHRoPScyLjInIHN0cm9rZS1saW5lY2FwPSdyb3VuZCcgc3Ryb2tlLWxpbmVqb2luPSdyb3VuZCc%2BPHBhdGggZD0nTTEyIDIyczgtNCA4LTEwVjVsLTgtMy04IDN2N2MwIDYgOCAxMCA4IDEweicvPjxwYXRoIGQ9J205IDEyIDIgMiA0LTQnLz48L3N2Zz4%3D&logoColor=white">
 <img alt="funciona: sem internet" src="https://img.shields.io/badge/funciona-sem%20internet-0891B2?style=flat">
-<img alt="testes: 64 passando" src="https://img.shields.io/badge/testes-64%20passando-22C55E?style=flat&logo=data%3Aimage%2Fsvg%2Bxml%3Bbase64%2CPHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHZpZXdCb3g9JzAgMCAyNCAyNCcgZmlsbD0nbm9uZScgc3Ryb2tlPSd3aGl0ZScgc3Ryb2tlLXdpZHRoPScyLjInIHN0cm9rZS1saW5lY2FwPSdyb3VuZCcgc3Ryb2tlLWxpbmVqb2luPSdyb3VuZCc%2BPHBhdGggZD0nTTkgMnY2TDQgMTlhMiAyIDAgMCAwIDEuOCAzaDEyLjRhMiAyIDAgMCAwIDEuOC0zTDE1IDhWMicvPjxwYXRoIGQ9J004IDJoOCcvPjxwYXRoIGQ9J003IDE1aDEwJy8%2BPC9zdmc%2B&logoColor=white">
+<img alt="testes: 66 passando" src="https://img.shields.io/badge/testes-66%20passando-22C55E?style=flat&logo=data%3Aimage%2Fsvg%2Bxml%3Bbase64%2CPHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHZpZXdCb3g9JzAgMCAyNCAyNCcgZmlsbD0nbm9uZScgc3Ryb2tlPSd3aGl0ZScgc3Ryb2tlLXdpZHRoPScyLjInIHN0cm9rZS1saW5lY2FwPSdyb3VuZCcgc3Ryb2tlLWxpbmVqb2luPSdyb3VuZCc%2BPHBhdGggZD0nTTkgMnY2TDQgMTlhMiAyIDAgMCAwIDEuOCAzaDEyLjRhMiAyIDAgMCAwIDEuOC0zTDE1IDhWMicvPjxwYXRoIGQ9J004IDJoOCcvPjxwYXRoIGQ9J003IDE1aDEwJy8%2BPC9zdmc%2B&logoColor=white">
 <img alt="licença: proprietária" src="https://img.shields.io/badge/licen%C3%A7a-propriet%C3%A1ria-6B7280?style=flat">
 
 <img alt="Electron: 44.9.3" src="https://img.shields.io/badge/Electron-44.9.3-47848F?style=flat&logo=electron&logoColor=white">
@@ -360,17 +360,28 @@ Tudo pode ser feito na tela (*Configurações*, **F10**). As chaves marcadas com
 
 <a id="firebird"></a>
 
-### Firebird neste computador (instalação automática)
+### Firebird neste computador (na versão do servidor)
 
-O Firebird **deste** computador é opcional: ele é usado na cópia completa do banco (**gbak**) e para abrir um `SMALL.FDB` que esteja neste computador. Quando ele não existe, o aplicativo pergunta ao abrir se você quer instalar (**Instalar**, **Agora não** ou **Não perguntar mais**). O botão também fica em *Configurações → Banco de dados → Instalar o Firebird neste computador*.
+O Firebird **deste** computador é opcional: ele é usado na cópia completa do banco (**gbak**) e para abrir um `SMALL.FDB` que esteja neste computador. O aplicativo descobre sozinho **qual Firebird o servidor usa** (uma consulta de leitura de uma linha) e qual está neste computador — as duas versões aparecem em *Configurações → Banco de dados*.
 
-1. Pede a senha do administrador.
-2. Baixa o instalador **oficial** do **Firebird 3.0.13** (64 ou 32 bits, conforme o Windows) do GitHub do projeto Firebird — precisa de internet (cerca de 8 a 11 MB).
-3. Confere o tamanho e a "impressão digital" (SHA-256) do arquivo; se não bater, nada é instalado.
-4. Instala sozinho, sem janelas, como serviço do Windows (usuário `SYSDBA`, senha `masterkey`). O **Windows pergunta "Deseja permitir que este aplicativo faça alterações?"**: clique em **Sim**.
-5. Confere que o serviço ficou de pé e passa a usá-lo (o método automático da cópia vira gbak).
+| Situação | O que o aplicativo faz |
+|---|---|
+| Este computador **não tem** Firebird | Pergunta se você quer **instalar a mesma versão do servidor** (**Instalar**, **Agora não** ou **Não perguntar mais**) |
+| Tem, mas **mais antigo** que o do servidor (ex.: 3.0 aqui, 4.0 no servidor) | A cópia gbak não funciona com ele: o método automático passa a usar a **cópia instantânea** e o aplicativo pergunta se você quer **trocar** o Firebird daqui pela versão do servidor |
+| Tem, igual ou mais novo | Nada a fazer: a cópia gbak funciona |
 
-O Firebird do **servidor** e o banco do Small Commerce nunca são tocados. Firebird 3.0 roda do Windows 7 ao 11 e o gbak dele copia bancos dos servidores Firebird 2.5, 3, 4 e 5.
+**Tudo sempre com confirmação.** A pergunta da troca diz as duas versões e o que vai acontecer; nada é instalado nem desinstalado sem o **"Sim"**. Os botões também ficam em *Configurações → Banco de dados* (**Instalar o Firebird…** / **Trocar o Firebird deste computador (3.0 → 4.0)**).
+
+Passo a passo:
+
+1. Pede a senha do administrador (se houver).
+2. Escolhe o instalador **oficial** da versão do servidor: **2.5.9**, **3.0.13**, **4.0.6** ou **5.0.3** (64 ou 32 bits, conforme o Windows), do GitHub do projeto Firebird — precisa de internet (de 7 a 26 MB). Sem saber a versão do servidor, usa o 3.0.
+3. Confere o tamanho e a "impressão digital" (SHA-256) do arquivo; se não bater, nada é instalado nem desinstalado.
+4. **Troca:** desinstala o Firebird antigo deste computador e, em seguida, instala o novo — tudo numa única pergunta do Windows. **Instalação:** só instala.
+5. Instala sozinho, sem janelas, como serviço do Windows, com as ferramentas de administração (o gbak) e o usuário `SYSDBA`/senha `masterkey`. O **Windows pergunta "Deseja permitir que este aplicativo faça alterações?"**: clique em **Sim**.
+6. Confere que o serviço ficou de pé e passa a usá-lo (o método automático da cópia volta a ser gbak).
+
+O Firebird do **servidor** e o banco do Small Commerce nunca são tocados. A troca é **recusada** quando o banco em uso está neste computador (o Firebird daqui seria o do Small Commerce). Não confirme a troca se outro programa deste computador usar o Firebird antigo.
 
 ---
 
@@ -422,11 +433,11 @@ Uma única biblioteca em uso pelo aplicativo (`node-firebird`); o resto é o pr�
 | Aplicativo legado | Electron | 22.3.27 (Chromium 108, Node 16) | Windows 7/8/8.1 e 32 bits |
 | Banco | [node-firebird](https://www.npmjs.com/package/node-firebird) | 2.19.1 | Driver Firebird em JavaScript puro (sem DLL), com a trava somente leitura deste projeto |
 | Cópia | `gbak` do Firebird | do Firebird instalado | Backup sem coleta de lixo + restauração somente leitura |
-| Firebird local (opcional) | [Firebird](https://firebirdsql.org) | 3.0.13 (baixado só se você pedir) | Instalação automática neste computador, com SHA-256 conferido |
+| Firebird local (opcional) | [Firebird](https://firebirdsql.org) | 2.5.9, 3.0.13, 4.0.6 ou 5.0.3 — a versão do servidor (baixado só se você confirmar) | Instalação ou troca automática neste computador, com SHA-256 conferido |
 | Instalador | [electron-builder](https://www.electron.build) | 26.18.0 | Instalador NSIS e versão portátil, x64 e ia32 |
 | Tela | HTML5, CSS e JavaScript sem framework | — | Leve para PCs fracos; temas claro e escuro |
 | Som | Web Audio API | — | Bipe da leitura, sem arquivos de áudio |
-| Testes | `node:test` + `node:assert` | Node 20+ | 64 testes com Firebird, gbak e aplicativo simulados |
+| Testes | `node:test` + `node:assert` | Node 20+ | 66 testes com Firebird, gbak e aplicativo simulados |
 | Senha | `crypto.pbkdf2` (Node) | — | *Hash* da senha do administrador com sal, comparação em tempo constante |
 | Teste da tela | Playwright + Electron | — | Fluxo do leitor, cartão, configurações, tema e Electron 22 |
 | Build | GitHub Actions | — | Testes + instaladores a cada push |
@@ -439,7 +450,7 @@ Uma única biblioteca em uso pelo aplicativo (`node-firebird`); o resto é o pr�
 npm test
 ```
 
-- **64 testes**, sem Firebird real:
+- **66 testes**, sem Firebird real:
   - **Firebird simulado** (`src/demo.js`): registra toda SQL e transação, para provar que nada de escrita sai;
   - **gbak simulado** (`test/mock-gbak.js`): backup, restauração, falhas e atraso.
 - **Trava de somente leitura:** comandos recusados, transação somente leitura, `node-firebird` 0.x e 1.x+.
@@ -447,14 +458,15 @@ npm test
 - **Busca:** acentos, EAN, zeros à esquerda, exclusão, filtros, coringa `*` e preço `>`/`<` (com as opções desligadas também).
 - **Cache em disco:** ida e volta; CSV protegido.
 - **Descoberta:** rede antes do local, só `SMALL.FDB`, unidade mapeada, `.ini` do compartilhamento, `SMALL.FDB` achado na pasta compartilhada (aberto só pelo Firebird do servidor), servidor de compartilhamento fora do ar e pasta travada, lista de pastas do `net view`, meta rede × este computador, outros `.FDB` quando não há `SMALL.FDB`, atalho `.lnk`, servidor fora do ar, senha errada.
-- **Instalação do Firebird:** 32 × 64 bits, arquivo que não confere recusado, permissão do Windows negada, download com redirecionamento e erro.
+- **Instalação do Firebird:** 32 × 64 bits, versão do servidor escolhe o pacote (2.5 a 5.0), troca desinstala o antigo na mesma permissão, versão do gbak local, gbak incluído (ferramentas de administração), arquivo que não confere recusado, permissão do Windows negada, download com redirecionamento e erro.
+- **Versões:** Firebird daqui mais antigo que o do servidor → cópia instantânea e aviso para trocar.
 - **Motor:** auto-correção do endereço, `fbHostFixo`, dados salvos sem rede, item ao vivo na leitura direta, troca de modo, gbak ausente.
 - **Cópia gbak:** senha por variável de ambiente, cópia nova atômica, limpeza segura, falha mantém a anterior, cancelamento.
 - **Administrador:** senha só como *hash*, chaves sensíveis, padrões do quiosque (barra de tarefas oculta, também em config antigo), cópia a cada 3 horas.
 - **Caminho no servidor:** servidor informado sem o caminho, troca de servidor apaga o caminho antigo.
 - **Vigia (processos de verdade):** reabre o aplicativo fechado à força (rápido, sem abrir duas vezes enquanto o novo grava o PID), espera o reinício avisado, encerra com a saída autorizada e com a persistência desligada, um vigia só.
 - **Abertura:** cópia salva em dia não toca no banco ao abrir; estimativa da cópia pela duração de cada etapa (também antes da primeira cópia da abertura).
-- **Tela (Playwright, Electron 44 e 22):** configuração inicial (nome da loja, senha opcional, sem senha tudo livre, criar e remover a senha depois), barra de andamento da cópia, confirmação do Atualizar/F5, pergunta da meta, foco de volta na busca após 30 s, coringa e preço, leitura, limpeza após inatividade, fechar bloqueado, trava das abas, desbloqueio, ações sensíveis recusadas sem a senha, saída com Ctrl+Shift+Q, instalação do Firebird e escolha de outro `.FDB`.
+- **Tela (Playwright, Electron 44 e 22):** configuração inicial (nome da loja, senha opcional, sem senha tudo livre, criar e remover a senha depois), barra de andamento da cópia, confirmação do Atualizar/F5, troca do Firebird, pergunta da meta, foco de volta na busca após 30 s, coringa e preço, leitura, limpeza após inatividade, fechar bloqueado, trava das abas, desbloqueio, ações sensíveis recusadas sem a senha, saída com Ctrl+Shift+Q, instalação do Firebird e escolha de outro `.FDB`.
 
 ---
 
@@ -495,9 +507,9 @@ npm test
 | Leitor não abre o produto | Confira se o leitor envia **Enter** (ou TAB, com a opção ligada). Teste num Bloco de Notas: o código deve aparecer e pular de linha |
 | Método gbak: "gbak não encontrado" / "Firebird desta máquina não está rodando" | Use **Automático** ou **Instantâneo**, ou *Banco de dados → Instalar o Firebird neste computador* |
 | "SMALL.FDB não encontrado em lugar nenhum" | Clique em **Ver outros arquivos .FDB** e escolha o banco certo (os que abrem com a tabela de produtos). Se a lista estiver vazia, confira se o servidor está ligado e na mesma rede |
-| A instalação do Firebird falhou | Sem internet, permissão do Windows negada ou antivírus bloqueando. Tente de novo ou instale o Firebird 3.0 à mão (firebirdsql.org) |
+| A instalação do Firebird falhou | Sem internet, permissão do Windows negada ou antivírus bloqueando. Tente de novo ou instale à mão (firebirdsql.org) a mesma versão do servidor (aparece em *Banco de dados*) |
 | A busca não aceita `*` ou `>` | *Configurações → Consulta*: ligue **Busca com coringa** e **Filtro de preço na busca** |
-| "Versão do Firebird local incompatível" | O Firebird deste computador precisa ser da mesma versão ou mais novo que o do servidor; ou use **Instantâneo** |
+| "Versão do Firebird local incompatível" / Firebird daqui mais antigo | O aplicativo mostra as duas versões em *Banco de dados* e oferece **Trocar o Firebird deste computador** pela versão do servidor (com confirmação). Enquanto isso, usa a cópia instantânea |
 | Tela preta ou piscando | Desmarque **Aceleração gráfica** ou abra com `--sem-gpu` |
 | Demora para abrir | Use o **instalador** (a versão portátil descompacta o aplicativo inteiro a cada abertura). A cópia do banco não roda mais a cada abertura; antivírus examinando o aplicativo também atrasa — adicione a pasta do aplicativo às exceções |
 | Fechou sozinho logo ao abrir (PC antigo) | Abra de novo (com a persistência ele reabre sozinho): a abertura seguinte vem sem aceleração gráfica automaticamente. Se acontecer sempre, desmarque **Aceleração gráfica** |

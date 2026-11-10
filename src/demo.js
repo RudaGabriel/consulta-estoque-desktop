@@ -1,7 +1,7 @@
 "use strict";
 /**
  * demo.js
- * @version 1.0.0
+ * @version 1.1.0
  * @author Ruda Gabriel
  * @description Firebird SIMULADO: usado pelos testes automáticos e pelo modo de
  *              demonstração (Consulta Estoque.exe --demo), que mostra a tela com
@@ -9,10 +9,10 @@
  *
  * @changelog
  *   (Histórico completo das versões: CHANGELOG.md no repositório.)
- *   1.0.0 — Primeira versão.
+ *   1.1.0 — Responde a versão do Firebird (ENGINE_VERSION) quando o banco simulado tem `versao`.
  */
 // Firebird simulado (substitui o node-firebird).
-// bancos: { "host|CAMINHO": { tabela, cols:[{n,tp,tam}], linhas:[{COL: valor}], semTabela, octetsRecusa, authErro } }
+// bancos: { "host|CAMINHO": { tabela, cols:[{n,tp,tam}], linhas:[{COL: valor}], semTabela, octetsRecusa, authErro, versao } }
 // Registra toda SQL recebida em `sql` e toda transação em `transacoes`.
 
 function criarFbFalso(bancos) {
@@ -24,6 +24,7 @@ function criarFbFalso(bancos) {
 
     function responder(banco, q, params) {
         const s = String(q).replace(/\s+/g, " ").trim();
+        if (/ENGINE_VERSION/i.test(s)) return banco.versao ? [{ V: banco.versao }] : [];
         if (/^SELECT TRIM\(RDB\$RELATION_NAME\) AS T FROM RDB\$RELATIONS/i.test(s)) {
             return banco.semTabela ? [] : [{ T: banco.tabela || "ESTOQUE" }];
         }

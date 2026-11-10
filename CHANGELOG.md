@@ -7,21 +7,21 @@ Versões em uso hoje:
 
 | Arquivo | Versão |
 |---|---|
-| Aplicativo (`package.json`) | [1.4.1](#aplicativo) |
-| [`main.js`](#mainjs) | 1.3.0 |
-| [`preload.js`](#preloadjs) | 1.3.0 |
-| [`ui/index.html`, `ui/estilo.css`, `ui/app.js`](#ui) | 1.4.0 (`app.js`); 1.3.0 (`index.html`, `estilo.css`) |
-| [`src/motor.js`](#srcmotorjs) | 1.4.0 |
+| Aplicativo (`package.json`) | [1.5.0](#aplicativo) |
+| [`main.js`](#mainjs) | 1.4.0 |
+| [`preload.js`](#preloadjs) | 1.4.0 |
+| [`ui/index.html`, `ui/estilo.css`, `ui/app.js`](#ui) | 1.5.0 (`app.js`); 1.3.0 (`index.html`, `estilo.css`) |
+| [`src/motor.js`](#srcmotorjs) | 1.5.0 |
 | [`src/firebird.js`](#srcfirebirdjs) | 1.0.0 |
 | [`src/estoque-dados.js`](#srcestoque-dadosjs) | 1.0.0 |
 | [`src/estoque-busca.js`](#srcestoque-buscajs) | 1.1.0 |
 | [`src/localizar-banco.js`](#srclocalizar-bancojs) | 1.3.0 |
-| [`src/instalar-firebird.js`](#srcinstalar-firebirdjs) | 1.0.0 |
+| [`src/instalar-firebird.js`](#srcinstalar-firebirdjs) | 1.1.0 |
 | [`src/copia-gbak.js`](#srccopia-gbakjs) | 1.1.0 |
 | [`src/config.js`](#srcconfigjs) | 1.3.0 |
 | [`src/vigia.js`](#srcvigiajs) | 1.1.0 |
 | [`src/registro.js`](#srcregistrojs) | 1.0.0 |
-| [`src/demo.js`](#srcdemojs) | 1.0.0 |
+| [`src/demo.js`](#srcdemojs) | 1.1.0 |
 | [`electron-builder.config.js`](#electron-builderconfigjs) | 1.0.0 |
 | [`gerar-instalador.bat`](#gerar-instaladorbat) | 1.0.0 |
 | [`.github/workflows/build.yml`](#githubworkflowsbuildyml) | 1.2.0 |
@@ -33,6 +33,10 @@ Versões em uso hoje:
 ## Aplicativo
 
 Versão do Consulta Estoque (a que aparece no instalador e em *Configurações → Diagnóstico*).
+
+### 1.5.0 — 2026-11-10
+
+**Firebird deste computador na versão do servidor.** O aplicativo lê a versão do Firebird do servidor e a deste computador. Sem Firebird aqui, oferece instalar a mesma versão do servidor; com um Firebird mais antigo que o do servidor, usa a cópia instantânea e oferece **trocar** (desinstala o antigo e instala o novo, numa só permissão do Windows) — sempre com confirmação clara e a senha. Instaladores oficiais 2.5.9, 3.0.13, 4.0.6 e 5.0.3 com SHA-256 conferido. Corrige a instalação da 1.3.0, que não incluía o gbak. 66 testes.
 
 ### 1.4.1 — 2026-11-10
 
@@ -110,6 +114,10 @@ Versão do Consulta Estoque (a que aparece no instalador e em *Configurações �
 
 Processo principal (janela, instância única, pasta de dados, IPC).
 
+### 1.4.0 — 2026-11-10
+
+**Firebird na versão do servidor:** `firebird:estado` traz as versões; `firebird:instalar` instala a versão do servidor e, com `{ trocar: true }`, troca o Firebird local mais antigo (recusado se o banco em uso estiver neste computador, se já for compatível ou sem o desinstalador).
+
 ### 1.3.0 — 2026-11-10
 
 **Abertura e instância única.** Segunda abertura sai na hora (`app.exit`), PID gravado antes do `ready`, aviso `reiniciando` para o vigia no reinício pelo próprio aplicativo, `skipTaskbar` já na criação da janela; `admin:remover-senha` e `app:configuracao-inicial` (livre só antes da primeira configuração); `configInicial` nunca muda pela tela.
@@ -131,6 +139,10 @@ Processo principal (janela, instância única, pasta de dados, IPC).
 ## `preload.js`
 
 Ponte segura entre a tela e o processo principal.
+
+### 1.4.0 — 2026-11-10
+
+**`instalarFirebird({ trocar })`.**
 
 ### 1.3.0 — 2026-11-10
 
@@ -155,6 +167,10 @@ Ponte segura entre a tela e o processo principal.
 ## `ui/index.html`, `ui/estilo.css`, `ui/app.js`
 
 A tela.
+
+### 1.5.0 — 2026-11-10 (só `app.js`)
+
+**Troca do Firebird com confirmação:** pergunta com as duas versões e o que vai acontecer ("Sim, trocar pelo 4.0" / "Agora não" / "Não perguntar mais"), oferecida quando o status mostra o Firebird daqui mais antigo; instalação nova já na versão do servidor; versões e botão de troca na aba Banco de dados.
 
 ### 1.4.0 — 2026-11-10 (só `app.js`)
 
@@ -181,6 +197,10 @@ A tela.
 ## `src/motor.js`
 
 Modos, atualização, cache em disco e auto-correção do banco.
+
+### 1.5.0 — 2026-11-10
+
+**Versões do Firebird:** versão do servidor (`rdb$get_context('SYSTEM','ENGINE_VERSION')`, só leitura) e do gbak local, lidas também logo ao abrir; Firebird local mais antigo → método automático usa a cópia instantânea (método gbak explícito dá erro claro); `status.firebird`.
 
 ### 1.4.0 — 2026-11-10
 
@@ -264,6 +284,10 @@ Descoberta automática do banco.
 
 Instalação automática do Firebird neste computador.
 
+### 1.1.0 — 2026-11-10
+
+**Versão do servidor e troca.** Pacotes 2.5.9, 3.0.13, 4.0.6 e 5.0.3 com SHA-256; `chaveParaVersao`, `localMaisAntiga`, `versaoDoGbak` (`gbak -z`), `acharDesinstalador`; troca numa só permissão do Windows (desinstalador antigo, espera ele terminar de verdade, instalador novo); ferramentas de administração no pacote (o gbak faltava na 1.0.0).
+
 ### 1.0.0 — 2026-11-10
 
 **Primeira versão.** Baixa o Firebird 3.0.13 oficial (x64 ou Win32, conforme o Windows) seguindo redirecionamentos, com prazo sem dados e prazo total; confere tamanho e SHA-256 fixados; instala em silêncio como serviço (SuperServer, SYSDBA/masterkey, autenticação antiga liberada) pedindo a permissão do Windows; confere a porta 3050; reaproveita o instalador já baixado e íntegro.
@@ -333,6 +357,10 @@ Log.
 ## `src/demo.js`
 
 Firebird simulado.
+
+### 1.1.0 — 2026-11-10
+
+**Versão do Firebird simulada** (`versao` no banco de exemplo responde a `ENGINE_VERSION`).
 
 ### 1.0.0 — 2026-11-09
 

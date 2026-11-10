@@ -1,6 +1,6 @@
 /**
  * app.js — Consulta Estoque (tela)
- * @version 1.4.0
+ * @version 1.5.0
  * @author Ruda Gabriel
  * @description Tela de consulta de preço e estoque. Pensada para o leitor de
  *              código de barras USB/Bluetooth (que "digita" o código e manda
@@ -10,9 +10,9 @@
  *              Compatível com o Chromium 108 (versão para Windows 7/8).
  * @changelog
  *   (Histórico completo das versões: CHANGELOG.md no repositório.)
- *   1.4.0 — Atualizar/F5 no modo cópia pede confirmação antes de fazer uma nova
- *           cópia do banco (o que acontece, quanto tempo leva pela última cópia e
- *           quando seria a próxima automática); com cópia em andamento só avisa.
+ *   1.5.0 — Firebird na versão do servidor: Firebird deste computador mais antigo
+ *           que o do servidor → oferece a troca, sempre com confirmação (e a senha);
+ *           instalação nova já na versão do servidor; versões na aba Banco de dados.
  */
 (function () {
     "use strict";
@@ -355,6 +355,7 @@
         $("bOutrosFdb").hidden = !s.buscaSemSmall;
         desenharAndamento();
         talvezPerguntarOutros();
+        talvezOferecerTroca();
     }
 
     // ── Andamento da atualização (barra abaixo do topo) ──────────────────────
@@ -494,13 +495,19 @@
         if (s.fonte) html += "<b>Banco em uso:</b> " + esc(s.fonte.host + ":" + s.fonte.caminho) + (s.fbHostAuto ? " <i>(encontrado automaticamente)</i>" : "") + "<br>";
         else html += "<b>Banco:</b> ainda não definido — o aplicativo procura sozinho na rede.<br>";
         html += "<b>Situação:</b> " + esc(s.mensagem || "") + (s.erro ? "<br><b>Último erro:</b> " + esc(s.erro) : "");
+        var fv = s.firebird || {};
+        if (fv.servidor || fv.local) html += "<br><b>Firebird:</b> servidor " + esc(fv.servidor || "?") + " · este computador " + esc(fv.local || "não instalado") + (fv.localMaisAntiga ? " <i>(mais antigo — a cópia gbak não funciona)</i>" : "");
         if (s.copia && s.copia.emAndamento) html += "<br><b>Cópia:</b> " + esc(s.copia.etapa === "restauracao" ? "restaurando" : "fazendo o backup") + " há " + Math.round(s.copia.decorridoMs / 1000) + " s";
         $("infoBanco").innerHTML = html;
     }
     async function desenharFirebird() {
         try { estado.firebird = await api.firebirdEstado(); } catch (_) { estado.firebird = null; }
         var f = estado.firebird;
-        $("bInstalarFb").hidden = !(f && f.suportado && !f.instalado);
+        var v = (f && f.versoes) || {};
+        var troca = !!(f && f.suportado && f.instalado && v.localMaisAntiga);
+        $("bInstalarFb").hidden = !(f && f.suportado && (!f.instalado || troca));
+        $("bInstalarFb").textContent = troca ? "Trocar o Firebird deste computador (" + v.local + " → " + (v.pacote || v.servidor) + ")"
+            : "Instalar o Firebird " + (v.pacote || "") + " neste computador";
         $("bInstalarFb").disabled = !!(f && f.instalando);
     }
     function desenharInfoAdmin() {
@@ -776,36 +783,69 @@
         if (await salvarConfig({ metaBusca: meta }, false)) toast(meta === "local" ? "A busca vai começar por este computador." : "A busca vai começar pela rede.");
     }
 
-    async function instalarFirebird() {
-        if (!(await garantirAdmin("Digite a senha do administrador para instalar o Firebird."))) return;
-        var tela = andamento("Instalando o Firebird", "Preparando...");
+    async function instalarFirebird(opcoes) {
+        var trocar = !!(opcoes && opcoes.trocar);
+        if (!(await garantirAdmin("Digite a senha do administrador para " + (trocar ? "trocar" : "instalar") + " o Firebird."))) return;
+        var tela = andamento(trocar ? "Trocando o Firebird" : "Instalando o Firebird", "Preparando...");
         var parar = api.aoEtapaFirebird(function (t) { tela.texto(t); });
         var r;
-        try { r = await api.instalarFirebird(); } catch (e) { r = { ok: false, mensagem: String(e && e.message || e) }; }
+        try { r = await api.instalarFirebird({ trocar: trocar }); } catch (e) { r = { ok: false, mensagem: String(e && e.message || e) }; }
         try { if (typeof parar === "function") parar(); } catch (_) {}
         tela.fechar();
         if (r && r.precisaSenha) { await atualizarAdmin(); toast("A sessão do administrador expirou — tente de novo."); return; }
-        await perguntar({ titulo: r && r.ok ? "Firebird instalado" : "O Firebird não foi instalado", texto: (r && r.mensagem) || "Erro desconhecido.", ok: "OK", cancelar: false });
+        await perguntar({ titulo: r && r.ok ? (trocar ? "Firebird trocado" : "Firebird instalado") : (trocar ? "O Firebird não foi trocado" : "O Firebird não foi instalado"), texto: (r && r.mensagem) || "Erro desconhecido.", ok: "OK", cancelar: false });
         if (estado.painel) desenharFirebird();
     }
 
-    /** Oferece instalar o Firebird (manual = botão da aba Banco de dados). */
+    /**
+     * Firebird deste computador: instalar (não tem) ou trocar pela versão do
+     * servidor (tem, mas mais antigo). Sempre com confirmação. manual = botão
+     * da aba Banco de dados (pergunta mesmo com "Não perguntar mais").
+     */
     async function perguntarFirebird(manual) {
         var f;
         try { f = await api.firebirdEstado(); } catch (_) { f = null; }
         estado.firebird = f;
         if (!f || !f.suportado) { if (manual) toast("A instalação automática só funciona no aplicativo instalado no Windows."); return; }
-        if (f.instalado) { if (manual) toast("Este computador já tem o Firebird."); return; }
         if (f.instalando) { if (manual) toast("A instalação do Firebird já está em andamento."); return; }
+        var v = f.versoes || {};
         if (!manual && !f.perguntar) return;
-        var r = await perguntar({
+        var r;
+        if (f.instalado && v.localMaisAntiga) {
+            estado.trocaOferecida = v.local + ">" + v.servidor;
+            r = await perguntar({
+                titulo: "Trocar o Firebird deste computador?",
+                texto: "O servidor do Small Commerce usa o Firebird " + v.servidor + ", mas este computador tem o Firebird " + v.local + ", mais antigo. " +
+                    "Com versões assim a cópia completa (gbak) não funciona — enquanto isso o aplicativo usa a cópia instantânea. " +
+                    "Se você confirmar, o aplicativo DESINSTALA o Firebird " + v.local + " deste computador, baixa o instalador oficial do Firebird " + (v.pacote || v.servidor) + " (precisa de internet) e instala; o Windows vai pedir permissão. " +
+                    "O Firebird do servidor e o banco do caixa não são tocados. Não confirme se outro programa deste computador usa o Firebird " + v.local + ".",
+                ok: "Sim, trocar pelo " + (v.pacote || v.servidor), extra: manual ? null : "Não perguntar mais", cancelar: "Agora não"
+            });
+            if (r === "extra") { try { await api.firebirdNaoPerguntar(); } catch (_) {} toast("Tudo bem — dá para trocar depois em Configurações → Banco de dados."); return; }
+            if (r == null) return;
+            await instalarFirebird({ trocar: true });
+            return;
+        }
+        if (f.instalado) { if (manual) toast("O Firebird deste computador" + (v.local ? " (" + v.local + ")" : "") + " já é compatível com o do servidor" + (v.servidor ? " (" + v.servidor + ")" : "") + "."); return; }
+        var qual = v.servidor ? "o Firebird " + (v.pacote || v.servidor) + ", a mesma versão do servidor" : "o Firebird 3.0 (a versão do servidor ainda não é conhecida)";
+        r = await perguntar({
             titulo: "Este computador não tem o Firebird",
-            texto: "O Firebird deste computador é usado na cópia completa do banco (gbak) e para abrir um SMALL.FDB que esteja aqui. Sem ele o aplicativo funciona, lendo o estoque do servidor. Instalar agora? O aplicativo baixa o instalador oficial do Firebird 3.0 (precisa de internet) e instala sozinho — o Windows vai pedir permissão.",
+            texto: "O Firebird deste computador é usado na cópia completa do banco (gbak) e para abrir um SMALL.FDB que esteja aqui. Sem ele o aplicativo funciona, lendo o estoque do servidor. " +
+                "Instalar agora " + qual + "? O aplicativo baixa o instalador oficial (precisa de internet) e instala sozinho — o Windows vai pedir permissão.",
             ok: "Instalar", extra: manual ? null : "Não perguntar mais", cancelar: "Agora não"
         });
         if (r === "extra") { try { await api.firebirdNaoPerguntar(); } catch (_) {} toast("Tudo bem — dá para instalar depois em Configurações → Banco de dados."); return; }
         if (r == null) return;
-        await instalarFirebird();
+        await instalarFirebird({});
+    }
+
+    /** Status novo com o Firebird daqui mais antigo que o do servidor: oferece a troca (uma vez por par de versões). */
+    function talvezOferecerTroca() {
+        var v = (estado.status || {}).firebird || {};
+        if (!v.localMaisAntiga || estado.iniciando || algoAberto() || !estado.cfg || estado.cfg.perguntarFirebird === false) return;
+        if (estado.trocaOferecida === v.local + ">" + v.servidor) return;
+        estado.trocaOferecida = v.local + ">" + v.servidor;
+        perguntarFirebird(false);
     }
 
     // ── Sem SMALL.FDB em lugar nenhum: outros .FDB para escolher ────────────

@@ -1,7 +1,7 @@
 "use strict";
 /**
  * main.js
- * @version 1.3.0
+ * @version 1.4.0
  * @author Ruda Gabriel
  * @description Processo principal do Consulta Estoque (Electron): janela em
  *              modo quiosque, senha do administrador, módulo de persistência
@@ -17,12 +17,10 @@
  *
  * @changelog
  *   (Histórico completo das versões: CHANGELOG.md no repositório.)
- *   1.3.0 — Abertura mais rápida e uma instância só: a segunda abertura sai na
- *           hora (só traz a janela aberta para a frente); o PID é gravado logo no
- *           início (o vigia reabre em 1 a 2 s) e o reinício pelo próprio aplicativo
- *           avisa o vigia ("reiniciando"); a janela já nasce fora da barra de
- *           tarefas. Senha do administrador opcional: configuração inicial (nome da
- *           loja + senha opcional) e remover a senha.
+ *   1.4.0 — Firebird na versão do servidor: o estado traz as versões (servidor e
+ *           este computador); "firebird:instalar" instala a versão do servidor e,
+ *           com { trocar: true }, troca o Firebird local mais antigo (recusado se o
+ *           banco em uso estiver neste computador).
  */
 
 const { app, BrowserWindow, ipcMain, dialog, shell, screen, powerSaveBlocker } = require("electron");
@@ -35,6 +33,7 @@ const { criarRegistro } = require("./src/registro.js");
 const { criarMotor } = require("./src/motor.js");
 const FB = require("./src/firebird.js");
 const InstalarFirebird = require("./src/instalar-firebird.js");
+const Localizar = require("./src/localizar-banco.js");
 const pacote = require("./package.json");
 
 const VERSAO = pacote.version;
@@ -463,8 +462,9 @@ if (!INSTANCIA_PRINCIPAL) {
         tratar("firebird:estado", async () => {
             const suportado = process.platform === "win32" && !DEMO;
             const base = { suportado, perguntar: !!motor.config().perguntarFirebird, instalando: !!instalandoFirebird };
-            if (!suportado) return Object.assign(base, { instalado: true, ligado: false });
-            return Object.assign(base, await motor.firebirdLocal());
+            const versoes = motor.status().firebird || {};
+            if (!suportado) return Object.assign(base, { instalado: true, ligado: false, versoes });
+            return Object.assign(base, await motor.firebirdLocal(), { versoes: motor.status().firebird || versoes });
         });
         tratar("firebird:nao-perguntar", () => {
             // Só desliga a pergunta (não abre nada nem muda o banco): não precisa da senha.
@@ -472,16 +472,31 @@ if (!INSTANCIA_PRINCIPAL) {
             reg.info("Pergunta sobre instalar o Firebird desligada.");
             return { ok: true };
         });
-        tratar("firebird:instalar", async () => {
+        tratar("firebird:instalar", async p => {
             exigirAdmin();
             if (process.platform !== "win32" || DEMO) return { ok: false, mensagem: "A instalação automática do Firebird só funciona no aplicativo instalado no Windows." };
             if (instalandoFirebird) return instalandoFirebird;
-            reg.info("Instalação do Firebird pedida pelo administrador.");
+            const trocar = !!objeto(p).trocar;
+            const fbs = motor.status().firebird || {};
+            let desinstalador = null;
+            if (trocar) {
+                // O Firebird daqui não pode estar servindo o banco em uso (este computador seria o servidor).
+                const cfg = motor.config();
+                const host = String(cfg.fbHost || "127.0.0.1").trim().toLowerCase();
+                if (Localizar.ehLocal(host) || Localizar.identidadesDestaMaquina().has(host))
+                    return { ok: false, mensagem: "O banco em uso está neste computador: trocar o Firebird daqui pararia o Small Commerce. Troque à mão, com o caixa fechado." };
+                if (!fbs.localMaisAntiga) return { ok: false, mensagem: "O Firebird deste computador já é compatível com o do servidor — nada a trocar." };
+                desinstalador = InstalarFirebird.acharDesinstalador(fbs.gbak);
+                if (!desinstalador) return { ok: false, mensagem: "Não achei o desinstalador do Firebird " + fbs.local + " deste computador. Desinstale-o pelo Painel de Controle e use \"Instalar o Firebird\"." };
+            }
+            reg.info((trocar ? "Troca do Firebird " + fbs.local + " deste computador pelo " + fbs.servidor : "Instalação do Firebird " + (fbs.servidor || "3.0")) + " pedida pelo administrador.");
             // A pergunta de permissão do Windows (UAC) precisa aparecer por cima do quiosque.
             dialogoAberto = true;
             try { janela.setAlwaysOnTop(false); } catch (_) {}
             instalandoFirebird = InstalarFirebird.instalar({
                 portaAberta: FB.portaAberta,
+                versao: fbs.servidor || null,
+                desinstalador,
                 etapa: t => { reg.info("Firebird: " + t); enviar("firebird:etapa", t); }
             }).then(r => {
                 if (r.ok) reg.info("Firebird: " + r.mensagem); else reg.aviso("Firebird: " + r.mensagem);

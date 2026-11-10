@@ -82,3 +82,38 @@ test("firebird: download segue redirecionamento, recusa resposta de erro e não 
     await assert.rejects(I.baixar("https://c/z", path.join(dir, "erro.exe"), { get }), /404/);
     assert.ok(!fs.existsSync(path.join(dir, "erro.exe")));
 });
+
+test("firebird: versão do servidor escolhe o pacote; Firebird daqui mais antigo; troca desinstala antes, numa só permissão", async () => {
+    assert.strictEqual(I.chaveParaVersao("2.1.7"), "2.5");
+    assert.strictEqual(I.chaveParaVersao("2.5.9.27139"), "2.5");
+    assert.strictEqual(I.chaveParaVersao("4.0.2"), "4.0");
+    assert.strictEqual(I.chaveParaVersao("5.0.1"), "5.0");
+    assert.strictEqual(I.chaveParaVersao("6.0.0"), null, "versão sem instalador conhecido");
+    assert.strictEqual(I.localMaisAntiga("3.0.13", "4.0.6"), true);
+    assert.strictEqual(I.localMaisAntiga("3.0.13", "2.5.9"), false, "local mais novo é compatível");
+    assert.strictEqual(I.localMaisAntiga("2.5.9", "2.5.8"), false);
+    assert.deepStrictEqual(await I.versaoDoGbak("gbak", async () => "gbak:gbak version WI-V2.5.9.27139 Firebird 2.5\ngbak: ERROR"), { maior: 2, menor: 5, texto: "2.5.9" });
+    assert.strictEqual(await I.versaoDoGbak("gbak", async () => ""), null);
+    Object.keys(I.VERSOES).forEach(k => assert.ok(I.argumentosInstalador(k).some(a => /DevAdminComponent/.test(a)), "gbak instalado (ferramentas de administração) na " + k));
+    assert.ok(!I.argumentosInstalador("2.5").some(a => /SYSDBAPASSWORD|EnableLegacy/.test(a)), "2.5 sem opções do 3.0+");
+    // Troca: baixa o pacote da versão do servidor e passa o desinstalador ao executor.
+    const pasta = tmp();
+    const unins = path.join(pasta, "unins000.exe");
+    fs.writeFileSync(unins, "x");
+    const pac = I.VERSOES["4.0"].x64;
+    let url = "", recebido = null, ligado = true;
+    const r = await I.instalar({
+        plataforma: "win32", arch: "x64", env: {}, pasta, esperaMs: 0, versao: "4.0.4", desinstalador: unins,
+        portaAberta: async () => ligado,
+        baixar: async (u, destino) => { url = u; fs.writeFileSync(destino, Buffer.alloc(pac.tamanho)); },
+        sha256: async () => pac.sha256,
+        executar: async (exe, a, ms, des) => { recebido = des; ligado = true; return 0; }
+    });
+    assert.strictEqual(r.ok, true, r.mensagem);
+    assert.match(url, /v4\.0\.6\/Firebird-4\.0\.6\.3221-0-x64\.exe$/);
+    assert.strictEqual(recebido, unins, "desinstala o antigo na mesma permissão");
+    assert.match(I.scriptTroca(unins, "fb.exe", ["/X"]), /unins000\.exe.*Test-Path.*exit 90.*fb\.exe/);
+    const sem = await I.instalar({ plataforma: "win32", arch: "x64", env: {}, pasta: tmp(), versao: "6.0.0", portaAberta: async () => false });
+    assert.strictEqual(sem.ok, false);
+    assert.match(sem.mensagem, /mais novo/);
+});
