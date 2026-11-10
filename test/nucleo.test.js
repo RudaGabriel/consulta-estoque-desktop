@@ -188,3 +188,40 @@ test("config: padrões do quiosque e da cópia (3 horas), hora do reinício diá
     assert.strictEqual(Config.validarValor("reiniciarDiario", "24:00"), "");
     assert.strictEqual(Config.validarValor("reiniciarDiario", "abc"), "");
 });
+
+test("busca: coringa * no mesmo campo e filtro de preço >valor / <valor (o próprio valor entra)", async () => {
+    const { r } = await retratoExemplo();
+    const f = Dados.fonteDe(r);
+    const desc = (q, o) => Busca.pesquisar(f, Object.assign({ q }, o || {}), i => Dados.resumo(r, i)).itens.map(i => i.descricao).sort();
+    assert.deepStrictEqual(desc("racao*15"), ["RAÇÃO CÃO 15KG"]);
+    assert.deepStrictEqual(desc("rac*kg"), ["RAÇÃO CÃO 15KG", "RAÇÃO GATO 1KG"]);
+    assert.deepStrictEqual(desc("racao*15", { coringa: false }), [], "coringa desligado: * é texto");
+    assert.deepStrictEqual(desc("rac*gato", { contem: false }), ["RAÇÃO GATO 1KG"], "sem \"Contém\": o campo começa pelo padrão");
+    assert.deepStrictEqual(desc("racao >100"), ["RAÇÃO CÃO 15KG"]);
+    assert.deepStrictEqual(desc("racao <25,90"), ["RAÇÃO GATO 1KG"], "valor igual entra");
+    assert.deepStrictEqual(desc("racao <25,89"), []);
+    assert.deepStrictEqual(desc("item >=5 <6"), ["ITEM GENÉRICO 4", "ITEM GENÉRICO 5"]);
+    assert.strictEqual(Busca.pesquisar(f, { q: "racao >100", preco: false }, i => i).total, 0, "preço desligado: \">100\" é texto");
+    assert.strictEqual(Busca.pesquisar(f, { q: "*" }, i => i).total, 15, "só * não filtra nada");
+    assert.deepStrictEqual(Busca.separarPreco("racao >1.500,00 <R$ 2000"), { texto: "racao", min: 1500, max: 2000 });
+    assert.deepStrictEqual(Busca.separarPreco("cabo >50kg"), { texto: "cabo >50kg", min: null, max: null }, "valor com letras grudadas não é preço");
+    assert.strictEqual(Busca.lerValor("49.90"), 49.9);
+    assert.strictEqual(Busca.lerValor("1.500"), 1500);
+    assert.strictEqual(Busca.lerValor("abc"), null);
+});
+
+test("config: barra de tarefas oculta por padrão (também em config antigo, uma vez só), opções novas e chaves internas", () => {
+    assert.strictEqual(Config.padrao().ocultarBarraTarefas, true);
+    assert.strictEqual(Config.normalizar({ ocultarBarraTarefas: false }).ocultarBarraTarefas, true, "config.json antigo: passa a ocultar");
+    const novo = Config.normalizar({ ocultarBarraTarefas: false, versaoConfig: 2 });
+    assert.strictEqual(novo.ocultarBarraTarefas, false, "escolha feita depois da migração é mantida");
+    assert.strictEqual(Config.mesclar(novo, {}).ocultarBarraTarefas, false);
+    const c = Config.padrao();
+    assert.strictEqual(c.buscaCoringa, true);
+    assert.strictEqual(c.buscaPreco, true);
+    assert.strictEqual(c.metaBusca, "");
+    assert.strictEqual(Config.validarValor("metaBusca", "nuvem"), "");
+    assert.strictEqual(c.perguntarFirebird, true);
+    assert.ok(Config.SENSIVEIS.includes("metaBusca") && Config.SENSIVEIS.includes("buscaCoringa"));
+    assert.ok(!Config.SENSIVEIS.includes("versaoConfig") && !Config.SENSIVEIS.includes("senhaAdmin"));
+});

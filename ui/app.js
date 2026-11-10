@@ -1,6 +1,6 @@
 /**
  * app.js — Consulta Estoque (tela)
- * @version 1.1.0
+ * @version 1.2.0
  * @author Ruda Gabriel
  * @description Tela de consulta de preço e estoque. Pensada para o leitor de
  *              código de barras USB/Bluetooth (que "digita" o código e manda
@@ -10,10 +10,11 @@
  *              Compatível com o Chromium 108 (versão para Windows 7/8).
  * @changelog
  *   (Histórico completo das versões: CHANGELOG.md no repositório.)
- *   1.1.0 — Senha do administrador (criada na primeira execução; abas Consulta,
- *           Banco de dados, Windows e Administrador travadas), saída com senha
- *           (Ctrl+Shift+Q), modo manutenção, aba Windows, limpeza automática da
- *           busca e do cartão após 1 minuto sem mexer, cursor oculto quando parado.
+ *   1.2.0 — Foco de volta na busca 30 s após a última ação (tela principal); dica e
+ *           destaque da busca com coringa "*" e preço ">valor"/"<valor"; na primeira
+ *           abertura pergunta onde está o banco (rede ou este computador) e oferece
+ *           instalar o Firebird; sem SMALL.FDB em lugar nenhum, oferece os outros
+ *           .FDB achados para o administrador escolher.
  */
 (function () {
     "use strict";
@@ -27,8 +28,10 @@
     var estado = {
         seq: 0, pagina: 1, paginas: 1, total: 0, itens: [], ultimaQ: "",
         status: null, cfg: null, info: null, cartao: null, cartaoSeq: 0, timerCartao: null,
-        painel: false, aba: "modo", debounce: null, logAberto: false
+        painel: false, aba: "modo", debounce: null, logAberto: false,
+        iniciando: true, semSmallVisto: 0, firebird: null
     };
+    var FOCO_MS = 30000;
 
     // ── Utilidades ───────────────────────────────────────────────────────────
     var esc = function (s) {
@@ -72,8 +75,13 @@
         }
         return out + (aberto ? "</mark>" : "");
     }
+    // Filtros de preço (">50", "<49,90") não são destacados; "RAÇÃO*10KG" destaca as duas partes.
+    var RE_PRECO_TELA = /(^|\s)[<>]=?\s*(?:R\$\s*)?[\d.,]+(?=\s|$)/gi;
     var termosDe = function (texto) {
-        return String(texto || "").replace(/"/g, " ").split(/\s+/).filter(function (x) { return x && x[0] !== "-"; }).map(norm).filter(Boolean).slice(0, 8);
+        return String(texto || "").replace(RE_PRECO_TELA, " ").replace(/"/g, " ").split(/\s+/)
+            .filter(function (x) { return x && x[0] !== "-"; })
+            .reduce(function (a, x) { return a.concat(x.split("*")); }, [])
+            .map(norm).filter(Boolean).slice(0, 8);
     };
 
     function toast(msg, ms) {
@@ -122,6 +130,16 @@
         }, 120);
     });
     window.addEventListener("focus", function () { focarBusca(false); });
+    // Foco perdido na tela principal (num filtro, num detalhe do cartão...): 30 s
+    // depois da última ação ele volta para a busca — e confere de novo a cada 30 s.
+    function agendarFoco() {
+        clearTimeout(estado.timerFoco);
+        estado.timerFoco = setTimeout(function () {
+            if (!algoAberto() && document.activeElement !== q) focarBusca(true);
+            talvezPerguntarOutros();
+            agendarFoco();
+        }, FOCO_MS);
+    }
 
     // ── Busca ────────────────────────────────────────────────────────────────
     function parametros(pagina, enter) {
@@ -328,6 +346,8 @@
         $("bAtualizar").disabled = !!s.ocupado && !s.copia.emAndamento;
         if (!s.itens) mostrarVazio();
         if (estado.painel && estado.aba === "banco") desenharInfoBanco();
+        $("bOutrosFdb").hidden = !s.buscaSemSmall;
+        talvezPerguntarOutros();
     }
 
     function mostrarVazio() {
@@ -339,6 +359,7 @@
         $("vazioTexto").textContent = carregando ? "Na primeira vez pode levar alguns instantes. Depois o estoque fica salvo neste computador e aparece na hora." : (s.erro || s.mensagem || "");
         $("bVazioProcurar").hidden = carregando;
         $("bVazioTentar").hidden = carregando;
+        $("bVazioOutros").hidden = carregando || !s.buscaSemSmall;
         v.hidden = false;
     }
 
@@ -351,6 +372,11 @@
         $("loja").textContent = cfg.nomeLoja || "";
         $("loja").hidden = !cfg.nomeLoja;
         if (!cfg.ocultarCursor) document.body.classList.remove("sem-cursor");
+        var dicas = [];
+        if (cfg.buscaCoringa !== false) dicas.push("* = qualquer coisa");
+        if (cfg.buscaPreco !== false) dicas.push(">50 = preço 50 ou mais", "<50 = 50 ou menos");
+        $("dicaBusca").textContent = dicas.join(" · ");
+        $("dicaBusca").hidden = !dicas.length;
         reiniciarInatividade();
     }
 
@@ -417,7 +443,7 @@
         desenharTrava();
         estado.logAberto = aba === "diag";
         $("bSalvar").hidden = aba === "diag" || aba === "admin" || (!!ABAS_PROTEGIDAS[aba] && !livre());
-        if (aba === "banco") desenharInfoBanco();
+        if (aba === "banco") { desenharInfoBanco(); desenharFirebird(); }
         if (aba === "diag") carregarDiagnostico();
         if (aba === "admin") desenharInfoAdmin();
         if (aba === "windows") desenharWindows();
@@ -431,6 +457,12 @@
         html += "<b>Situação:</b> " + esc(s.mensagem || "") + (s.erro ? "<br><b>Último erro:</b> " + esc(s.erro) : "");
         if (s.copia && s.copia.emAndamento) html += "<br><b>Cópia:</b> " + esc(s.copia.etapa === "restauracao" ? "restaurando" : "fazendo o backup") + " há " + Math.round(s.copia.decorridoMs / 1000) + " s";
         $("infoBanco").innerHTML = html;
+    }
+    async function desenharFirebird() {
+        try { estado.firebird = await api.firebirdEstado(); } catch (_) { estado.firebird = null; }
+        var f = estado.firebird;
+        $("bInstalarFb").hidden = !(f && f.suportado && !f.instalado);
+        $("bInstalarFb").disabled = !!(f && f.instalando);
     }
     function desenharInfoAdmin() {
         var a = estado.admin || {};
@@ -483,6 +515,7 @@
         $("cfgFixo").checked = c.fbHostFixo; $("cfgVarrer").checked = c.varrerRede;
         $("cfgGbak").value = c.gbakPath; $("cfgPasta").value = c.pastaCopias; $("cfgTimeout").value = c.copiaTimeoutMin;
         $("cfgLoja").value = c.nomeLoja; $("cfgLimpar").value = c.limparAposSeg; $("cfgCusto").checked = c.mostrarCusto;
+        $("cfgCoringa").checked = c.buscaCoringa !== false; $("cfgPreco").checked = c.buscaPreco !== false; $("cfgMeta").value = c.metaBusca || "";
         $("cfgTema").value = c.tema; $("cfgZoom").value = c.zoom; $("oZoom").textContent = Math.round(c.zoom * 100) + "%";
         $("cfgSom").checked = c.som; $("cfgTab").checked = c.tabComoEnter; $("cfgLeve").checked = c.modoLeve;
         $("cfgIniciar").checked = c.iniciarComWindows; $("cfgPersistente").checked = c.persistente; $("cfgTopo").checked = c.sempreNoTopo;
@@ -505,6 +538,7 @@
             metodoCopia: $("cfgMetodo").value, copiaACadaMin: $("cfgCopiaMin").value,
             diretoRecarregarSeg: $("cfgDiretoSeg").value, diretoItemAoVivo: $("cfgAoVivo").checked,
             nomeLoja: $("cfgLoja").value.trim(), limparAposSeg: $("cfgLimpar").value, mostrarCusto: $("cfgCusto").checked,
+            buscaCoringa: $("cfgCoringa").checked, buscaPreco: $("cfgPreco").checked, metaBusca: $("cfgMeta").value,
             fbHost: $("cfgHost").value.trim(), fbPorta: $("cfgPorta").value, fdbPath: $("cfgPath").value.trim(),
             fbUser: $("cfgUser").value.trim(),
             fbHostFixo: $("cfgFixo").checked, varrerRede: $("cfgVarrer").checked,
@@ -534,49 +568,113 @@
         return true;
     }
 
-    // ── Janela de senha / confirmação ────────────────────────────────────────
-    // perguntar({ titulo, texto, senha, repetir, ok, cancelar, validar(v1, v2) → Promise<mensagem de erro | null> })
+    // ── Janela de senha / confirmação / escolha ──────────────────────────────
+    // perguntar({ titulo, texto, senha, repetir, ok, extra, cancelar, lista, largo,
+    //             validar(v1, v2, escolha) → Promise<mensagem de erro | null> })
+    //   cancelar: false esconde o botão; texto troca o rótulo.
+    //   extra: rótulo de um terceiro botão (resolve "extra").
+    //   lista: [{ valor, titulo, texto, desabilitado }] — resolve com o valor escolhido.
     // Resolve com o valor digitado (ou true) ao confirmar, null ao cancelar.
+    function prepararModal(o) {
+        estado.modal = true;
+        $("modalTitulo").textContent = o.titulo || "";
+        $("modalTexto").textContent = o.texto || "";
+        $("modalTexto").className = o.andamento ? "andamento" : "";
+        $("modalSenha").hidden = !o.senha; $("modalSenha").value = "";
+        $("modalSenha2").hidden = !o.repetir; $("modalSenha2").value = "";
+        $("modalErro").textContent = "";
+        $("modal").classList.toggle("largo", !!(o.largo || o.lista));
+        $("modalBotoes").hidden = !!o.andamento;
+        $("modalFundo").hidden = false; $("modal").hidden = false;
+    }
+    function fecharModal() {
+        estado.modal = false;
+        $("modalFundo").hidden = true; $("modal").hidden = true;
+        $("modalOk").onclick = null; $("modalCancelar").onclick = null; $("modalExtra").onclick = null; perguntar.tecla = null;
+        $("modalSenha").value = ""; $("modalSenha2").value = "";
+        $("modalLista").innerHTML = ""; $("modalLista").hidden = true; $("modalLista").onchange = null;
+        $("modalTexto").className = ""; $("modalBotoes").hidden = false;
+        focarBusca(false);
+    }
     function perguntar(o) {
         return new Promise(function (resolve) {
-            estado.modal = true;
-            $("modalTitulo").textContent = o.titulo || "";
-            $("modalTexto").textContent = o.texto || "";
-            $("modalSenha").hidden = !o.senha; $("modalSenha").value = "";
-            $("modalSenha2").hidden = !o.repetir; $("modalSenha2").value = "";
-            $("modalErro").textContent = "";
+            prepararModal(o);
             $("modalOk").textContent = o.ok || "OK";
             $("modalOk").disabled = false;
             $("modalCancelar").hidden = o.cancelar === false;
-            $("modalFundo").hidden = false; $("modal").hidden = false;
-            setTimeout(function () { (o.senha ? $("modalSenha") : $("modalOk")).focus(); }, 30);
-            var terminar = function (v) {
-                estado.modal = false;
-                $("modalFundo").hidden = true; $("modal").hidden = true;
-                $("modalOk").onclick = null; $("modalCancelar").onclick = null; perguntar.tecla = null;
-                $("modalSenha").value = ""; $("modalSenha2").value = "";
-                resolve(v);
-                focarBusca(false);
-            };
+            $("modalCancelar").textContent = typeof o.cancelar === "string" ? o.cancelar : "Cancelar";
+            $("modalExtra").hidden = !o.extra;
+            $("modalExtra").textContent = o.extra || "";
+            var caixa = $("modalLista");
+            if (o.lista) {
+                var primeiro = -1;
+                caixa.innerHTML = o.lista.map(function (it, k) {
+                    if (!it.desabilitado && primeiro < 0) primeiro = k;
+                    return '<label class="modal-item' + (it.desabilitado ? " desabilitado" : "") + '"><input type="radio" name="modalEscolha" value="' + k + '"' +
+                        (it.desabilitado ? " disabled" : "") + "><div><strong>" + esc(it.titulo) + "</strong><span>" + esc(it.texto || "") + "</span></div></label>";
+                }).join("");
+                caixa.hidden = false;
+                var marcar = function () {
+                    var itens = caixa.querySelectorAll(".modal-item");
+                    for (var x = 0; x < itens.length; x++) itens[x].classList.toggle("marcado", itens[x].querySelector("input").checked);
+                };
+                caixa.onchange = marcar;
+                if (primeiro >= 0) { caixa.querySelectorAll("input")[primeiro].checked = true; marcar(); }
+            }
+            setTimeout(function () {
+                var r = o.lista ? caixa.querySelector("input:checked") : null;
+                (o.senha ? $("modalSenha") : (r || $("modalOk"))).focus();
+            }, 30);
+            var terminar = function (v) { fecharModal(); resolve(v); };
             var confirmar = async function () {
                 if ($("modalOk").disabled) return;
                 var v1 = $("modalSenha").value, v2 = $("modalSenha2").value;
+                var escolha;
+                if (o.lista) {
+                    var marcado = caixa.querySelector("input:checked");
+                    if (!marcado) { $("modalErro").textContent = "Nenhum item pode ser escolhido."; return; }
+                    escolha = o.lista[Number(marcado.value)].valor;
+                }
                 if (o.validar) {
                     $("modalOk").disabled = true;
                     var msg = null;
-                    try { msg = await o.validar(v1, v2); } catch (e) { msg = String(e && e.message || e); }
+                    try { msg = await o.validar(v1, v2, escolha); } catch (e) { msg = String(e && e.message || e); }
                     $("modalOk").disabled = false;
                     if (msg) { $("modalErro").textContent = msg; if (o.senha) $("modalSenha").select(); return; }
                 }
-                terminar(o.senha ? v1 : true);
+                terminar(o.lista ? escolha : (o.senha ? v1 : true));
             };
             $("modalOk").onclick = confirmar;
             $("modalCancelar").onclick = function () { terminar(null); };
+            $("modalExtra").onclick = function () { if (!$("modalOk").disabled) terminar("extra"); };
             perguntar.tecla = function (e) {
                 if (e.key === "Enter") { e.preventDefault(); confirmar(); }
                 else if (e.key === "Escape" && o.cancelar !== false) { e.preventDefault(); terminar(null); }
             };
         });
+    }
+    /** Janela de andamento (sem botões): { texto(t), fechar() }. */
+    function andamento(titulo, texto) {
+        prepararModal({ titulo: titulo, texto: texto, andamento: true });
+        perguntar.tecla = function (e) { e.preventDefault(); };
+        return {
+            texto: function (t) { $("modalTexto").textContent = t; },
+            fechar: fecharModal
+        };
+    }
+    /** Pede a senha do administrador (se a sessão não estiver aberta). Resolve true/false. */
+    async function garantirAdmin(texto) {
+        await atualizarAdmin();
+        if (livre()) return true;
+        var r = await perguntar({
+            titulo: "Senha do administrador", texto: texto, senha: true, ok: "Continuar",
+            validar: async function (senha) {
+                var x = await api.desbloquear(senha);
+                if (x && x.ok) { estado.admin = x.estado; return null; }
+                return (x && x.mensagem) || "Senha incorreta.";
+            }
+        });
+        return r != null;
     }
 
     async function pedirSaida() {
@@ -607,10 +705,96 @@
                 return null;
             }
         });
-        if (criada != null) {
-            try { estado.admin = await api.bloquear(); } catch (_) {}
-            toast("Senha do administrador criada.");
-        }
+        if (criada != null) toast("Senha do administrador criada.");
+        return criada != null;
+    }
+
+    // ── Primeira abertura: onde está o banco e o Firebird deste computador ──
+    async function perguntarMeta() {
+        var r = await perguntar({
+            titulo: "Onde está o banco do Small Commerce?",
+            texto: "A busca automática começa pelo lugar escolhido, mas varre tudo: o disco deste computador, as pastas compartilhadas e a rede inteira. Dá para mudar depois em Configurações → Banco de dados.",
+            ok: "Na rede (servidor)", extra: "Neste computador", cancelar: "Decidir depois"
+        });
+        if (r == null) return;
+        var meta = r === "extra" ? "local" : "rede";
+        if (!(await garantirAdmin("Digite a senha do administrador para guardar a escolha."))) return;
+        if (await salvarConfig({ metaBusca: meta }, false)) toast(meta === "local" ? "A busca vai começar por este computador." : "A busca vai começar pela rede.");
+    }
+
+    async function instalarFirebird() {
+        if (!(await garantirAdmin("Digite a senha do administrador para instalar o Firebird."))) return;
+        var tela = andamento("Instalando o Firebird", "Preparando...");
+        var parar = api.aoEtapaFirebird(function (t) { tela.texto(t); });
+        var r;
+        try { r = await api.instalarFirebird(); } catch (e) { r = { ok: false, mensagem: String(e && e.message || e) }; }
+        try { if (typeof parar === "function") parar(); } catch (_) {}
+        tela.fechar();
+        if (r && r.precisaSenha) { await atualizarAdmin(); toast("A sessão do administrador expirou — tente de novo."); return; }
+        await perguntar({ titulo: r && r.ok ? "Firebird instalado" : "O Firebird não foi instalado", texto: (r && r.mensagem) || "Erro desconhecido.", ok: "OK", cancelar: false });
+        if (estado.painel) desenharFirebird();
+    }
+
+    /** Oferece instalar o Firebird (manual = botão da aba Banco de dados). */
+    async function perguntarFirebird(manual) {
+        var f;
+        try { f = await api.firebirdEstado(); } catch (_) { f = null; }
+        estado.firebird = f;
+        if (!f || !f.suportado) { if (manual) toast("A instalação automática só funciona no aplicativo instalado no Windows."); return; }
+        if (f.instalado) { if (manual) toast("Este computador já tem o Firebird."); return; }
+        if (f.instalando) { if (manual) toast("A instalação do Firebird já está em andamento."); return; }
+        if (!manual && !f.perguntar) return;
+        var r = await perguntar({
+            titulo: "Este computador não tem o Firebird",
+            texto: "O Firebird deste computador é usado na cópia completa do banco (gbak) e para abrir um SMALL.FDB que esteja aqui. Sem ele o aplicativo funciona, lendo o estoque do servidor. Instalar agora? O aplicativo baixa o instalador oficial do Firebird 3.0 (precisa de internet) e instala sozinho — o Windows vai pedir permissão.",
+            ok: "Instalar", extra: manual ? null : "Não perguntar mais", cancelar: "Agora não"
+        });
+        if (r === "extra") { try { await api.firebirdNaoPerguntar(); } catch (_) {} toast("Tudo bem — dá para instalar depois em Configurações → Banco de dados."); return; }
+        if (r == null) return;
+        await instalarFirebird();
+    }
+
+    // ── Sem SMALL.FDB em lugar nenhum: outros .FDB para escolher ────────────
+    function talvezPerguntarOutros() {
+        var s = estado.status || {};
+        var b = s.buscaSemSmall;
+        if (!b || b.quando === estado.semSmallVisto || estado.iniciando || algoAberto()) return;
+        estado.semSmallVisto = b.quando;
+        perguntar({
+            titulo: "SMALL.FDB não encontrado",
+            texto: "Procurei em tudo — no disco deste computador, nas pastas compartilhadas e na rede inteira — e não há nenhum SMALL.FDB. Achei " + b.outros +
+                " outro(s) arquivo(s) terminado(s) em .FDB. Quer ver esses arquivos para escolher qual é o banco?",
+            ok: "Ver os arquivos .FDB", cancelar: "Agora não"
+        }).then(function (r) { if (r) escolherOutroFdb(); });
+    }
+
+    async function escolherOutroFdb() {
+        var s = estado.status || {};
+        if (s.buscaSemSmall) estado.semSmallVisto = s.buscaSemSmall.quando;
+        if (!(await garantirAdmin("Digite a senha do administrador para escolher o banco."))) return;
+        var tela = andamento("Testando os arquivos .FDB", "Abrindo cada arquivo pelo Firebird, só para leitura... pode levar até 2 minutos.");
+        var lista;
+        try { lista = await api.outrosFdb(); } catch (e) { lista = { ok: false, mensagem: String(e && e.message || e) }; }
+        tela.fechar();
+        if (lista && lista.precisaSenha) { await atualizarAdmin(); toast("A sessão do administrador expirou — tente de novo."); return; }
+        if (!Array.isArray(lista)) { toast((lista && lista.mensagem) || "Não foi possível testar os arquivos."); return; }
+        if (!lista.length) { toast("Não há outros arquivos .FDB para mostrar — procure o banco de novo."); return; }
+        var usaveis = lista.filter(function (x) { return x.ok; }).length;
+        var escolha = await perguntar({
+            titulo: "Escolha o banco",
+            texto: usaveis ? "Nenhum arquivo se chama SMALL.FDB. Escolha o banco certo — só dá para escolher os que abrem e têm a tabela de produtos."
+                : "Nenhum destes arquivos abre com a tabela de produtos do Small Commerce. Confira o servidor e a senha do Firebird em Configurações → Banco de dados.",
+            ok: "Usar este banco", cancelar: usaveis ? "Cancelar" : "Fechar",
+            lista: lista.map(function (x) {
+                return { valor: x, titulo: x.exibir, texto: x.ok ? "Abre e tem a tabela de produtos → " + x.host + ":" + x.caminho : x.motivo, desabilitado: !x.ok };
+            }),
+            validar: async function (_a, _b, x) {
+                var r = await api.usarBanco({ host: x.host, caminho: x.caminho });
+                if (r && r.precisaSenha) return "A sessão do administrador expirou — feche e tente de novo.";
+                return r && r.ok ? null : ((r && r.mensagem) || "Não foi possível usar este banco.");
+            }
+        });
+        if (escolha) toast("Banco escolhido: " + escolha.host + ":" + escolha.caminho + " — carregando o estoque...", 5000);
     }
 
     // ── Inatividade: limpa a busca e o cartão N segundos após a última ação ─
@@ -630,6 +814,7 @@
     }
     function atividade() {
         reiniciarInatividade();
+        agendarFoco();
         if (estado.cfg && estado.cfg.ocultarCursor) {
             document.body.classList.remove("sem-cursor");
             clearTimeout(estado.timerCursor);
@@ -685,6 +870,9 @@
     $("estado").addEventListener("click", function () { abrirPainel("banco"); });
     $("bVazioProcurar").addEventListener("click", function () { abrirPainel("banco"); });
     $("bVazioTentar").addEventListener("click", function () { api.atualizar(); });
+    $("bVazioOutros").addEventListener("click", function () { escolherOutroFdb(); });
+    $("bOutrosFdb").addEventListener("click", function () { escolherOutroFdb(); });
+    $("bInstalarFb").addEventListener("click", function () { perguntarFirebird(true); });
     $("bVazioConfig").addEventListener("click", function () { abrirPainel("banco"); });
 
     $("abas").addEventListener("click", function (e) { var b = e.target.closest("button[data-aba]"); if (b) trocarAba(b.getAttribute("data-aba")); });
@@ -801,8 +989,23 @@
         if (estado.info && estado.info.demo) toast("Modo demonstração: produtos de exemplo, sem banco.", 5000);
         await buscar(1);
         focarBusca(false);
-        await atualizarAdmin();
-        if (estado.admin && !estado.admin.temSenha) await criarSenhaInicial();
+        try {
+            await atualizarAdmin();
+            var recemCriada = false;
+            if (estado.admin && !estado.admin.temSenha) recemCriada = await criarSenhaInicial();
+            if (!(estado.info && estado.info.demo)) {
+                var c = estado.cfg || {}, st = estado.status || {};
+                if (!c.metaBusca && (recemCriada || !st.fonte)) await perguntarMeta();
+                await perguntarFirebird(false);
+            }
+            // A senha acabou de ser criada: a configuração inicial terminou, a tela volta a ser pública.
+            if (recemCriada) { try { estado.admin = await api.bloquear(); } catch (_) {} }
+        } finally {
+            estado.iniciando = false;
+            focarBusca(true);
+            agendarFoco();
+            talvezPerguntarOutros();
+        }
     }
     iniciar();
 })();

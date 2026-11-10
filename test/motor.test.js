@@ -248,3 +248,38 @@ test("motor: trocar só o servidor nas configurações apaga o caminho antigo e 
     assert.strictEqual(motor.salvarConfig({ senhaAdmin: "pbkdf2$1$" }).senhaAdmin, "", "a senha não muda por salvarConfig");
     motor.encerrar();
 });
+
+test("motor: sem SMALL.FDB em lugar nenhum → status avisa, outros .FDB são testados e o escolhido é adotado", async () => {
+    const { motor, arquivoConfig } = montar({ "SRV|C:\\DADOS\\LOJA.FDB": bancoExemplo() }, null, {
+        portaAberta: async h => h === "SRV",
+        localizar: async () => ({ achado: null, falhas: [], mensagem: "O SMALL.FDB não foi encontrado em lugar nenhum.",
+            outros: [{ origem: "rede", host: "SRV", caminhos: ["D:\\DADOS\\LOJA.FDB", "C:\\DADOS\\LOJA.FDB"], exibir: "\\\\SRV\\DADOS\\LOJA.FDB" }] })
+    });
+    await motor.iniciar();
+    await esperar(() => motor.status().buscaSemSmall);
+    assert.strictEqual(motor.status().buscaSemSmall.outros, 1);
+    const lista = await motor.outrosFdb();
+    assert.deepStrictEqual(lista.map(x => [x.ok, x.host, x.caminho]), [[true, "SRV", "C:\\DADOS\\LOJA.FDB"]]);
+    assert.strictEqual((await motor.usarBanco({ host: "SRV", caminho: "C:\\DADOS\\NAO.FDB" })).ok, false, "banco que não abre não é adotado");
+    assert.strictEqual((await motor.usarBanco({ host: "SRV", caminho: "C:\\x.txt" })).ok, false);
+    assert.strictEqual((await motor.usarBanco({ host: "SRV", caminho: "C:\\DADOS\\LOJA.FDB" })).ok, true);
+    await esperar(() => motor.status().estado === "pronto" && motor.status().itens === 15);
+    const cfg = Config.carregar(arquivoConfig).cfg;
+    assert.strictEqual(cfg.fbHost, "SRV");
+    assert.strictEqual(cfg.fdbPath, "C:\\DADOS\\LOJA.FDB");
+    assert.strictEqual(cfg.fbHostAuto, false, "escolha do usuário não é trocada sozinha");
+    assert.strictEqual(motor.status().buscaSemSmall, null);
+    motor.encerrar();
+});
+
+test("motor: busca usa as opções de coringa e preço do config", async () => {
+    const { motor } = montar({ "10.0.0.5|C:\\SC\\SMALL.FDB": bancoExemplo() }, { fbHost: "10.0.0.5", fdbPath: "C:\\SC\\SMALL.FDB" });
+    await motor.iniciar();
+    await esperar(() => motor.status().estado === "pronto");
+    assert.strictEqual(motor.pesquisar({ q: "racao*15" }).total, 1);
+    assert.strictEqual(motor.pesquisar({ q: "racao >100" }).total, 1);
+    motor.salvarConfig({ buscaCoringa: false, buscaPreco: false });
+    assert.strictEqual(motor.pesquisar({ q: "racao*15" }).total, 0);
+    assert.strictEqual(motor.pesquisar({ q: "racao >100" }).total, 0);
+    motor.encerrar();
+});

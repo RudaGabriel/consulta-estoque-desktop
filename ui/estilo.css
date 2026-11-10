@@ -1,12 +1,13 @@
 /*
   estilo.css — Consulta Estoque (tela)
-  @version 1.1.0
+  @version 1.2.0
   @author Ruda Gabriel
   Compatível com o Chromium 108 (versão para Windows 7/8): sem CSS aninhado,
   sem color-mix, sem :has().
   @changelog
     (Histórico completo das versões: CHANGELOG.md no repositório.)
-    1.1.0 — Trava do administrador, janela de senha, botão de perigo e cursor oculto.
+    1.2.0 — Dica da busca (coringa e preço), lista de escolha e janela larga no modal,
+            texto de andamento (instalação do Firebird).
 */
 :root {
   --fundo: #f4f6f8; --superficie: #ffffff; --superficie2: #eef1f4; --borda: #d9dee4;
@@ -232,12 +233,24 @@ h3.sub { margin: 8px 0 0; font-size: 15px; }
 .modal h2 { margin: 0; font-size: 19px; }
 .modal p { margin: 0; color: var(--texto2); font-size: 14px; }
 .modal input { padding: 10px 12px; border-radius: 8px; border: 1px solid var(--borda); background: var(--superficie); color: var(--texto); font-size: 16px; }
+.modal.largo { width: min(680px, 94vw); }
+.modal .andamento { color: var(--destaque); font-weight: 600; }
+.modal-lista { display: flex; flex-direction: column; gap: 6px; max-height: 50vh; overflow-y: auto; padding-right: 4px; }
+.modal-item { display: flex; gap: 10px; align-items: flex-start; padding: 9px 10px; border: 1px solid var(--borda); border-radius: 9px; cursor: pointer; background: var(--superficie); }
+.modal-item input { margin-top: 3px; padding: 0; }
+.modal-item strong { display: block; font-size: 14px; word-break: break-all; }
+.modal-item span { display: block; font-size: 12.5px; color: var(--texto2); }
+.modal-item.marcado { border-color: var(--destaque); background: var(--superficie2); }
+.modal-item.desabilitado { opacity: .55; cursor: not-allowed; }
+.modal-item.desabilitado span { color: var(--ruim); }
+.dica-busca { font-size: 12.5px; color: var(--texto2); margin-left: auto; }
 body.sem-cursor, body.sem-cursor * { cursor: none !important; }
 
 /* ── Telas estreitas ──────────────────────────────────────────────────── */
 @media (max-width: 860px) {
   .acoes .btn span { display: none; }
   .loja { display: none; }
+  .dica-busca { display: none; }
   .cartao-preco { font-size: 48px; }
   .cartao-desc { font-size: 22px; }
   th:nth-child(3), td:nth-child(3), th:nth-child(5), td:nth-child(5) { display: none; }

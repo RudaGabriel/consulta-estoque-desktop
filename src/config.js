@@ -1,7 +1,7 @@
 "use strict";
 /**
  * config.js
- * @version 1.1.0
+ * @version 1.2.0
  * @author Ruda Gabriel
  * @description Configuração do aplicativo (config.json na pasta de dados):
  *              valores padrão, validação de cada chave e gravação atômica.
@@ -12,18 +12,18 @@
  *
  * @changelog
  *   (Histórico completo das versões: CHANGELOG.md no repositório.)
- *   1.1.0 — Quiosque e administrador: chaves do Windows (iniciarComWindows,
- *           persistente, sempreNoTopo, manterFoco, impedirDescanso,
- *           ocultarBarraTarefas, ocultarCursor, reiniciarDiario, monitor), senha do
- *           administrador guardada só como hash PBKDF2 (senhaAdmin), lista das chaves
- *           sensíveis, cópia a cada 3 horas por padrão e limparAposSeg (60 s) no lugar
- *           de fecharDetalheSeg; telaCheia removida (a tela cheia é permanente).
+ *   1.2.0 — buscaCoringa e buscaPreco (busca com "*" e com ">valor"/"<valor"),
+ *           metaBusca (onde procurar primeiro: rede ou este computador),
+ *           perguntarFirebird, ocultarBarraTarefas ligada por padrão (também nos
+ *           config.json antigos, uma vez só, pela versaoConfig 2).
  */
 
 const fs = require("fs");
 const path = require("path");
 
-const VERSAO = "1.0.0";
+const VERSAO = "1.2.0";
+// Versão do formato do config.json (migrações feitas uma vez só).
+const VERSAO_CONFIG = 2;
 
 // [padrão, tipo, mínimo, máximo] ou [padrão, lista de valores aceitos].
 const ESQUEMA = {
@@ -43,6 +43,8 @@ const ESQUEMA = {
     fbHostFixo:          [false, "bool"],
     fbHostAuto:          [false, "bool"],
     varrerRede:          [true, "bool"],
+    metaBusca:           ["", ["", "rede", "local"]],   // "" = ainda não perguntado (vale "rede")
+    perguntarFirebird:   [true, "bool"],
     gbakPath:            ["", "texto"],
     pastaCopias:         ["", "texto"],
     // Windows (quiosque)
@@ -51,7 +53,7 @@ const ESQUEMA = {
     sempreNoTopo:        [true, "bool"],
     manterFoco:          [true, "bool"],
     impedirDescanso:     [true, "bool"],
-    ocultarBarraTarefas: [false, "bool"],
+    ocultarBarraTarefas: [true, "bool"],
     ocultarCursor:       [false, "bool"],
     reiniciarDiario:     ["", "hora"],
     monitor:             [0, "int", 0, 9],
@@ -66,14 +68,20 @@ const ESQUEMA = {
     limitePagina:        [100, "int", 20, 1000],
     nomeLoja:            ["", "texto"],
     tabComoEnter:        [true, "bool"],
+    // Busca
+    buscaCoringa:        [true, "bool"],
+    buscaPreco:          [true, "bool"],
     // Administrador: "pbkdf2$iteracoes$sal$hash" (nunca a senha em texto)
-    senhaAdmin:          ["", "hash"]
+    senhaAdmin:          ["", "hash"],
+    // Formato do arquivo (interno)
+    versaoConfig:        [VERSAO_CONFIG, "int", 0, 99]
 };
 
 // Chaves que só mudam com a senha do administrador (a tela de consulta fica
 // aberta ao público: cliente não pode trocar o banco, sair do quiosque etc.).
 const PUBLICAS = ["tema", "modoLeve", "som", "zoom", "tabComoEnter"];
-const SENSIVEIS = Object.keys(ESQUEMA).filter(k => PUBLICAS.indexOf(k) < 0 && k !== "senhaAdmin" && k !== "fbHostAuto");
+const INTERNAS = ["senhaAdmin", "fbHostAuto", "versaoConfig"];
+const SENSIVEIS = Object.keys(ESQUEMA).filter(k => PUBLICAS.indexOf(k) < 0 && INTERNAS.indexOf(k) < 0);
 
 function padrao() {
     const o = {};
@@ -115,6 +123,11 @@ function normalizar(obj) {
     const src = obj && typeof obj === "object" ? obj : {};
     const o = padrao();
     Object.keys(ESQUEMA).forEach(k => { if (src[k] !== undefined) o[k] = validarValor(k, src[k]); });
+    // config.json de uma versão anterior (sem versaoConfig ou menor que 2):
+    // "Ocultar da barra de tarefas" passa a vir ligado, uma vez só.
+    const versao = Number(src.versaoConfig);
+    if (Object.keys(src).length && !(versao >= 2)) o.ocultarBarraTarefas = true;
+    o.versaoConfig = VERSAO_CONFIG;
     return o;
 }
 
@@ -205,6 +218,6 @@ function sensiveisAlteradas(atual, parcial) {
 }
 
 module.exports = {
-    VERSAO, ESQUEMA, PUBLICAS, SENSIVEIS, padrao, validarValor, normalizar, mesclar, carregar, salvar, gravarAtomico, semSenha,
+    VERSAO, VERSAO_CONFIG, ESQUEMA, PUBLICAS, INTERNAS, SENSIVEIS, padrao, validarValor, normalizar, mesclar, carregar, salvar, gravarAtomico, semSenha,
     gerarHashSenha, conferirSenha, sensiveisAlteradas
 };

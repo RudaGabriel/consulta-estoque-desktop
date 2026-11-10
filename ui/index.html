@@ -1,13 +1,14 @@
 <!doctype html>
 <!--
   index.html — Consulta Estoque (tela)
-  @version 1.1.0
+  @version 1.2.0
   @author Ruda Gabriel
   @changelog
     (Histórico completo das versões: CHANGELOG.md no repositório.)
-    1.1.0 — Quiosque: sem botão de tela cheia; abas protegidas por senha (Consulta,
-            Banco de dados, Windows, Administrador); janela de senha; exportação e
-            "Mostrar custo" só para o administrador.
+    1.2.0 — Busca com coringa "*" e preço ">valor"/"<valor" (dica no campo e opções
+            na aba Consulta); meta da busca automática, instalar o Firebird e escolher
+            outro .FDB na aba Banco de dados; janela de pergunta com terceira opção e
+            lista de escolha.
 -->
 <html lang="pt-BR">
 <head>
@@ -43,7 +44,8 @@
   <div class="campo">
     <svg class="lupa" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="M20 20l-4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
     <input id="q" type="search" autocomplete="off" spellcheck="false" autofocus
-           placeholder="Passe o leitor ou digite nome, código, código de barras, referência...">
+           placeholder="Passe o leitor ou digite nome, código, código de barras, referência..."
+           title="Dicas: RAÇÃO*10KG acha os dois no mesmo nome (* = qualquer coisa) · RAÇÃO >50 = preço de R$ 50 ou mais · RAÇÃO <50 = R$ 50 ou menos">
     <button id="bLimpar" class="limpar" type="button" title="Limpar (Esc)" hidden>×</button>
   </div>
   <div class="filtros">
@@ -69,6 +71,7 @@
     </label>
     <label class="chk" title="Desmarcado: o texto precisa estar no começo de algum campo"><input type="checkbox" id="fCon" checked> Contém</label>
     <label class="chk"><input type="checkbox" id="fAtv"> Só ativos</label>
+    <span class="dica-busca" id="dicaBusca">* = qualquer coisa · &gt;50 = preço 50 ou mais · &lt;50 = 50 ou menos</span>
   </div>
 </section>
 
@@ -103,6 +106,7 @@
     <p id="vazioTexto"></p>
     <div class="vazio-acoes">
       <button class="btn primario" id="bVazioProcurar" type="button">Procurar o banco</button>
+      <button class="btn primario" id="bVazioOutros" type="button" hidden>Ver outros arquivos .FDB</button>
       <button class="btn" id="bVazioTentar" type="button">Tentar de novo</button>
       <button class="btn" id="bVazioConfig" type="button">Configurações</button>
     </div>
@@ -193,6 +197,8 @@
         <input type="number" id="cfgLimpar" min="0" max="3600">
       </label>
       <label class="chk"><input type="checkbox" id="cfgCusto"> Mostrar o custo (na lista e no cartão)</label>
+      <label class="chk"><input type="checkbox" id="cfgCoringa"> Busca com coringa: <strong>*</strong> vale qualquer coisa (ex.: RAÇÃO*10KG)</label>
+      <label class="chk"><input type="checkbox" id="cfgPreco"> Filtro de preço na busca: <strong>RAÇÃO &gt;50</strong> = R$ 50 ou mais; <strong>RAÇÃO &lt;50</strong> = R$ 50 ou menos</label>
       <p class="dica">Nos dois modos o aplicativo <strong>nunca grava</strong> no banco do Small Commerce (só leitura).</p>
     </section>
 
@@ -209,8 +215,17 @@
       </div>
       <label class="chk"><input type="checkbox" id="cfgFixo"> Não trocar o servidor sozinho (desliga a correção automática)</label>
       <label class="chk"><input type="checkbox" id="cfgVarrer"> Procurar servidores na rede local</label>
+      <label>Onde o banco deve estar (a busca automática começa por aqui, mas varre tudo)
+        <select id="cfgMeta">
+          <option value="">Ainda não escolhido (rede primeiro)</option>
+          <option value="rede">Na rede — em outro computador (servidor)</option>
+          <option value="local">Neste computador</option>
+        </select>
+      </label>
       <div class="botoes">
         <button class="btn primario" id="bProcurar" type="button">Procurar o banco agora</button>
+        <button class="btn" id="bOutrosFdb" type="button" hidden>Ver outros arquivos .FDB</button>
+        <button class="btn" id="bInstalarFb" type="button" hidden>Instalar o Firebird neste computador</button>
         <button class="btn" id="bCancelarCopia" type="button" hidden>Cancelar a cópia em andamento</button>
       </div>
       <details class="avancado">
@@ -281,9 +296,11 @@
   <p id="modalTexto"></p>
   <input type="password" id="modalSenha" autocomplete="off" placeholder="Senha">
   <input type="password" id="modalSenha2" autocomplete="off" placeholder="Repita a senha" hidden>
+  <div class="modal-lista" id="modalLista" hidden></div>
   <div class="trava-erro" id="modalErro"></div>
-  <div class="botoes direita">
+  <div class="botoes direita" id="modalBotoes">
     <button class="btn" id="modalCancelar" type="button">Cancelar</button>
+    <button class="btn" id="modalExtra" type="button" hidden></button>
     <button class="btn primario" id="modalOk" type="button">OK</button>
   </div>
 </div>

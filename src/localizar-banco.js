@@ -1,38 +1,46 @@
 "use strict";
 /**
  * localizar-banco.js
- * @version 1.2.0
+ * @version 1.3.0
  * @author Ruda Gabriel
  * @description Descobre sozinho ONDE está o banco do Small Commerce (servidor +
  *              caminho do SMALL.FDB), sem o usuário digitar nada.
  *
- * A meta é ler o banco PELA REDE; o Firebird desta máquina é a ÚLTIMA opção.
- * Só arquivos chamados SMALL.FDB são aceitos (nunca padrao.fdb, exemplo.fdb...).
- * Ordem:
+ * Meta (cfg.metaBusca, perguntada ao usuário): "rede" (padrão) testa o servidor
+ * da rede primeiro e o Firebird desta máquina por último; "local" testa esta
+ * máquina primeiro. Nos dois casos a busca VARRE TUDO: disco local, pastas
+ * compartilhadas e a rede inteira. O nome procurado é SMALL.FDB; se não houver
+ * nenhum em lugar nenhum, os outros .FDB achados voltam em `outros` para o
+ * usuário escolher (validarOutros abre cada um, em somente leitura).
+ * Etapas:
  *   1. a configuração do próprio Small Commerce: .ini/.cfg desta máquina, das
  *      unidades de rede mapeadas e dos compartilhamentos do servidor (o Small
  *      costuma rodar de \\SERVIDOR\SmallSoft\Small Commerce) e os atalhos do
  *      Small na Área de Trabalho/Menu Iniciar — com o servidor citado neles;
- *   1b. o SMALL.FDB procurado nas pastas compartilhadas da rede (atalhos do
- *      Small, unidades mapeadas, \\SERVIDOR\SmallSoft...). A pasta serve só
- *      para ACHAR o arquivo e o servidor: o banco é aberto pelo Firebird do
- *      servidor (SERVIDOR:C:\...\SMALL.FDB), nunca pela pasta compartilhada;
  *   2. os servidores da rede: os citados nessas pistas (pelo NOME, que não
  *      muda quando o IP muda), o configurado, o nome "SERVIDOR" e os achados
  *      na varredura (LAN 192.168 > 10 > 172.16-31 > Tailscale 100.64 > outras >
  *      cabo direto 169.254);
- *   3. por último, o Firebird desta máquina, com o SMALL.FDB do disco local.
+ *   3. o SMALL.FDB nas pastas compartilhadas de todos esses servidores (as
+ *      conhecidas e as listadas por "net view"). A pasta serve só para ACHAR o
+ *      arquivo: o banco é aberto pelo Firebird do servidor, nunca pela pasta;
+ *   4. os caminhos típicos em cada servidor;
+ *   5. o Firebird desta máquina com o SMALL.FDB do disco local (primeiro, quando
+ *      a meta é "local").
  * Uma combinação só é aceita quando o banco ABRE e tem a tabela de produtos
  * (a validação é feita por quem chama, sempre em somente leitura). Servidor que
  * não responde na porta é descartado na hora. O .FDB achado num compartilhamento
  * nunca é aberto pela pasta (abrir .FDB por compartilhamento corrompe o banco):
  * só a lista da pasta é lida, com prazo, e só em servidor com a porta 445 aberta.
- * A busca em disco desta máquina continua ignorando unidades de rede e de CD.
+ * A busca em disco desta máquina ignora unidades de rede e de CD (a rede é
+ * procurada pelos compartilhamentos).
  *
  * @changelog
  *   (Histórico completo das versões: CHANGELOG.md no repositório.)
- *   1.2.0 — SMALL.FDB procurado nas pastas compartilhadas da rede (busca geral e
- *           caminhoNoServidor) e convertido no caminho do disco do servidor.
+ *   1.3.0 — Meta da busca (rede ou este computador primeiro); varredura completa
+ *           (disco local mais fundo, compartilhamentos listados por "net view" em
+ *           todos os servidores achados); outros .FDB coletados e validarOutros
+ *           para o usuário escolher quando não há SMALL.FDB em lugar nenhum.
  */
 
 const fs = require("fs");
@@ -40,7 +48,7 @@ const path = require("path");
 const os = require("os");
 const { execFile } = require("child_process");
 
-const VERSAO = "1.2.0";
+const VERSAO = "1.3.0";
 
 // Pastas que nunca têm o banco do Small Commerce (ou são cópias de sistemas de consulta).
 const PASTAS_IGNORADAS = new Set([
@@ -83,9 +91,9 @@ function partesDeUnc(unc) {
  * recusa um caminho errado em milissegundos). Compartilhamento administrativo
  * (\\SRV\C$\...) dá o caminho exato.
  */
-function caminhosDoCompartilhamento(unc) {
+function caminhosDoCompartilhamento(unc, qualquerFdb) {
     const p = partesDeUnc(unc);
-    if (!p || !ehArquivoSmall(p.resto)) return [];
+    if (!p || !(qualquerFdb ? /\.fdb$/i.test(p.resto) : ehArquivoSmall(p.resto))) return [];
     const lista = [];
     const vistos = new Set();
     const add = c => { const k = c.toUpperCase(); if (!vistos.has(k)) { vistos.add(k); lista.push(c); } };
@@ -136,14 +144,45 @@ function identidadesDestaMaquina() {
     return out;
 }
 
-// Pura: o banco configurado foi adotado pela busca automática e é suspeito —
-// desta máquina (a meta é a rede) ou um arquivo que não é SMALL.FDB. Nesse caso
-// a busca roda de novo ao iniciar, procurando primeiro o servidor da rede.
+// Pura: o banco configurado foi adotado pela busca automática e é suspeito — fora
+// da meta (desta máquina com a meta "rede", ou da rede com a meta "local") ou um
+// arquivo que não é SMALL.FDB. Nesse caso a busca roda de novo em segundo plano.
 function bancoAutoSuspeito(conf, ehLocal) {
     if (!conf || conf.fbHostAuto !== true || conf.fbHostFixo === true) return false;
     const local = typeof ehLocal === "function" ? ehLocal(conf.fbHost)
         : /^(127\.0\.0\.1|localhost|::1)?$/i.test(String(conf.fbHost || "").trim());
-    return local || !ehArquivoSmall(conf.fdbPath != null ? conf.fdbPath : conf.fbPath);
+    const foraDaMeta = conf.metaBusca === "local" ? !local : local;
+    return foraDaMeta || !ehArquivoSmall(conf.fdbPath != null ? conf.fdbPath : conf.fbPath);
+}
+
+// Puro: nomes dos compartilhamentos de disco na saída do "net view \\SERVIDOR /all"
+// (Windows em português, inglês, espanhol...). IPC$, ADMIN$ e print$ ficam de fora.
+function extrairCompartilhamentos(texto) {
+    const linhas = String(texto || "").split(/\r?\n/);
+    const ini = linhas.findIndex(l => /^-{8,}\s*$/.test(l.trim()));
+    if (ini < 0) return [];
+    const out = [];
+    for (const l of linhas.slice(ini + 1)) {
+        if (!l.trim()) break;
+        const m = /^(.+?)\s{2,}(Disk|Disco|Disque|Datentr\S*)\b/i.exec(l);
+        if (!m) continue;
+        const nome = m[1].trim();
+        if (!nome || /^(ipc|admin|print)\$$/i.test(nome) || /[\\/:*?"<>|]/.test(nome)) continue;
+        if (out.indexOf(nome) < 0) out.push(nome);
+    }
+    return out;
+}
+
+/** Compartilhamentos de disco de um servidor ("net view", com prazo). Só no Windows. */
+function compartilhamentosDe(host, prazoMs) {
+    return new Promise(resolve => {
+        const h = String(host || "").trim();
+        if (process.platform !== "win32" || !/^[A-Za-z0-9][\w.\-]*$/.test(h)) { resolve([]); return; }
+        try {
+            execFile("net", ["view", "\\\\" + h, "/all"], { windowsHide: true, timeout: prazoMs || 8000, encoding: "latin1", maxBuffer: 1024 * 1024 },
+                (err, stdout) => resolve(extrairCompartilhamentos(stdout).map(n => "\\\\" + h + "\\" + n)));
+        } catch (_) { resolve([]); }
+    });
 }
 
 // Promessa com prazo (pasta de rede fora do ar não pode travar a busca).
@@ -384,9 +423,11 @@ function unidadesSeguras(log) {
  */
 async function buscarFdbLocais(raizes, opcoes) {
     const o = opcoes || {};
-    const maxProf = o.maxProf != null ? o.maxProf : 6;
+    const maxProf = o.maxProf != null ? o.maxProf : 10;
     const maxArq = o.maxArquivos || 15;
-    const prazo = Date.now() + (o.prazoMs || 25000);
+    const prazo = Date.now() + (o.prazoMs || 60000);
+    // Outros .FDB (não SMALL.FDB) achados no caminho, para o usuário escolher se faltar o SMALL.FDB.
+    const outros = Array.isArray(o.outros) ? o.outros : null;
     const pastasIni = Array.isArray(o.pastasIni) ? o.pastasIni : null;
     const achados = [];
     const fila = (raizes || []).map(r => ({ dir: r, prof: 0 }));
@@ -401,7 +442,8 @@ async function buscarFdbLocais(raizes, opcoes) {
             const nome = e.name;
             const caminho = path.join(dir, nome);
             if (e.isFile() && /\.fdb$/i.test(nome)) {
-                if (FDB_IGNORADOS.test(nome) || !ehArquivoSmall(nome)) continue;
+                if (FDB_IGNORADOS.test(nome)) continue;
+                if (!ehArquivoSmall(nome)) { if (outros && outros.length < 40 && outros.indexOf(caminho) < 0) outros.push(caminho); continue; }
                 let mtime = 0;
                 try { mtime = (await fs.promises.stat(caminho)).mtimeMs; } catch (_) {}
                 achados.push({ caminho, nome, mtime });
@@ -427,7 +469,8 @@ async function buscarFdbLocais(raizes, opcoes) {
  * servidor sem a porta 445 (compartilhamento) é pulado sem tocar na pasta, e há
  * limite de profundidade, de pastas e de tempo total. Devolve os UNC achados.
  * opcoes: { hostAcessivel(host) → Promise<bool>, log, maxProf, maxPastas,
- *           maxArquivos, prazoMs, prazoPastaMs, lerPasta (testes) }
+ *           maxArquivos, prazoMs, prazoPastaMs, outros (lista que recebe os
+ *           outros .FDB), lerPasta (testes) }
  */
 async function buscarFdbNaRede(pastas, opcoes) {
     const o = opcoes || {};
@@ -441,6 +484,7 @@ async function buscarFdbNaRede(pastas, opcoes) {
     const prazo = Date.now() + (o.prazoMs || 20000);
     const prazoPasta = o.prazoPastaMs || 4000;
     const hostOk = typeof o.hostAcessivel === "function" ? o.hostAcessivel : async () => true;
+    const outros = Array.isArray(o.outros) ? o.outros : null;
     const statusHost = new Map();
     const achados = [];
     const vistos = new Set();
@@ -476,7 +520,8 @@ async function buscarFdbNaRede(pastas, opcoes) {
             try { arquivo = e.isFile(); pasta = e.isDirectory(); } catch (_) { continue; }
             const caminho = dir + "\\" + nome;
             if (arquivo && /\.fdb$/i.test(nome)) {
-                if (FDB_IGNORADOS.test(nome) || !ehArquivoSmall(nome)) continue;
+                if (FDB_IGNORADOS.test(nome)) continue;
+                if (!ehArquivoSmall(nome)) { if (outros && outros.length < 40 && outros.every(a => a.toUpperCase() !== caminho.toUpperCase())) outros.push(caminho); continue; }
                 if (achados.every(a => a.toUpperCase() !== caminho.toUpperCase())) achados.push(caminho);
                 if (achados.length >= maxArq) break;
             } else if (pasta && prof < maxProf && !nome.endsWith("$")) {
@@ -585,28 +630,94 @@ async function caminhoNoServidor(dep) {
     };
 }
 
+// Puro: os outros .FDB achados (não SMALL.FDB), sem repetição, prontos para validarOutros.
+function montarOutros(fontes, daMaquina) {
+    const f = fontes || {};
+    const ehDaqui = typeof daMaquina === "function" ? daMaquina : ehLocal;
+    const lista = [];
+    const vistos = new Set();
+    const add = (item, chave) => {
+        const k = String(chave).toUpperCase();
+        if (vistos.has(k) || lista.length >= 40) return;
+        vistos.add(k);
+        lista.push(item);
+    };
+    for (const b of (f.ini || [])) {
+        const nome = String(b.caminho || "").split("\\").pop();
+        if (!/\.fdb$/i.test(nome) || ehArquivoSmall(b.caminho) || FDB_IGNORADOS.test(nome)) continue;
+        let host = "127.0.0.1";
+        if (b.host && !ehDaqui(b.host)) host = b.host;
+        else if (!b.host && b.origemHost && !ehDaqui(b.origemHost)) host = b.origemHost;
+        add({ origem: "config", host, caminhos: [b.caminho], exibir: host + ":" + b.caminho }, host + "|" + b.caminho);
+    }
+    for (const unc of (f.rede || [])) {
+        const host = hostDeUnc(unc);
+        if (!host || ehDaqui(host)) continue;
+        const caminhos = caminhosDoCompartilhamento(unc, true);
+        if (caminhos.length) add({ origem: "rede", host, caminhos, exibir: unc }, unc);
+    }
+    for (const c of (f.disco || [])) add({ origem: "disco", host: "127.0.0.1", caminhos: [c], exibir: c + " (este computador)" }, "127.0.0.1|" + c);
+    return lista;
+}
+
+/**
+ * Abre cada um dos outros .FDB (pelo Firebird do servidor dono dele, em somente
+ * leitura, pelo `validar` de quem chama) para o usuário escolher.
+ * dep: { outros, validar(h, c), portaAberta(h, porta, ms), porta, prazoMs }
+ * Resolve [{ exibir, origem, host, caminho, ok, motivo }].
+ */
+async function validarOutros(dep) {
+    const d = dep || {};
+    const porta = Number(d.porta) || 3050;
+    const limite = Date.now() + (d.prazoMs || 120000);
+    const portas = new Map();
+    const portaOk = async h => {
+        const k = String(h).toLowerCase();
+        if (!portas.has(k)) { let ok = false; try { ok = await d.portaAberta(h, porta, 1500); } catch (_) {} portas.set(k, ok); }
+        return portas.get(k);
+    };
+    const out = [];
+    for (const o of (Array.isArray(d.outros) ? d.outros : [])) {
+        const base = { exibir: o.exibir, origem: o.origem, host: o.host, caminho: (o.caminhos || [])[0] || "" };
+        if (Date.now() > limite) { out.push(Object.assign(base, { ok: false, motivo: "não testado (tempo esgotado)" })); continue; }
+        if (!(await portaOk(o.host))) {
+            out.push(Object.assign(base, { ok: false, motivo: o.host === "127.0.0.1" ? "este computador não tem o Firebird ligado" : "o Firebird de " + o.host + " não respondeu" }));
+            continue;
+        }
+        const r = await primeiraQueAbre((o.caminhos || []).map(c => ({ host: o.host, caminho: c })), d.validar, Math.max(1000, limite - Date.now()));
+        if (r.combo) { out.push(Object.assign(base, { caminho: r.combo.caminho, ok: true, motivo: "" })); continue; }
+        // Mostra o motivo mais útil (abriu sem a tabela > senha > não achou).
+        const f = r.falhas.find(x => /tabela/i.test(x.motivo)) || r.falhas.find(x => x.auth) || r.falhas[0];
+        out.push(Object.assign(base, { ok: false, motivo: f ? (f.auth ? "usuário/senha do Firebird recusados" : /tabela/i.test(f.motivo) ? "abre, mas não tem a tabela de produtos" : "não abriu pelo Firebird") : "não abriu pelo Firebird" }));
+    }
+    return out;
+}
+
 // ── Orquestração ─────────────────────────────────────────────────────────────
 /**
  * Procura o banco. dep:
- *   cfg            configuração atual (fbHost, fbPorta, fdbPath, varrerRede)
+ *   cfg            configuração atual (fbHost, fbPorta, fdbPath, varrerRede, metaBusca)
  *   validar(h, c)  → Promise<{ ok, auth, inacessivel, motivo }> (abre em somente leitura)
  *   portaAberta(h, porta, ms) → Promise<bool>
  *   log(msg)
  *   interfaces     (opcional) os.networkInterfaces()
  *   identidades    (opcional) Set com IPs/nomes desta máquina, em minúsculas
  *   raizesDisco    (opcional) raízes para a busca em disco (padrão: unidades seguras)
+ *   buscarDisco    (opcional) substitui buscarFdbLocais (testes)
  *   lerIni         (opcional) substitui lerConfiguracoesSmall (testes)
  *   unidadesRede   (opcional) substitui unidadesDeRede (testes)
  *   atalhos        (opcional) substitui pistasDeAtalhos (testes)
  *   buscarRede     (opcional) substitui buscarFdbNaRede (testes)
+ *   compartilhamentos (opcional) substitui compartilhamentosDe (testes)
  *   cancelado()    (opcional) → true interrompe entre as etapas
- * Resolve { achado: {host, caminho} | null, falhas, mensagem }.
+ * Resolve { achado: {host, caminho} | null, falhas, mensagem, outros, meta }.
  */
 async function localizar(dep) {
     const d = dep || {};
     const cfg = d.cfg || {};
     const log = typeof d.log === "function" ? d.log : () => {};
     const porta = Number(cfg.fbPorta) || 3050;
+    const meta = cfg.metaBusca === "local" ? "local" : "rede";
     const cancelado = typeof d.cancelado === "function" ? d.cancelado : () => false;
     const portaAberta = d.portaAberta;
     const hostAtual = String(cfg.fbHost || "").trim();
@@ -614,6 +725,7 @@ async function localizar(dep) {
     const proprios = d.identidades || identidadesDestaMaquina();
     ipsLocais(ifaces).forEach(ip => proprios.add(ip));
     const daMaquina = h => ehLocal(h) || proprios.has(String(h || "").trim().toLowerCase());
+    const smb = h => comPrazo(Promise.resolve().then(() => portaAberta(h, 445, 1500)), 3000, false);
 
     const vistos = new Set();
     const adicionar = (lista, host, caminho) => {
@@ -638,6 +750,7 @@ async function localizar(dep) {
         if (r.combo) achado = r.combo;
     };
 
+    log("Meta da busca: " + (meta === "local" ? "este computador primeiro, depois a rede" : "a rede primeiro, este computador por último") + " — varrendo o disco, as pastas compartilhadas e a rede.");
     let localAtivo = false;
     try { localAtivo = await portaAberta("127.0.0.1", porta, 800); } catch (_) {}
 
@@ -646,6 +759,8 @@ async function localizar(dep) {
     try { unidRede = await (d.unidadesRede || unidadesDeRede)(); } catch (_) {}
     let atalhos = { hosts: [], pastas: [] };
     try { atalhos = await (d.atalhos || pistasDeAtalhos)(); } catch (_) {}
+    if (!atalhos || !Array.isArray(atalhos.hosts) || !Array.isArray(atalhos.pastas)) atalhos = { hosts: [], pastas: [] };
+    if (!Array.isArray(unidRede)) unidRede = [];
     const hostsRede = [];
     const addHostRede = h => { if (h && !daMaquina(h) && !hostsRede.some(x => x.toLowerCase() === String(h).toLowerCase())) hostsRede.push(String(h)); };
     unidRede.forEach(u => addHostRede(hostDeUnc(u.unc)));
@@ -664,24 +779,48 @@ async function localizar(dep) {
         return u ? hostDeUnc(u.unc) : null;
     };
 
-    // Disco desta máquina (uma vez): SMALL.FDB + pastas do Small com .ini.
+    // Disco desta máquina (uma vez, a fundo): SMALL.FDB, outros .FDB e pastas do Small com .ini.
     const pastasIni = [];
+    const outrosDisco = [];
     let noDisco = [];
     try {
-        log("Procurando a configuração do Small Commerce nesta máquina e na rede...");
+        log("Varrendo o disco deste computador...");
         const raizes = d.raizesDisco || await unidadesSeguras(log);
-        noDisco = await buscarFdbLocais(raizes, { pastasIni });
+        noDisco = await (d.buscarDisco || buscarFdbLocais)(raizes, { pastasIni, outros: outrosDisco });
+        if (!Array.isArray(noDisco)) noDisco = [];
     } catch (_) {}
+    if (noDisco.length) log("SMALL.FDB neste computador: " + noDisco.map(x => x.caminho).join(" | "));
 
-    // (1) Configuração do próprio Small Commerce.
+    // Configuração do próprio Small Commerce.
     let ini = { bancos: [], hosts: [] };
     try { ini = await (d.lerIni || lerConfiguracoesSmall)(pastasIni.concat(pastasRede), log, hostDaPasta); } catch (_) {}
+    if (!ini || !Array.isArray(ini.bancos) || !Array.isArray(ini.hosts)) ini = { bancos: [], hosts: [] };
     ini.hosts.forEach(addHostRede);
-    {
+
+    const extras = ini.bancos.map(b => b.caminho).concat(noDisco.map(x => x.caminho));
+    const caminhos = caminhosConhecidos(cfg.fdbPath, extras);
+
+    // Este computador (primeiro com a meta "local", por último com a meta "rede").
+    const etapaLocal = async () => {
+        if (achado || cancelado()) return;
+        if (!localAtivo) { if (noDisco.length) log("Há SMALL.FDB neste computador, mas o Firebird daqui não está ligado — ele não pode ser aberto."); return; }
+        const combos = [];
+        for (const b of ini.bancos) if (!b.host || daMaquina(b.host)) adicionar(combos, "127.0.0.1", b.caminho);
+        for (const x of noDisco) adicionar(combos, "127.0.0.1", x.caminho);
+        for (const c of caminhos) adicionar(combos, "127.0.0.1", c);
+        if (combos.length) {
+            log(meta === "local" ? "Testando o SMALL.FDB deste computador (meta escolhida)..." : "Nenhum servidor da rede tem o banco — última opção: o SMALL.FDB deste computador...");
+            await tentar(combos, 90000);
+        }
+    };
+    if (meta === "local") await etapaLocal();
+
+    // (1) Configuração do próprio Small Commerce apontando para um servidor.
+    if (!achado && !cancelado()) {
         const combos = [];
         for (const b of ini.bancos) {
             if (b.host && !daMaquina(b.host)) { adicionar(combos, b.host, b.caminho); continue; }
-            if (b.host) continue; // aponta para esta máquina: fica para o fim
+            if (b.host) continue; // aponta para esta máquina: fica para a etapa local
             // Caminho sem servidor num .ini lido do compartilhamento de um servidor = disco DELE.
             if (b.origemHost && !daMaquina(b.origemHost)) adicionar(combos, b.origemHost, b.caminho);
             for (const h of hostsRede) adicionar(combos, h, b.caminho);
@@ -692,23 +831,44 @@ async function localizar(dep) {
         }
     }
 
-    // (1b) SMALL.FDB nas pastas compartilhadas da rede: a pasta só diz QUAL
-    // servidor tem o banco e onde; ele é aberto pelo Firebird desse servidor.
+    // (2) Servidores da rede: pistas, configurado, "SERVIDOR" e a varredura.
+    const hosts = [];
+    const addHost = h => { if (h && !daMaquina(h) && !hosts.some(x => x.toLowerCase() === String(h).trim().toLowerCase())) hosts.push(String(h).trim()); };
+    hostsRede.forEach(addHost);
+    addHost(hostAtual);
+    addHost("SERVIDOR");
+    if (!achado && !cancelado() && cfg.varrerRede !== false) {
+        for (const base of classificarRedes(ifaces).slice(0, 4)) {
+            if (cancelado()) break;
+            (await escanearSubnet(portaAberta, porta, base, 10, log)).forEach(addHost);
+        }
+    }
+
+    // (3) SMALL.FDB nas pastas compartilhadas de todos esses servidores.
+    const outrosRede = [];
     if (!achado && !cancelado()) {
         const pastasFdb = [];
         atalhos.pastas.forEach(p => pastasFdb.push(p));
         unidRede.forEach(u => { if (u.unc) pastasFdb.push(u.unc); });
-        hostsRede.concat(["SERVIDOR"]).forEach(h => ["\\SmallSoft\\Small Commerce", "\\Small Commerce", "\\SmallSoft"].forEach(x => pastasFdb.push("\\\\" + h + x)));
+        hosts.forEach(h => ["\\SmallSoft\\Small Commerce", "\\Small Commerce", "\\SmallSoft"].forEach(x => pastasFdb.push("\\\\" + h + x)));
+        // Compartilhamentos listados pelo próprio servidor (só os que respondem na porta 445).
+        for (const h of hosts.slice(0, 12)) {
+            if (cancelado()) break;
+            if (!(await smb(h))) continue;
+            let lista = [];
+            try { lista = await (d.compartilhamentos || compartilhamentosDe)(h, 8000); } catch (_) {}
+            if (Array.isArray(lista) && lista.length) { log("Pastas compartilhadas de " + h + ": " + lista.join(" | ")); lista.forEach(p => pastasFdb.push(p)); }
+        }
         let naRede = [];
         try {
             log("Procurando o SMALL.FDB nas pastas compartilhadas da rede...");
-            naRede = await (d.buscarRede || buscarFdbNaRede)(pastasFdb, { log, hostAcessivel: h => portaAberta(h, 445, 1500) });
+            naRede = await (d.buscarRede || buscarFdbNaRede)(pastasFdb, { log, hostAcessivel: smb, outros: outrosRede, prazoMs: 45000, maxPastas: 400 });
         } catch (_) {}
         const combos = [];
         for (const unc of (Array.isArray(naRede) ? naRede : [])) {
             const h = hostDeUnc(unc);
             if (!h || daMaquina(h)) continue;
-            addHostRede(h);
+            addHost(h);
             for (const c of caminhosDoCompartilhamento(unc)) adicionar(combos, h, c);
         }
         if (combos.length) {
@@ -717,22 +877,8 @@ async function localizar(dep) {
         }
     }
 
-    const extras = ini.bancos.map(b => b.caminho).concat(noDisco.map(x => x.caminho));
-    const caminhos = caminhosConhecidos(cfg.fdbPath, extras);
-
-    // (2) Servidores da rede.
+    // (4) Caminhos típicos em cada servidor.
     if (!achado && !cancelado()) {
-        const hosts = [];
-        const add = h => { if (h && !daMaquina(h) && !hosts.some(x => x.toLowerCase() === String(h).toLowerCase())) hosts.push(String(h).trim()); };
-        hostsRede.forEach(add);
-        add(hostAtual);
-        add("SERVIDOR");
-        if (cfg.varrerRede !== false) {
-            for (const base of classificarRedes(ifaces).slice(0, 4)) {
-                if (cancelado()) break;
-                (await escanearSubnet(portaAberta, porta, base, 10, log)).forEach(add);
-            }
-        }
         const combos = [];
         for (const h of hosts) for (const c of caminhos) adicionar(combos, h, c);
         if (combos.length) {
@@ -741,30 +887,25 @@ async function localizar(dep) {
         }
     }
 
-    // (3) Última opção: o Firebird desta máquina.
-    if (!achado && localAtivo && !cancelado()) {
-        const combos = [];
-        for (const b of ini.bancos) if (!b.host || daMaquina(b.host)) adicionar(combos, "127.0.0.1", b.caminho);
-        for (const x of noDisco) adicionar(combos, "127.0.0.1", x.caminho);
-        for (const c of caminhos) adicionar(combos, "127.0.0.1", c);
-        if (combos.length) {
-            log("Nenhum servidor da rede tem o banco — última opção: o SMALL.FDB desta máquina...");
-            await tentar(combos, 90000);
-        }
-    }
+    // (5) Este computador, por último (meta "rede").
+    if (meta === "rede") await etapaLocal();
 
-    if (achado) return { achado, falhas, mensagem: "Banco encontrado em " + achado.host + ":" + achado.caminho + (achado.host === "127.0.0.1" ? " (nesta máquina — nenhum servidor da rede respondeu)." : ".") };
+    if (achado) return { achado, falhas, meta, outros: [], mensagem: "Banco encontrado em " + achado.host + ":" + achado.caminho + (daMaquina(achado.host) ? " (neste computador)." : ".") };
+    const outros = cancelado() ? [] : montarOutros({ ini: ini.bancos, rede: outrosRede, disco: outrosDisco }, daMaquina);
+    if (outros.length) log("Outros arquivos .FDB encontrados (não se chamam SMALL.FDB): " + outros.map(o => o.exibir).join(" | "));
     const comAuth = falhas.find(f => f.auth);
     let mensagem;
     if (comAuth) mensagem = "O banco foi encontrado em " + comAuth.host + " (" + comAuth.caminho + "), mas o usuário/senha do Firebird não conferem. Ajuste em Configurações → Banco de dados.";
     else if (hostAtual && !daMaquina(hostAtual) && falhas.some(f => f.host === hostAtual && f.inacessivel))
-        mensagem = "O servidor " + hostAtual + " não respondeu na porta " + porta + " e o SMALL.FDB não foi encontrado em outro servidor da rede nem nesta máquina. Verifique se o servidor do Small Commerce está ligado e acessível (mesma rede, cabo ou VPN).";
-    else mensagem = "O SMALL.FDB do Small Commerce não foi encontrado na rede nem nesta máquina. Verifique se o servidor está ligado e acessível, ou informe o endereço em Configurações → Banco de dados.";
-    return { achado: null, falhas, mensagem };
+        mensagem = "O servidor " + hostAtual + " não respondeu na porta " + porta + " e o SMALL.FDB não foi encontrado em outro servidor da rede nem neste computador. Verifique se o servidor do Small Commerce está ligado e acessível (mesma rede, cabo ou VPN).";
+    else mensagem = "O SMALL.FDB não foi encontrado em lugar nenhum: o disco deste computador, as pastas compartilhadas e a rede inteira foram varridos." +
+        (outros.length ? " Foram achados " + outros.length + " outro(s) arquivo(s) .FDB — veja se algum é o banco." : " Verifique se o servidor está ligado e acessível, ou informe o endereço em Configurações → Banco de dados.");
+    return { achado: null, falhas, meta, outros, mensagem };
 }
 
 module.exports = {
     VERSAO, classificarRedes, ipsLocais, caminhosConhecidos, extrairBancosDeIni, compararLocais, primeiraQueAbre,
     unidadesSeguras, buscarFdbLocais, lerConfiguracoesSmall, escanearSubnet, localizar, ehLocal, FDB_IGNORADOS,
-    caminhoNoServidor, ehArquivoSmall, hostDeUnc, partesDeUnc, caminhosDoCompartilhamento, buscarFdbNaRede, extrairUncDeAtalho, identidadesDestaMaquina, bancoAutoSuspeito, comPrazo, unidadesDeRede, pistasDeAtalhos
+    caminhoNoServidor, ehArquivoSmall, hostDeUnc, partesDeUnc, caminhosDoCompartilhamento, buscarFdbNaRede,
+    extrairCompartilhamentos, compartilhamentosDe, montarOutros, validarOutros, extrairUncDeAtalho, identidadesDestaMaquina, bancoAutoSuspeito, comPrazo, unidadesDeRede, pistasDeAtalhos
 };
