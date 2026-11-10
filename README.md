@@ -6,13 +6,13 @@
 
 ### Consulta de preço e estoque para lojas que usam o Small Commerce (Firebird), feita para o leitor de código de barras
 
-<img alt="aplicativo: v1.4.0" src="https://img.shields.io/badge/aplicativo-v1.4.0-2563EB?style=flat">
+<img alt="aplicativo: v1.4.1" src="https://img.shields.io/badge/aplicativo-v1.4.1-2563EB?style=flat">
 <img alt="plataforma: Windows 7 a 11" src="https://img.shields.io/badge/plataforma-Windows%207%20%7C%208%20%7C%2010%20%7C%2011-0078D4?style=flat&logo=data%3Aimage%2Fsvg%2Bxml%3Bbase64%2CPHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHZpZXdCb3g9JzAgMCAyNCAyNCcgZmlsbD0nd2hpdGUnPjxyZWN0IHg9JzMnIHk9JzMnIHdpZHRoPSc4JyBoZWlnaHQ9JzgnLz48cmVjdCB4PScxMycgeT0nMycgd2lkdGg9JzgnIGhlaWdodD0nOCcvPjxyZWN0IHg9JzMnIHk9JzEzJyB3aWR0aD0nOCcgaGVpZ2h0PSc4Jy8%2BPHJlY3QgeD0nMTMnIHk9JzEzJyB3aWR0aD0nOCcgaGVpZ2h0PSc4Jy8%2BPC9zdmc%2B&logoColor=white">
 <img alt="arquitetura: 64 e 32 bits" src="https://img.shields.io/badge/arquitetura-64%20e%2032%20bits-0E7490?style=flat">
 <img alt="idioma: pt-BR" src="https://img.shields.io/badge/idioma-pt--BR-16A34A?style=flat">
 <img alt="banco: somente leitura" src="https://img.shields.io/badge/banco-somente%20leitura-DC2626?style=flat&logo=data%3Aimage%2Fsvg%2Bxml%3Bbase64%2CPHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHZpZXdCb3g9JzAgMCAyNCAyNCcgZmlsbD0nbm9uZScgc3Ryb2tlPSd3aGl0ZScgc3Ryb2tlLXdpZHRoPScyLjInIHN0cm9rZS1saW5lY2FwPSdyb3VuZCcgc3Ryb2tlLWxpbmVqb2luPSdyb3VuZCc%2BPHBhdGggZD0nTTEyIDIyczgtNCA4LTEwVjVsLTgtMy04IDN2N2MwIDYgOCAxMCA4IDEweicvPjxwYXRoIGQ9J205IDEyIDIgMiA0LTQnLz48L3N2Zz4%3D&logoColor=white">
 <img alt="funciona: sem internet" src="https://img.shields.io/badge/funciona-sem%20internet-0891B2?style=flat">
-<img alt="testes: 63 passando" src="https://img.shields.io/badge/testes-63%20passando-22C55E?style=flat&logo=data%3Aimage%2Fsvg%2Bxml%3Bbase64%2CPHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHZpZXdCb3g9JzAgMCAyNCAyNCcgZmlsbD0nbm9uZScgc3Ryb2tlPSd3aGl0ZScgc3Ryb2tlLXdpZHRoPScyLjInIHN0cm9rZS1saW5lY2FwPSdyb3VuZCcgc3Ryb2tlLWxpbmVqb2luPSdyb3VuZCc%2BPHBhdGggZD0nTTkgMnY2TDQgMTlhMiAyIDAgMCAwIDEuOCAzaDEyLjRhMiAyIDAgMCAwIDEuOC0zTDE1IDhWMicvPjxwYXRoIGQ9J004IDJoOCcvPjxwYXRoIGQ9J003IDE1aDEwJy8%2BPC9zdmc%2B&logoColor=white">
+<img alt="testes: 64 passando" src="https://img.shields.io/badge/testes-64%20passando-22C55E?style=flat&logo=data%3Aimage%2Fsvg%2Bxml%3Bbase64%2CPHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHZpZXdCb3g9JzAgMCAyNCAyNCcgZmlsbD0nbm9uZScgc3Ryb2tlPSd3aGl0ZScgc3Ryb2tlLXdpZHRoPScyLjInIHN0cm9rZS1saW5lY2FwPSdyb3VuZCcgc3Ryb2tlLWxpbmVqb2luPSdyb3VuZCc%2BPHBhdGggZD0nTTkgMnY2TDQgMTlhMiAyIDAgMCAwIDEuOCAzaDEyLjRhMiAyIDAgMCAwIDEuOC0zTDE1IDhWMicvPjxwYXRoIGQ9J004IDJoOCcvPjxwYXRoIGQ9J003IDE1aDEwJy8%2BPC9zdmc%2B&logoColor=white">
 <img alt="licença: proprietária" src="https://img.shields.io/badge/licen%C3%A7a-propriet%C3%A1ria-6B7280?style=flat">
 
 <img alt="Electron: 44.9.3" src="https://img.shields.io/badge/Electron-44.9.3-47848F?style=flat&logo=electron&logoColor=white">
@@ -118,7 +118,7 @@ Abra com o parâmetro `--demo` (ex.: um atalho para `"Consulta Estoque.exe" --de
 | Fechar o cartão | **Esc** ou o **×**. Um segundo **Esc** limpa a busca. |
 | Filtrar | **Estoque** (com, sem, negativo, abaixo do mínimo), **Só ativos**, **Contém** e **Ordem**. Os filtros ficam guardados. |
 | Exportar a lista | *Configurações → Administrador → Exportar a lista* (com a senha) → planilha CSV. |
-| Atualizar agora | **Atualizar** ou **F5**. |
+| Atualizar agora | **Atualizar** ou **F5**. No modo cópia o aplicativo **pergunta antes** ("Fazer uma nova cópia do banco agora?"), explicando o que vai acontecer, quanto a última cópia levou e quando seria a próxima automática. Com uma cópia já em andamento, só avisa. |
 | Acompanhar a cópia do banco | Uma barra aparece abaixo do topo: etapa (copiando do servidor / restaurando aqui), porcentagem e **quanto falta**. A estimativa vem da duração da última cópia; na primeira, a barra corre sem porcentagem e mostra o tempo decorrido. |
 | Limpar a tela | Sozinha, **1 minuto** depois da última tecla ou leitura (busca e cartão somem). |
 | Sair do aplicativo | **Ctrl+Shift+Q** e a senha do administrador. |
@@ -426,7 +426,7 @@ Uma única biblioteca em uso pelo aplicativo (`node-firebird`); o resto é o pr�
 | Instalador | [electron-builder](https://www.electron.build) | 26.18.0 | Instalador NSIS e versão portátil, x64 e ia32 |
 | Tela | HTML5, CSS e JavaScript sem framework | — | Leve para PCs fracos; temas claro e escuro |
 | Som | Web Audio API | — | Bipe da leitura, sem arquivos de áudio |
-| Testes | `node:test` + `node:assert` | Node 20+ | 63 testes com Firebird, gbak e aplicativo simulados |
+| Testes | `node:test` + `node:assert` | Node 20+ | 64 testes com Firebird, gbak e aplicativo simulados |
 | Senha | `crypto.pbkdf2` (Node) | — | *Hash* da senha do administrador com sal, comparação em tempo constante |
 | Teste da tela | Playwright + Electron | — | Fluxo do leitor, cartão, configurações, tema e Electron 22 |
 | Build | GitHub Actions | — | Testes + instaladores a cada push |
@@ -439,7 +439,7 @@ Uma única biblioteca em uso pelo aplicativo (`node-firebird`); o resto é o pr�
 npm test
 ```
 
-- **63 testes**, sem Firebird real:
+- **64 testes**, sem Firebird real:
   - **Firebird simulado** (`src/demo.js`): registra toda SQL e transação, para provar que nada de escrita sai;
   - **gbak simulado** (`test/mock-gbak.js`): backup, restauração, falhas e atraso.
 - **Trava de somente leitura:** comandos recusados, transação somente leitura, `node-firebird` 0.x e 1.x+.
@@ -453,8 +453,8 @@ npm test
 - **Administrador:** senha só como *hash*, chaves sensíveis, padrões do quiosque (barra de tarefas oculta, também em config antigo), cópia a cada 3 horas.
 - **Caminho no servidor:** servidor informado sem o caminho, troca de servidor apaga o caminho antigo.
 - **Vigia (processos de verdade):** reabre o aplicativo fechado à força (rápido, sem abrir duas vezes enquanto o novo grava o PID), espera o reinício avisado, encerra com a saída autorizada e com a persistência desligada, um vigia só.
-- **Abertura:** cópia salva em dia não toca no banco ao abrir; estimativa da cópia pela duração de cada etapa.
-- **Tela (Playwright, Electron 44 e 22):** configuração inicial (nome da loja, senha opcional, sem senha tudo livre, criar e remover a senha depois), barra de andamento da cópia, pergunta da meta, foco de volta na busca após 30 s, coringa e preço, leitura, limpeza após inatividade, fechar bloqueado, trava das abas, desbloqueio, ações sensíveis recusadas sem a senha, saída com Ctrl+Shift+Q, instalação do Firebird e escolha de outro `.FDB`.
+- **Abertura:** cópia salva em dia não toca no banco ao abrir; estimativa da cópia pela duração de cada etapa (também antes da primeira cópia da abertura).
+- **Tela (Playwright, Electron 44 e 22):** configuração inicial (nome da loja, senha opcional, sem senha tudo livre, criar e remover a senha depois), barra de andamento da cópia, confirmação do Atualizar/F5, pergunta da meta, foco de volta na busca após 30 s, coringa e preço, leitura, limpeza após inatividade, fechar bloqueado, trava das abas, desbloqueio, ações sensíveis recusadas sem a senha, saída com Ctrl+Shift+Q, instalação do Firebird e escolha de outro `.FDB`.
 
 ---
 

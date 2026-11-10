@@ -7,11 +7,11 @@ Versões em uso hoje:
 
 | Arquivo | Versão |
 |---|---|
-| Aplicativo (`package.json`) | [1.4.0](#aplicativo) |
+| Aplicativo (`package.json`) | [1.4.1](#aplicativo) |
 | [`main.js`](#mainjs) | 1.3.0 |
 | [`preload.js`](#preloadjs) | 1.3.0 |
-| [`ui/index.html`, `ui/estilo.css`, `ui/app.js`](#ui) | 1.3.0 |
-| [`src/motor.js`](#srcmotorjs) | 1.3.0 |
+| [`ui/index.html`, `ui/estilo.css`, `ui/app.js`](#ui) | 1.4.0 (`app.js`); 1.3.0 (`index.html`, `estilo.css`) |
+| [`src/motor.js`](#srcmotorjs) | 1.4.0 |
 | [`src/firebird.js`](#srcfirebirdjs) | 1.0.0 |
 | [`src/estoque-dados.js`](#srcestoque-dadosjs) | 1.0.0 |
 | [`src/estoque-busca.js`](#srcestoque-buscajs) | 1.1.0 |
@@ -33,6 +33,10 @@ Versões em uso hoje:
 ## Aplicativo
 
 Versão do Consulta Estoque (a que aparece no instalador e em *Configurações → Diagnóstico*).
+
+### 1.4.1 — 2026-11-10
+
+**Atualizar/F5 confirma antes de uma nova cópia.** No modo cópia, a janela "Fazer uma nova cópia do banco agora?" explica o que acontece (cópia completa gbak ou leitura instantânea), quanto a última cópia levou, o efeito no servidor do caixa e quando seria a próxima cópia automática. Com cópia em andamento, só avisa. 64 testes.
 
 ### 1.4.0 — 2026-11-10
 
@@ -152,6 +156,10 @@ Ponte segura entre a tela e o processo principal.
 
 A tela.
 
+### 1.4.0 — 2026-11-10 (só `app.js`)
+
+**Confirmação do Atualizar/F5** no modo cópia, com mensagem clara (tipo de cópia, duração da última, efeito no servidor, próxima automática); cópia em andamento só avisa.
+
 ### 1.3.0 — 2026-11-10
 
 **Andamento e senha opcional.** Barra de andamento da cópia (porcentagem e tempo que falta; indeterminada sem histórico ou na leitura instantânea); configuração inicial com nome da loja e senha opcional; "Criar a senha"/"Remover a senha" na aba Administrador; cópia salva em dia aparece como "Atualizado em"; campo de texto na janela de pergunta.
@@ -173,6 +181,10 @@ A tela.
 ## `src/motor.js`
 
 Modos, atualização, cache em disco e auto-correção do banco.
+
+### 1.4.0 — 2026-11-10
+
+**Estimativa da cópia no status** antes da primeira cópia desta abertura (lida do `copia.json` uma vez; relida se a pasta das cópias mudar).
 
 ### 1.3.0 — 2026-11-10
 
