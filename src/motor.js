@@ -1,7 +1,7 @@
 "use strict";
 /**
  * motor.js
- * @version 1.4.0
+ * @version 1.5.0
  * @author Ruda Gabriel
  * @description O coração do aplicativo: mantém o estoque em memória e atualizado
  *              conforme o modo escolhido, acha o banco sozinho e responde às
@@ -27,8 +27,10 @@
  *
  * @changelog
  *   (Histórico completo das versões: CHANGELOG.md no repositório.)
- *   1.4.0 — Estimativa da cópia gbak no status mesmo antes da primeira cópia desta
- *           abertura (lida do copia.json uma vez), para a tela avisar quanto leva.
+ *   1.5.0 — Versão do Firebird do servidor (SELECT de uma linha em RDB$DATABASE, só
+ *           leitura) e do gbak deste computador; Firebird local mais antigo que o
+ *           do servidor: o método automático usa a cópia instantânea (o gbak não
+ *           serve) e o status avisa (status.firebird) para a tela oferecer a troca.
  */
 
 const fs = require("fs");
@@ -40,14 +42,16 @@ const Busca = require("./estoque-busca.js");
 const Config = require("./config.js");
 const Localizar = require("./localizar-banco.js");
 const Copia = require("./copia-gbak.js");
+const InstalarFb = require("./instalar-firebird.js");
 
-const VERSAO = "1.4.0";
+const VERSAO = "1.5.0";
 const ARQ_CACHE = "estoque-cache.json.gz";
 const CHAVES_CONEXAO = ["modo", "metodoCopia", "fbHost", "fbPorta", "fdbPath", "fbUser", "fbPass", "gbakPath", "pastaCopias", "copiaTimeoutMin"];
 
 /**
  * dep: { pastaDados, arquivoConfig, log (registro.js), Firebird (blindado),
- *        aoStatus(status), aoDadosNovos(info), localizar (testes), localizarGbak (testes) }
+ *        aoStatus(status), aoDadosNovos(info), localizar (testes), localizarGbak (testes),
+ *        versaoGbak (testes) }
  */
 function criarMotor(dep) {
     const d = dep || {};
@@ -83,7 +87,10 @@ function criarMotor(dep) {
     let conexaoVivaTimer = null;
     let geracao = 0;                   // invalida ciclos antigos quando a configuração muda
     let semSmall = null;
-    let estimativaDisco;               // duração da última cópia gbak (copia.json); undefined = não lida               // { quando, outros: [...] } — última busca sem SMALL.FDB em lugar nenhum
+    let estimativaDisco;
+    let versaoServ = { chave: "", v: null };   // versão do Firebird do servidor (por servidor+caminho)
+    let versaoLoc = { gbak: "", v: null };     // versão do gbak deste computador
+    let avisouVersao = "";               // duração da última cópia gbak (copia.json); undefined = não lida               // { quando, outros: [...] } — última busca sem SMALL.FDB em lugar nenhum
 
     // ── Status para a tela ────────────────────────────────────────────────────
     const statusAtual = () => {
@@ -102,10 +109,50 @@ function criarMotor(dep) {
             proximaEm,
             erro: ultimoErro,
             metaBusca: cfg.metaBusca,
+            firebird: situacaoFirebird(),
             buscaSemSmall: semSmall && semSmall.outros.length ? { quando: semSmall.quando, outros: semSmall.outros.length } : null,
             copia: cst
         };
     };
+    // ── Versões do Firebird (servidor × este computador) ─────────────────────
+    const situacaoFirebird = () => {
+        const sv = versaoServ.v, lv = versaoLoc.v;
+        return {
+            servidor: sv ? sv.texto : null, local: lv ? lv.texto : null,
+            pacote: sv ? InstalarFb.chaveParaVersao(sv) : null,
+            localMaisAntiga: !!(sv && lv && InstalarFb.localMaisAntiga(lv, sv)),
+            gbak: gbak || ""
+        };
+    };
+    /** Versão do servidor: um SELECT de uma linha (só leitura). Guardada só quando lida. */
+    const lerVersaoServidor = async () => {
+        if (!Firebird || !cfg.fdbPath) return versaoServ.v;
+        const chave = (cfg.fbHost || "127.0.0.1") + "|" + cfg.fdbPath;
+        if (versaoServ.chave === chave && versaoServ.v) return versaoServ.v;
+        let db = null;
+        try {
+            db = await FB.conectar(Firebird, alvoPrincipal(), 8000);
+            const r = await FB.consultar(db, "SELECT rdb$get_context('SYSTEM', 'ENGINE_VERSION') AS V FROM RDB$DATABASE", [], 8000);
+            const bruto = r && r[0] ? (r[0].V != null ? r[0].V : r[0].v) : null;
+            const v = InstalarFb.lerVersao(Buffer.isBuffer(bruto) ? FB.decodificarTexto(bruto) : bruto);
+            if (v) {
+                versaoServ = { chave, v };
+                reg.info("Firebird do servidor: " + v.texto + ".");
+            }
+        } catch (_) { /* servidor fora do ar ou versão antiga sem ENGINE_VERSION: segue sem saber */ }
+        finally { if (db) FB.matarConexao(db); }
+        return versaoServ.chave === chave ? versaoServ.v : null;
+    };
+    const lerVersaoLocal = async () => {
+        if (!gbak) return null;
+        if (versaoLoc.gbak === gbak) return versaoLoc.v;
+        let v = null;
+        try { v = await (d.versaoGbak || InstalarFb.versaoDoGbak)(gbak); } catch (_) {}
+        versaoLoc = { gbak, v };
+        if (v) reg.copia("Firebird deste computador (gbak): " + v.texto + ".");
+        return v;
+    };
+
     /** Duração da última cópia gbak guardada no copia.json (lida uma vez; null se não houver). */
     const estimativaSalva = () => {
         if (estimativaDisco === undefined) {
@@ -215,7 +262,17 @@ function criarMotor(dep) {
             reg.copia(gbak ? "gbak encontrado: " + gbak : "gbak não encontrado nesta máquina.");
         }
         const fbLocal = await portaAberta("127.0.0.1", 3050, 1500).catch(() => false);
-        if (gbak && fbLocal) return "gbak";
+        await lerVersaoServidor();
+        if (gbak && fbLocal) {
+            const sv = versaoServ.v, lv = await lerVersaoLocal();
+            if (sv && lv && InstalarFb.localMaisAntiga(lv, sv)) {
+                const msg = "O Firebird deste computador (" + lv.texto + ") é mais antigo que o do servidor (" + sv.texto + "): a cópia gbak não funciona com ele.";
+                if (cfg.metodoCopia === "gbak") { const e = new Error(msg + " Troque o Firebird deste computador ou use o método Instantâneo."); e.codigo = "GBAK"; throw e; }
+                if (avisouVersao !== lv.texto + ">" + sv.texto) { avisouVersao = lv.texto + ">" + sv.texto; reg.aviso(msg + " Usando a cópia instantânea até a troca."); }
+                return "instantaneo";
+            }
+            return "gbak";
+        }
         if (cfg.metodoCopia === "gbak") {
             const e = new Error(!gbak
                 ? "Método gbak escolhido, mas o gbak não foi encontrado nesta máquina (instale o Firebird ou informe o caminho do gbak.exe em Configurações)."
@@ -564,6 +621,20 @@ function criarMotor(dep) {
                 }
             }
             agendar(espera);
+            // Versões do Firebird (servidor × este computador) logo ao abrir, mesmo com a
+            // cópia em dia: a tela oferece a troca se o Firebird daqui for mais antigo.
+            if (cfg.modo === "copia" && cfg.metodoCopia !== "instantaneo") {
+                const t = setTimeout(async () => {
+                    if (encerrado || ocupado) return;
+                    try {
+                        await lerVersaoServidor();
+                        if (!gbak) gbak = await procurarGbak();
+                        await lerVersaoLocal();
+                    } catch (_) {}
+                    emitir();
+                }, Math.min(espera + 1500, 4000));
+                if (t.unref) t.unref();
+            }
         },
         pesquisar,
         item,
@@ -621,7 +692,7 @@ function criarMotor(dep) {
         },
         /** Firebird recém-instalado: esquece o gbak procurado antes e atualiza já. */
         redetectarFirebird() {
-            gbak = ""; gbakProcurado = false; gbakPromessa = null;
+            gbak = ""; gbakProcurado = false; gbakPromessa = null; versaoLoc = { gbak: "", v: null }; avisouVersao = "";
             ultimaBuscaAutomatica = 0;
             if (!ocupado) agendar(500); else pedidoPendente = true;
         },

@@ -303,3 +303,18 @@ test("motor: estimativa da última cópia gbak no status, mesmo antes de copiar 
     assert.strictEqual(sem.motor.status().copia.estimativaMs, null, "sem cópia anterior: sem estimativa");
     motor.encerrar(); sem.motor.encerrar();
 });
+
+test("motor: Firebird daqui mais antigo que o do servidor → cópia instantânea e aviso para trocar", async () => {
+    const banco = Object.assign(bancoExemplo(), { versao: "4.0.4" });
+    const { motor } = montar({ "10.0.0.5|C:\\SMALL.FDB": banco }, { fbHost: "10.0.0.5", fdbPath: "C:\\SMALL.FDB" }, {
+        localizarGbak: async () => "C:\\Firebird_3_0\\gbak.exe",
+        portaAberta: async () => true,
+        versaoGbak: async () => ({ maior: 3, menor: 0, texto: "3.0.13" })
+    });
+    await motor.iniciar();
+    await esperar(() => motor.status().estado === "pronto" && motor.status().itens === 15);
+    assert.strictEqual(motor.status().metodoEfetivo, "instantaneo", "gbak mais antigo que o servidor não é usado");
+    const fb = motor.status().firebird;
+    assert.deepStrictEqual([fb.servidor, fb.local, fb.pacote, fb.localMaisAntiga], ["4.0.4", "3.0.13", "4.0", true]);
+    motor.encerrar();
+});

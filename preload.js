@@ -1,14 +1,14 @@
 "use strict";
 /**
  * preload.js
- * @version 1.3.0
+ * @version 1.4.0
  * @author Ruda Gabriel
  * @description Ponte segura entre a tela e o processo principal: expõe só as
  *              funções da consulta (window.consulta), nunca o Node inteiro.
  *
  * @changelog
  *   (Histórico completo das versões: CHANGELOG.md no repositório.)
- *   1.3.0 — Configuração inicial (nome da loja) e remover a senha do administrador.
+ *   1.4.0 — instalarFirebird({ trocar }) troca o Firebird local pela versão do servidor.
  */
 const { contextBridge, ipcRenderer } = require("electron");
 
@@ -43,7 +43,7 @@ contextBridge.exposeInMainWorld("consulta", {
     removerSenha: () => ipcRenderer.invoke("admin:remover-senha"),
     configuracaoInicial: d => ipcRenderer.invoke("app:configuracao-inicial", d),
     firebirdEstado: () => ipcRenderer.invoke("firebird:estado"),
-    instalarFirebird: () => ipcRenderer.invoke("firebird:instalar"),
+    instalarFirebird: o => ipcRenderer.invoke("firebird:instalar", o || {}),
     firebirdNaoPerguntar: () => ipcRenderer.invoke("firebird:nao-perguntar"),
     outrosFdb: () => ipcRenderer.invoke("banco:outros"),
     usarBanco: p => ipcRenderer.invoke("banco:usar", p),
