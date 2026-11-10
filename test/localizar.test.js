@@ -174,3 +174,19 @@ test("pistas: SMALL.FDB, UNC e atalho .lnk", () => {
     assert.strictEqual(L.bancoAutoSuspeito({ fbHostAuto: true, fbHost: "SERVIDOR", fdbPath: "C:\\x\\SMALL.FDB" }), false, "servidor da rede com SMALL.FDB não é suspeito");
     assert.strictEqual(L.bancoAutoSuspeito({ fbHostAuto: true, fbHost: "SERVIDOR", fdbPath: "C:\\x\\padrao.fdb" }), true);
 });
+
+test("caminhoNoServidor: acha o SMALL.FDB no servidor informado, sem trocar o servidor", async () => {
+    const testados = [];
+    const r = await L.caminhoNoServidor({
+        host: "SERVIDOR", cfg: { fdbPath: "" },
+        portaAberta: async h => h === "SERVIDOR",
+        validar: async (h, c) => { testados.push(h); return { ok: c === "D:\\SmallSoft\\Small Commerce\\SMALL.FDB" }; }
+    });
+    assert.deepStrictEqual(r.achado, { host: "SERVIDOR", caminho: "D:\\SmallSoft\\Small Commerce\\SMALL.FDB" });
+    assert.ok(testados.every(h => h === "SERVIDOR"));
+    const fora = await L.caminhoNoServidor({ host: "OUTRO", cfg: {}, portaAberta: async () => false, validar: async () => ({ ok: true }) });
+    assert.strictEqual(fora.achado, null);
+    assert.match(fora.mensagem, /não respondeu/);
+    const auth = await L.caminhoNoServidor({ host: "S", cfg: {}, portaAberta: async () => true, validar: async () => ({ ok: false, auth: true }) });
+    assert.match(auth.mensagem, /usuário\/senha/);
+});

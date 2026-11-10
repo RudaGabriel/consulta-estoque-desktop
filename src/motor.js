@@ -1,7 +1,7 @@
 "use strict";
 /**
  * motor.js
- * @version 1.0.0
+ * @version 1.1.0
  * @author Ruda Gabriel
  * @description O coração do aplicativo: mantém o estoque em memória e atualizado
  *              conforme o modo escolhido, acha o banco sozinho e responde às
@@ -27,7 +27,10 @@
  *
  * @changelog
  *   (Histórico completo das versões: CHANGELOG.md no repositório.)
- *   1.0.0 — Primeira versão.
+ *   1.1.0 — Servidor conhecido sem o caminho (ou com o caminho errado): o SMALL.FDB é
+ *           procurado nesse servidor antes da busca geral (vale com fbHostFixo);
+ *           trocar só o servidor nas configurações apaga o caminho antigo; senha do
+ *           administrador gravada só por definirSenhaAdmin.
  */
 
 const fs = require("fs");
@@ -199,6 +202,29 @@ function criarMotor(dep) {
 
     // ── Descoberta automática ─────────────────────────────────────────────────
     const buscaLiberada = () => !cfg.fbHostFixo;
+    /**
+     * Servidor conhecido, caminho não: procura o SMALL.FDB só NESSE servidor
+     * (caminhos típicos de C: a H: e o anterior). Rápido: servidor que responde
+     * recusa um caminho errado em milissegundos. Não troca o servidor.
+     */
+    async function procurarCaminhoNoServidor(host, motivo) {
+        if (!host) return false;
+        reg.busca("Procurando o caminho do SMALL.FDB no servidor " + host + (motivo ? " (" + motivo + ")" : "") + "...");
+        definir(estado === "pronto" ? "pronto" : "carregando", "Procurando o SMALL.FDB no servidor " + host + "...");
+        try {
+            const r = await Localizar.caminhoNoServidor({ host, cfg, validar, portaAberta, log: m => reg.busca(m) });
+            if (!r.achado) { reg.aviso(r.mensagem); ultimoErro = r.mensagem; return false; }
+            if (cfg.fdbPath === r.achado.caminho && cfg.fbHost === host) return true;
+            reg.busca("SMALL.FDB encontrado em " + host + ":" + r.achado.caminho + " — configuração atualizada automaticamente.");
+            cfg = Config.mesclar(cfg, { fdbPath: r.achado.caminho });
+            try { Config.salvar(d.arquivoConfig, cfg); } catch (e) { reg.erro("Falha ao salvar config.json: " + e.message); }
+            return true;
+        } catch (e) {
+            reg.erro("Falha ao procurar o caminho no servidor: " + e.message);
+            return false;
+        } finally { emitir(); }
+    }
+
     async function procurarBanco(motivo) {
         if (procurando) return false;
         procurando = true;
@@ -283,6 +309,8 @@ function criarMotor(dep) {
         if (timer) { clearTimeout(timer); timer = null; }
         emitir();
         try {
+            // Servidor informado sem o caminho: o caminho é procurado nele.
+            if (!cfg.fdbPath && cfg.fbHost) await procurarCaminhoNoServidor(cfg.fbHost, "caminho não informado");
             if (!cfg.fdbPath) {
                 if (!buscaLiberada()) throw Object.assign(new Error("Banco não configurado. Informe o servidor e o caminho do SMALL.FDB em Configurações → Banco de dados."), { codigo: "SEMCFG" });
                 await procurarBanco("primeira execução");
@@ -295,7 +323,18 @@ function criarMotor(dep) {
                 // Banco configurado com problema de LOCAL (não de senha): procura o certo e tenta de novo.
                 // (busca pesada: no máximo uma a cada 5 min enquanto o erro persistir)
                 const corrigivel = ["inacessivel", "arquivo", "tabela"].indexOf(t) >= 0 && !/restaura/i.test(String(e.message));
-                if (corrigivel && buscaLiberada() && Date.now() - ultimaBuscaAutomatica > 5 * 60000) {
+                // Servidor respondeu mas o caminho está errado: primeiro procura o
+                // caminho nele mesmo (vale também com fbHostFixo — não troca o servidor).
+                let resolvido = false;
+                if ((t === "arquivo" || t === "tabela") && cfg.fbHost && !/restaura/i.test(String(e.message))) {
+                    const antesCam = cfg.fdbPath;
+                    if (await procurarCaminhoNoServidor(cfg.fbHost, "o caminho configurado falhou") && cfg.fdbPath !== antesCam) {
+                        await carregarUmaVez(gen);
+                        resolvido = true;
+                    }
+                }
+                if (resolvido) { /* carregado pelo caminho achado */ }
+                else if (corrigivel && buscaLiberada() && Date.now() - ultimaBuscaAutomatica > 5 * 60000) {
                     reg.aviso("O banco configurado (" + (cfg.fbHost || "127.0.0.1") + ":" + cfg.fdbPath + ") falhou: " + FB.explicarErro(e) + " Procurando o banco correto...");
                     const antes = cfg.fbHost + "|" + cfg.fdbPath;
                     if (await procurarBanco("o banco configurado falhou") && antes !== cfg.fbHost + "|" + cfg.fdbPath) {
@@ -428,6 +467,10 @@ function criarMotor(dep) {
         const antes = cfg;
         const p = Object.assign({}, parcial || {});
         delete p.fbHostAuto; // só o próprio aplicativo marca o endereço como "automático"
+        delete p.senhaAdmin; // a senha só muda por definirSenhaAdmin
+        // Servidor trocado e caminho não mexido: o caminho será procurado no servidor novo.
+        if (p.fbHost !== undefined && Config.validarValor("fbHost", p.fbHost) !== antes.fbHost &&
+            (p.fdbPath === undefined || Config.validarValor("fdbPath", p.fdbPath) === antes.fdbPath)) p.fdbPath = "";
         const novo = Config.mesclar(antes, p);
         // Endereço trocado pelo usuário: vale como escolha dele (não é mais "automático").
         if (novo.fbHost !== antes.fbHost || novo.fdbPath !== antes.fdbPath) novo.fbHostAuto = false;
@@ -475,6 +518,14 @@ function criarMotor(dep) {
         exportarCsv,
         status: statusAtual,
         config: () => Object.assign({}, cfg),
+        /** Grava o registro (hash) da senha do administrador. */
+        definirSenhaAdmin(registro) {
+            cfg = Config.mesclar(cfg, {});
+            cfg.senhaAdmin = Config.validarValor("senhaAdmin", registro);
+            Config.salvar(d.arquivoConfig, cfg);
+            reg.info(cfg.senhaAdmin ? "Senha do administrador definida." : "Senha do administrador removida.");
+            return !!cfg.senhaAdmin;
+        },
         salvarConfig,
         atualizarAgora() { falhasSeguidas = 0; if (ocupado) { pedidoPendente = true; return false; } agendar(0); return true; },
         async procurarAgora() {

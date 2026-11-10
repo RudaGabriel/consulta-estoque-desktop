@@ -1,14 +1,17 @@
 # build.yml — testes e instaladores do Consulta Estoque (Windows)
-# v1.0.0 — Autor: Ruda Gabriel
+# v1.1.0 — Autor: Ruda Gabriel
 # Gera, a cada push e PR:
 #   - moderno: Windows 10/11, 64 bits (Electron 44)
 #   - legado:  Windows 7 a 11, 64 e 32 bits (Electron 22)
 # Os arquivos ficam em "Artifacts" de cada execução (aba Actions).
+# Tag "v*" (ex.: v1.1.0): publica uma Release com os instaladores e as versões
+# portáteis (aba Releases do repositório).
 name: build
 
 on:
   push:
     branches: [main, "claude/**"]
+    tags: ["v*"]
   pull_request:
   workflow_dispatch:
 
@@ -59,6 +62,7 @@ jobs:
           $exe = Get-ChildItem -Path dist -Recurse -Filter "Consulta Estoque.exe" | Where-Object { $_.FullName -match "win-unpacked" } | Select-Object -First 1
           if (-not $exe) { throw "executável não encontrado" }
           $env:CONSULTA_DESKTOP_DADOS = "$env:RUNNER_TEMP\dados-teste"
+          $env:CONSULTA_SEM_QUIOSQUE = "1"
           $p = Start-Process -FilePath $exe.FullName -ArgumentList "--demo" -PassThru
           Start-Sleep -Seconds 20
           if ($p.HasExited) { throw "o aplicativo fechou sozinho (código $($p.ExitCode))" }
@@ -73,3 +77,30 @@ jobs:
             !dist/**/win-unpacked/**
             !dist/**/win-ia32-unpacked/**
           if-no-files-found: error
+
+  publicar:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: instaladores
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: arquivos
+          merge-multiple: true
+      - name: Listar os arquivos
+        run: find arquivos -type f -name "*.exe" -printf "%f  %s bytes\n"
+      - uses: softprops/action-gh-release@v2
+        with:
+          name: Consulta Estoque ${{ github.ref_name }}
+          body: |
+            **Qual baixar?**
+            - Windows 10/11 64 bits: `...-win10-11-x64-instalador.exe` (instala) ou `...-win10-11-x64-portatil.exe` (sem instalar).
+            - Windows 7, 8 ou 32 bits: os arquivos `...-legado-win7-a-11-...` (`x64` = 64 bits, `ia32` = 32 bits).
+
+            Na primeira abertura o aplicativo pede para criar a senha do administrador. Para sair: Ctrl+Shift+Q + senha.
+            O Windows pode avisar "O Windows protegeu o computador" (aplicativo sem assinatura paga): Mais informações → Executar assim mesmo.
+            Histórico completo: CHANGELOG.md.
+          files: arquivos/**/*.exe
+          fail_on_unmatched_files: true

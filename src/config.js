@@ -1,7 +1,7 @@
 "use strict";
 /**
  * config.js
- * @version 1.0.0
+ * @version 1.1.0
  * @author Ruda Gabriel
  * @description Configuração do aplicativo (config.json na pasta de dados):
  *              valores padrão, validação de cada chave e gravação atômica.
@@ -12,7 +12,12 @@
  *
  * @changelog
  *   (Histórico completo das versões: CHANGELOG.md no repositório.)
- *   1.0.0 — Primeira versão.
+ *   1.1.0 — Quiosque e administrador: chaves do Windows (iniciarComWindows,
+ *           persistente, sempreNoTopo, manterFoco, impedirDescanso,
+ *           ocultarBarraTarefas, ocultarCursor, reiniciarDiario, monitor), senha do
+ *           administrador guardada só como hash PBKDF2 (senhaAdmin), lista das chaves
+ *           sensíveis, cópia a cada 3 horas por padrão e limparAposSeg (60 s) no lugar
+ *           de fecharDetalheSeg; telaCheia removida (a tela cheia é permanente).
  */
 
 const fs = require("fs");
@@ -22,8 +27,14 @@ const VERSAO = "1.0.0";
 
 // [padrão, tipo, mínimo, máximo] ou [padrão, lista de valores aceitos].
 const ESQUEMA = {
+    // Leitura do banco
     modo:                ["copia", ["copia", "direto"]],
     metodoCopia:         ["auto", ["auto", "gbak", "instantaneo"]],
+    copiaACadaMin:       [180, "int", 1, 1440],
+    copiaTimeoutMin:     [30, "int", 1, 360],
+    diretoRecarregarSeg: [60, "int", 15, 3600],
+    diretoItemAoVivo:    [true, "bool"],
+    // Banco de dados
     fbHost:              ["", "texto"],
     fbPorta:             [3050, "int", 1, 65535],
     fdbPath:             ["", "texto"],
@@ -32,26 +43,37 @@ const ESQUEMA = {
     fbHostFixo:          [false, "bool"],
     fbHostAuto:          [false, "bool"],
     varrerRede:          [true, "bool"],
-    copiaACadaMin:       [10, "int", 1, 1440],
-    copiaTimeoutMin:     [30, "int", 1, 360],
     gbakPath:            ["", "texto"],
     pastaCopias:         ["", "texto"],
-    diretoRecarregarSeg: [60, "int", 15, 3600],
-    diretoItemAoVivo:    [true, "bool"],
+    // Windows (quiosque)
+    iniciarComWindows:   [true, "bool"],
+    persistente:         [true, "bool"],
+    sempreNoTopo:        [true, "bool"],
+    manterFoco:          [true, "bool"],
+    impedirDescanso:     [true, "bool"],
+    ocultarBarraTarefas: [false, "bool"],
+    ocultarCursor:       [false, "bool"],
+    reiniciarDiario:     ["", "hora"],
+    monitor:             [0, "int", 0, 9],
+    aceleracaoGrafica:   [true, "bool"],
+    // Tela
     tema:                ["auto", ["auto", "claro", "escuro"]],
     modoLeve:            [false, "bool"],
     som:                 [true, "bool"],
-    telaCheia:           [false, "bool"],
-    sempreNoTopo:        [false, "bool"],
-    iniciarComWindows:   [false, "bool"],
     zoom:                [1, "num", 0.6, 2.5],
-    fecharDetalheSeg:    [0, "int", 0, 600],
+    limparAposSeg:       [60, "int", 0, 3600],
     mostrarCusto:        [false, "bool"],
     limitePagina:        [100, "int", 20, 1000],
     nomeLoja:            ["", "texto"],
-    aceleracaoGrafica:   [true, "bool"],
-    tabComoEnter:        [true, "bool"]
+    tabComoEnter:        [true, "bool"],
+    // Administrador: "pbkdf2$iteracoes$sal$hash" (nunca a senha em texto)
+    senhaAdmin:          ["", "hash"]
 };
+
+// Chaves que só mudam com a senha do administrador (a tela de consulta fica
+// aberta ao público: cliente não pode trocar o banco, sair do quiosque etc.).
+const PUBLICAS = ["tema", "modoLeve", "som", "zoom", "tabComoEnter"];
+const SENSIVEIS = Object.keys(ESQUEMA).filter(k => PUBLICAS.indexOf(k) < 0 && k !== "senhaAdmin" && k !== "fbHostAuto");
 
 function padrao() {
     const o = {};
@@ -78,6 +100,12 @@ function validarValor(chave, v) {
             return Math.min(max, Math.max(min, n));
         }
         case "senha": return v == null ? pad : String(v).slice(0, 200);
+        case "hora": {
+            const m = /^\s*(\d{1,2}):(\d{2})\s*$/.exec(String(v == null ? "" : v));
+            if (!m || Number(m[1]) > 23 || Number(m[2]) > 59) return pad;
+            return String(m[1]).padStart(2, "0") + ":" + m[2];
+        }
+        case "hash": return typeof v === "string" && /^pbkdf2\$\d+\$[0-9a-f]{32}\$[0-9a-f]{64}$/.test(v) ? v : pad;
         default: return v == null ? pad : String(v).trim().slice(0, 1000);
     }
 }
@@ -140,11 +168,43 @@ function salvar(arquivo, cfg) {
     gravarAtomico(arquivo, JSON.stringify(normalizar(cfg), null, 2) + "\n");
 }
 
-/** Cópia segura para mostrar/registrar (sem a senha). */
+/** Cópia segura para mostrar/registrar (sem senhas). */
 function semSenha(cfg) {
     const o = Object.assign({}, cfg);
     if (o.fbPass) o.fbPass = "••••";
+    if (o.senhaAdmin) o.senhaAdmin = "(definida)";
     return o;
 }
 
-module.exports = { VERSAO, ESQUEMA, padrao, validarValor, normalizar, mesclar, carregar, salvar, gravarAtomico, semSenha };
+// ── Senha do administrador ───────────────────────────────────────────────────
+const crypto = require("crypto");
+const ITER = 120000;
+
+/** Gera o registro "pbkdf2$iter$sal$hash" de uma senha. */
+function gerarHashSenha(senha) {
+    const sal = crypto.randomBytes(16);
+    const h = crypto.pbkdf2Sync(String(senha), sal, ITER, 32, "sha256");
+    return "pbkdf2$" + ITER + "$" + sal.toString("hex") + "$" + h.toString("hex");
+}
+
+/** Confere a senha contra o registro (comparação em tempo constante). */
+function conferirSenha(senha, registro) {
+    const m = /^pbkdf2\$(\d+)\$([0-9a-f]{32})\$([0-9a-f]{64})$/.exec(String(registro || ""));
+    if (!m || senha == null) return false;
+    const iter = Math.min(Math.max(parseInt(m[1], 10) || ITER, 1000), 10000000);
+    const h = crypto.pbkdf2Sync(String(senha), Buffer.from(m[2], "hex"), iter, 32, "sha256");
+    const esperado = Buffer.from(m[3], "hex");
+    return h.length === esperado.length && crypto.timingSafeEqual(h, esperado);
+}
+
+/** Puro: chaves sensíveis que `parcial` realmente muda em relação a `atual`. */
+function sensiveisAlteradas(atual, parcial) {
+    const a = normalizar(atual);
+    const p = parcial && typeof parcial === "object" ? parcial : {};
+    return SENSIVEIS.filter(k => p[k] !== undefined && validarValor(k, p[k]) !== a[k]);
+}
+
+module.exports = {
+    VERSAO, ESQUEMA, PUBLICAS, SENSIVEIS, padrao, validarValor, normalizar, mesclar, carregar, salvar, gravarAtomico, semSenha,
+    gerarHashSenha, conferirSenha, sensiveisAlteradas
+};

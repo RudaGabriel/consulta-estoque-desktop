@@ -1,12 +1,12 @@
 /*
   estilo.css — Consulta Estoque (tela)
-  @version 1.0.0
+  @version 1.1.0
   @author Ruda Gabriel
   Compatível com o Chromium 108 (versão para Windows 7/8): sem CSS aninhado,
   sem color-mix, sem :has().
   @changelog
     (Histórico completo das versões: CHANGELOG.md no repositório.)
-    1.0.0 — Primeira versão.
+    1.1.0 — Trava do administrador, janela de senha, botão de perigo e cursor oculto.
 */
 :root {
   --fundo: #f4f6f8; --superficie: #ffffff; --superficie2: #eef1f4; --borda: #d9dee4;
@@ -170,7 +170,7 @@ body:not(.custo) .cust { display: none; }
 @keyframes deslizar { from { transform: translateX(30px); opacity: 0; } to { transform: none; opacity: 1; } }
 .painel-topo { display: flex; align-items: center; justify-content: space-between; padding: 14px 18px 6px; }
 .painel-topo h2 { margin: 0; font-size: 19px; }
-.abas { display: flex; gap: 4px; padding: 0 14px; border-bottom: 1px solid var(--borda); overflow-x: auto; }
+.abas { display: flex; flex-wrap: wrap; gap: 0 4px; padding: 0 14px; border-bottom: 1px solid var(--borda); }
 .abas button { border: 0; background: none; padding: 10px 10px; cursor: pointer; color: var(--texto2); border-bottom: 2px solid transparent; white-space: nowrap; }
 .abas button.ativa { color: var(--destaque); border-bottom-color: var(--destaque); font-weight: 600; }
 .painel-corpo { flex: 1; overflow: auto; padding: 16px 18px; }
@@ -206,6 +206,33 @@ body:not(.custo) .cust { display: none; }
   position: fixed; left: 50%; bottom: 22px; transform: translateX(-50%); z-index: 20;
   background: var(--texto); color: var(--fundo); padding: 10px 16px; border-radius: 10px; box-shadow: var(--sombra); max-width: 90vw; font-size: 14px;
 }
+
+/* ── Administrador ────────────────────────────────────────────────────── */
+.cadeado { margin-left: auto; margin-right: 10px; font-size: 12.5px; padding: 3px 10px; border-radius: 999px; background: var(--superficie2); color: var(--texto2); white-space: nowrap; }
+.cadeado.aberto { background: rgba(19, 138, 74, .14); color: var(--ok); }
+.abas button[data-protegida]::after { content: " 🔒"; font-size: 11px; }
+.abas.livre button[data-protegida]::after { content: ""; }
+.trava { text-align: center; padding: 26px 10px; display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.trava-icone { font-size: 34px; }
+.trava h3 { margin: 0; }
+.trava p { margin: 0 0 6px; color: var(--texto2); font-size: 14px; }
+.trava .senha { width: min(360px, 100%); }
+.trava input { flex: 1; padding: 9px 10px; border-radius: 8px; border: 1px solid var(--borda); background: var(--superficie); color: var(--texto); }
+.trava-erro { color: var(--ruim); font-size: 13px; min-height: 18px; }
+h3.sub { margin: 8px 0 0; font-size: 15px; }
+.btn.perigo { border-color: var(--ruim); color: var(--ruim); }
+.btn.perigo:hover { background: rgba(198, 40, 40, .08); }
+.botoes.direita { justify-content: flex-end; }
+.fundo.alto { z-index: 30; }
+.modal {
+  position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 31; width: min(440px, 92vw);
+  background: var(--superficie); border: 1px solid var(--borda); border-radius: 14px; box-shadow: var(--sombra);
+  padding: 18px 20px; display: flex; flex-direction: column; gap: 10px;
+}
+.modal h2 { margin: 0; font-size: 19px; }
+.modal p { margin: 0; color: var(--texto2); font-size: 14px; }
+.modal input { padding: 10px 12px; border-radius: 8px; border: 1px solid var(--borda); background: var(--superficie); color: var(--texto); font-size: 16px; }
+body.sem-cursor, body.sem-cursor * { cursor: none !important; }
 
 /* ── Telas estreitas ──────────────────────────────────────────────────── */
 @media (max-width: 860px) {

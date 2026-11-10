@@ -158,3 +158,33 @@ test("config: arquivo corrompido é guardado e o app abre com os padrões", () =
     assert.strictEqual(Config.carregar(arq).cfg.fbHost, "10.0.0.5");
     assert.strictEqual(Config.carregar(path.join(d, "nao-existe.json")).aviso, null);
 });
+
+test("admin: senha guardada só como hash (pbkdf2), conferência correta e chaves sensíveis", () => {
+    const h = Config.gerarHashSenha("1234");
+    assert.match(h, /^pbkdf2\$\d+\$[0-9a-f]{32}\$[0-9a-f]{64}$/);
+    assert.ok(!h.includes("1234"));
+    assert.strictEqual(Config.conferirSenha("1234", h), true);
+    assert.strictEqual(Config.conferirSenha("12345", h), false);
+    assert.strictEqual(Config.conferirSenha("", ""), false);
+    assert.strictEqual(Config.conferirSenha(null, h), false);
+    assert.notStrictEqual(Config.gerarHashSenha("1234"), h, "sal diferente a cada vez");
+    assert.strictEqual(Config.validarValor("senhaAdmin", "texto-qualquer"), "", "registro inválido não é aceito");
+    const atual = Config.padrao();
+    assert.deepStrictEqual(Config.sensiveisAlteradas(atual, { tema: "escuro", zoom: 1.2, som: false }), [], "opções visuais são públicas");
+    assert.deepStrictEqual(Config.sensiveisAlteradas(atual, { persistente: false, fbHost: "X", mostrarCusto: true }).sort(), ["fbHost", "mostrarCusto", "persistente"]);
+    assert.deepStrictEqual(Config.sensiveisAlteradas(atual, { persistente: true, copiaACadaMin: "180" }), [], "valor igual ao atual não conta como mudança");
+    assert.strictEqual(Config.semSenha({ senhaAdmin: h }).senhaAdmin, "(definida)");
+});
+
+test("config: padrões do quiosque e da cópia (3 horas), hora do reinício diário validada", () => {
+    const c = Config.padrao();
+    assert.strictEqual(c.copiaACadaMin, 180);
+    assert.strictEqual(c.limparAposSeg, 60);
+    assert.strictEqual(c.iniciarComWindows, true);
+    assert.strictEqual(c.persistente, true);
+    assert.strictEqual(c.sempreNoTopo, true);
+    assert.strictEqual(c.telaCheia, undefined, "tela cheia não é mais opção: é permanente");
+    assert.strictEqual(Config.validarValor("reiniciarDiario", "6:30"), "06:30");
+    assert.strictEqual(Config.validarValor("reiniciarDiario", "24:00"), "");
+    assert.strictEqual(Config.validarValor("reiniciarDiario", "abc"), "");
+});

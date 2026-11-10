@@ -1,6 +1,6 @@
 /**
  * app.js — Consulta Estoque (tela)
- * @version 1.0.0
+ * @version 1.1.0
  * @author Ruda Gabriel
  * @description Tela de consulta de preço e estoque. Pensada para o leitor de
  *              código de barras USB/Bluetooth (que "digita" o código e manda
@@ -10,7 +10,10 @@
  *              Compatível com o Chromium 108 (versão para Windows 7/8).
  * @changelog
  *   (Histórico completo das versões: CHANGELOG.md no repositório.)
- *   1.0.0 — Primeira versão.
+ *   1.1.0 — Senha do administrador (criada na primeira execução; abas Consulta,
+ *           Banco de dados, Windows e Administrador travadas), saída com senha
+ *           (Ctrl+Shift+Q), modo manutenção, aba Windows, limpeza automática da
+ *           busca e do cartão após 1 minuto sem mexer, cursor oculto quando parado.
  */
 (function () {
     "use strict";
@@ -101,7 +104,7 @@
     }
 
     // ── Foco: o campo de busca está sempre pronto para o leitor ─────────────
-    var algoAberto = function () { return estado.painel; };
+    var algoAberto = function () { return estado.painel || estado.modal; };
     function focarBusca(selecionar) {
         if (algoAberto()) return;
         // Voltando de outro lugar: seleciona, para a próxima leitura substituir o texto.
@@ -269,11 +272,8 @@
         if (limparBusca && q.value) { q.value = ""; $("bLimpar").hidden = true; buscar(1); }
     }
 
-    function agendarFecharCartao() {
-        clearTimeout(estado.timerCartao);
-        var s = estado.cfg ? estado.cfg.fecharDetalheSeg : 0;
-        if (s > 0) estado.timerCartao = setTimeout(function () { fecharCartao(true); }, s * 1000);
-    }
+    // A limpeza automática (inatividade) cuida de fechar o cartão; ler um produto conta como atividade.
+    function agendarFecharCartao() { reiniciarInatividade(); }
 
     function marcarLinha(it) {
         var linhas = $("corpo").querySelectorAll("tr.sel");
@@ -348,34 +348,79 @@
         if (cfg.tema === "auto") raiz.removeAttribute("data-tema"); else raiz.setAttribute("data-tema", cfg.tema);
         document.body.classList.toggle("leve", !!cfg.modoLeve);
         document.body.classList.toggle("custo", !!cfg.mostrarCusto);
-        $("fCus").checked = !!cfg.mostrarCusto;
         $("loja").textContent = cfg.nomeLoja || "";
         $("loja").hidden = !cfg.nomeLoja;
+        if (!cfg.ocultarCursor) document.body.classList.remove("sem-cursor");
+        reiniciarInatividade();
     }
 
-    function abrirPainel(aba) {
+    // ── Administrador: trava das abas sensíveis ──────────────────────────────
+    var ABAS_PROTEGIDAS = { consulta: 1, banco: 1, windows: 1, admin: 1 };
+    var livre = function () { return !!(estado.admin && estado.admin.desbloqueado); };
+    function desenharTrava() {
+        var a = estado.admin || {};
+        var cad = $("cadeado");
+        cad.textContent = !a.temSenha ? "Sem senha definida" : a.desbloqueado ? "🔓 Administrador" : "🔒 Bloqueado";
+        cad.classList.toggle("aberto", !!a.desbloqueado);
+        $("abas").classList.toggle("livre", !!a.desbloqueado);
+        var protegida = !!ABAS_PROTEGIDAS[estado.aba];
+        var travada = protegida && !livre();
+        $("trava").hidden = !travada;
+        var pags = document.querySelectorAll("[data-pagina]");
+        for (var k = 0; k < pags.length; k++) pags[k].hidden = travada || pags[k].getAttribute("data-pagina") !== estado.aba;
+        if (travada && estado.painel) setTimeout(function () { $("travaSenha").focus(); }, 30);
+    }
+    async function atualizarAdmin() {
+        try { estado.admin = await api.adminEstado(); } catch (_) {}
+        desenharTrava();
+        return estado.admin;
+    }
+    async function desbloquear() {
+        var senha = $("travaSenha").value;
+        var r = await api.desbloquear(senha);
+        if (!r || !r.ok) { $("travaErro").textContent = (r && r.mensagem) || "Senha incorreta."; $("travaSenha").select(); return; }
+        $("travaSenha").value = "";
+        $("travaErro").textContent = "";
+        estado.admin = r.estado;
+        // Desbloqueado: recarrega a configuração completa (com a senha do Firebird).
+        try { estado.cfg = await api.lerConfig(); } catch (_) {}
+        preencherFormulario(estado.cfg);
+        trocarAba(estado.aba);
+    }
+
+    async function abrirPainel(aba) {
         estado.painel = true;
+        await atualizarAdmin();
+        try { estado.cfg = await api.lerConfig(); } catch (_) {}
+        try { estado.info = await api.info(); } catch (_) {}
         preencherFormulario(estado.cfg);
         $("fundo").hidden = false;
         $("painel").hidden = false;
         trocarAba(aba || estado.aba);
     }
     function fecharPainel() {
+        if (!estado.painel) return;
         estado.painel = false;
         estado.logAberto = false;
         $("fundo").hidden = true;
         $("painel").hidden = true;
+        $("travaSenha").value = "";
+        $("travaErro").textContent = "";
+        // Fechou as configurações: o administrador sai (a tela é pública).
+        if (estado.admin && estado.admin.temSenha) api.bloquear().then(function (a) { estado.admin = a; }, function () {});
         focarBusca(true);
     }
     function trocarAba(aba) {
         estado.aba = aba;
         var botoes = $("abas").querySelectorAll("button");
         for (var i = 0; i < botoes.length; i++) botoes[i].classList.toggle("ativa", botoes[i].getAttribute("data-aba") === aba);
-        var pags = document.querySelectorAll("[data-pagina]");
-        for (var k = 0; k < pags.length; k++) pags[k].hidden = pags[k].getAttribute("data-pagina") !== aba;
+        desenharTrava();
         estado.logAberto = aba === "diag";
+        $("bSalvar").hidden = aba === "diag" || aba === "admin" || (!!ABAS_PROTEGIDAS[aba] && !livre());
         if (aba === "banco") desenharInfoBanco();
         if (aba === "diag") carregarDiagnostico();
+        if (aba === "admin") desenharInfoAdmin();
+        if (aba === "windows") desenharWindows();
     }
 
     function desenharInfoBanco() {
@@ -387,8 +432,21 @@
         if (s.copia && s.copia.emAndamento) html += "<br><b>Cópia:</b> " + esc(s.copia.etapa === "restauracao" ? "restaurando" : "fazendo o backup") + " há " + Math.round(s.copia.decorridoMs / 1000) + " s";
         $("infoBanco").innerHTML = html;
     }
+    function desenharInfoAdmin() {
+        var a = estado.admin || {};
+        $("infoAdmin").innerHTML = (a.temSenha ? "<b>Senha do administrador:</b> definida." : "<b>Atenção:</b> nenhuma senha definida — qualquer pessoa pode mudar as configurações e sair do aplicativo. Defina uma senha abaixo.") +
+            "<br><b>Modo quiosque:</b> " + (a.quiosque ? (a.manutencao ? "suspenso (manutenção)" : "ligado — tela cheia permanente") : "desligado (desenvolvimento)") +
+            "<br><b>Persistência:</b> " + (a.podePersistir ? (estado.info && estado.info.vigiaAtivo ? "vigia ativo" : "vigia parado") : "só no aplicativo instalado/portátil");
+        $("bManutencao").textContent = a.manutencao ? "Voltar para a tela cheia" : "Modo manutenção (sair da tela cheia)";
+        $("bManutencao").hidden = !a.quiosque;
+    }
+    function desenharWindows() {
+        var a = estado.admin || {};
+        $("dicaPersistir").textContent = a.podePersistir ? "" : "Persistência e \"Abrir junto com o Windows\" funcionam no aplicativo instalado ou portátil (não no modo demonstração).";
+    }
 
     async function carregarDiagnostico() {
+        try { estado.info = await api.info(); } catch (_) {}
         var i = estado.info || {};
         $("infoApp").innerHTML = "<b>Consulta Estoque</b> " + esc(i.versao) + " (" + esc(i.variante) + ")" + (i.demo ? " — <b>demonstração</b>" : "") +
             "<br><b>Sistema:</b> " + esc(i.sistema) + "<br><b>Electron</b> " + esc(i.electron) + " · <b>Chromium</b> " + esc(i.chrome) + " · <b>Node</b> " + esc(i.node) +
@@ -405,6 +463,14 @@
         $("gDireto").hidden = v !== "direto";
     }
 
+    function preencherMonitores(atual) {
+        var lista = (estado.info && estado.info.monitores) || [];
+        if (!lista.length) lista = [{ i: 0, nome: "Monitor 1" }];
+        $("cfgMonitor").innerHTML = lista.map(function (m) { return '<option value="' + m.i + '">' + esc(m.nome) + "</option>"; }).join("");
+        $("cfgMonitor").value = String(atual || 0);
+        if ($("cfgMonitor").value !== String(atual || 0)) $("cfgMonitor").value = "0";
+    }
+
     function preencherFormulario(c) {
         if (!c) return;
         var r = document.querySelector('input[name="modo"][value="' + c.modo + '"]');
@@ -413,42 +479,165 @@
         $("cfgMetodo").value = c.metodoCopia; $("cfgCopiaMin").value = c.copiaACadaMin;
         $("cfgDiretoSeg").value = c.diretoRecarregarSeg; $("cfgAoVivo").checked = c.diretoItemAoVivo;
         $("cfgHost").value = c.fbHost; $("cfgPorta").value = c.fbPorta; $("cfgPath").value = c.fdbPath;
-        $("cfgUser").value = c.fbUser; $("cfgPass").value = c.fbPass; $("cfgPass").type = "password";
+        $("cfgUser").value = c.fbUser; $("cfgPass").value = c.fbPass == null ? "" : c.fbPass; $("cfgPass").type = "password";
         $("cfgFixo").checked = c.fbHostFixo; $("cfgVarrer").checked = c.varrerRede;
         $("cfgGbak").value = c.gbakPath; $("cfgPasta").value = c.pastaCopias; $("cfgTimeout").value = c.copiaTimeoutMin;
-        $("cfgLoja").value = c.nomeLoja; $("cfgTema").value = c.tema; $("cfgZoom").value = c.zoom; $("oZoom").textContent = Math.round(c.zoom * 100) + "%";
-        $("cfgFechar").value = c.fecharDetalheSeg; $("cfgSom").checked = c.som; $("cfgTab").checked = c.tabComoEnter;
-        $("cfgLeve").checked = c.modoLeve; $("cfgCheia").checked = c.telaCheia; $("cfgTopo").checked = c.sempreNoTopo;
-        $("cfgIniciar").checked = c.iniciarComWindows; $("cfgGpu").checked = c.aceleracaoGrafica;
+        $("cfgLoja").value = c.nomeLoja; $("cfgLimpar").value = c.limparAposSeg; $("cfgCusto").checked = c.mostrarCusto;
+        $("cfgTema").value = c.tema; $("cfgZoom").value = c.zoom; $("oZoom").textContent = Math.round(c.zoom * 100) + "%";
+        $("cfgSom").checked = c.som; $("cfgTab").checked = c.tabComoEnter; $("cfgLeve").checked = c.modoLeve;
+        $("cfgIniciar").checked = c.iniciarComWindows; $("cfgPersistente").checked = c.persistente; $("cfgTopo").checked = c.sempreNoTopo;
+        $("cfgFoco").checked = c.manterFoco; $("cfgDescanso").checked = c.impedirDescanso; $("cfgBarra").checked = c.ocultarBarraTarefas;
+        $("cfgCursor").checked = c.ocultarCursor; $("cfgReiniciar").value = c.reiniciarDiario || ""; $("cfgGpu").checked = c.aceleracaoGrafica;
+        preencherMonitores(c.monitor);
+        estado.fbPassCarregada = c.fbPass != null;
     }
 
     function lerFormulario() {
+        // Tela pública: só as opções visuais. Desbloqueado: todas.
+        var o = {
+            tema: $("cfgTema").value, zoom: Number($("cfgZoom").value),
+            som: $("cfgSom").checked, tabComoEnter: $("cfgTab").checked, modoLeve: $("cfgLeve").checked
+        };
+        if (!livre()) return o;
         var modo = document.querySelector('input[name="modo"]:checked');
-        return {
+        Object.assign(o, {
             modo: modo ? modo.value : "copia",
             metodoCopia: $("cfgMetodo").value, copiaACadaMin: $("cfgCopiaMin").value,
             diretoRecarregarSeg: $("cfgDiretoSeg").value, diretoItemAoVivo: $("cfgAoVivo").checked,
+            nomeLoja: $("cfgLoja").value.trim(), limparAposSeg: $("cfgLimpar").value, mostrarCusto: $("cfgCusto").checked,
             fbHost: $("cfgHost").value.trim(), fbPorta: $("cfgPorta").value, fdbPath: $("cfgPath").value.trim(),
-            fbUser: $("cfgUser").value.trim(), fbPass: $("cfgPass").value,
+            fbUser: $("cfgUser").value.trim(),
             fbHostFixo: $("cfgFixo").checked, varrerRede: $("cfgVarrer").checked,
             gbakPath: $("cfgGbak").value.trim(), pastaCopias: $("cfgPasta").value.trim(), copiaTimeoutMin: $("cfgTimeout").value,
-            nomeLoja: $("cfgLoja").value.trim(), tema: $("cfgTema").value, zoom: Number($("cfgZoom").value),
-            fecharDetalheSeg: $("cfgFechar").value, som: $("cfgSom").checked, tabComoEnter: $("cfgTab").checked,
-            modoLeve: $("cfgLeve").checked, telaCheia: $("cfgCheia").checked, sempreNoTopo: $("cfgTopo").checked,
-            iniciarComWindows: $("cfgIniciar").checked, aceleracaoGrafica: $("cfgGpu").checked
-        };
+            iniciarComWindows: $("cfgIniciar").checked, persistente: $("cfgPersistente").checked, sempreNoTopo: $("cfgTopo").checked,
+            manterFoco: $("cfgFoco").checked, impedirDescanso: $("cfgDescanso").checked, ocultarBarraTarefas: $("cfgBarra").checked,
+            ocultarCursor: $("cfgCursor").checked, reiniciarDiario: $("cfgReiniciar").value, monitor: Number($("cfgMonitor").value) || 0,
+            aceleracaoGrafica: $("cfgGpu").checked
+        });
+        // Só envia a senha do Firebird se ela foi carregada (nunca apaga por engano).
+        if (estado.fbPassCarregada) o.fbPass = $("cfgPass").value;
+        return o;
     }
 
     async function salvarConfig(parcial, fechar) {
         var r;
         try { r = await api.salvarConfig(parcial); } catch (e) { r = { ok: false, mensagem: String(e && e.message || e) }; }
+        if (r && r.precisaSenha) { await atualizarAdmin(); toast("Desbloqueie com a senha do administrador para salvar estas configurações."); return false; }
         if (!r || r.ok === false) { toast("Não foi possível salvar: " + (r && r.mensagem || "erro")); return false; }
         estado.cfg = r.cfg;
         aplicarAparencia(r.cfg);
         if (fechar) { fecharPainel(); toast("Configurações salvas."); }
-        if (r.reiniciar && window.confirm("A aceleração gráfica só muda depois de reiniciar o aplicativo. Reiniciar agora?")) api.reiniciar();
+        if (r.reiniciar) {
+            var sim = await perguntar({ titulo: "Reiniciar agora?", texto: "A aceleração gráfica só muda depois de reiniciar o aplicativo.", senha: false, ok: "Reiniciar" });
+            if (sim) api.reiniciar();
+        }
         return true;
     }
+
+    // ── Janela de senha / confirmação ────────────────────────────────────────
+    // perguntar({ titulo, texto, senha, repetir, ok, cancelar, validar(v1, v2) → Promise<mensagem de erro | null> })
+    // Resolve com o valor digitado (ou true) ao confirmar, null ao cancelar.
+    function perguntar(o) {
+        return new Promise(function (resolve) {
+            estado.modal = true;
+            $("modalTitulo").textContent = o.titulo || "";
+            $("modalTexto").textContent = o.texto || "";
+            $("modalSenha").hidden = !o.senha; $("modalSenha").value = "";
+            $("modalSenha2").hidden = !o.repetir; $("modalSenha2").value = "";
+            $("modalErro").textContent = "";
+            $("modalOk").textContent = o.ok || "OK";
+            $("modalOk").disabled = false;
+            $("modalCancelar").hidden = o.cancelar === false;
+            $("modalFundo").hidden = false; $("modal").hidden = false;
+            setTimeout(function () { (o.senha ? $("modalSenha") : $("modalOk")).focus(); }, 30);
+            var terminar = function (v) {
+                estado.modal = false;
+                $("modalFundo").hidden = true; $("modal").hidden = true;
+                $("modalOk").onclick = null; $("modalCancelar").onclick = null; perguntar.tecla = null;
+                $("modalSenha").value = ""; $("modalSenha2").value = "";
+                resolve(v);
+                focarBusca(false);
+            };
+            var confirmar = async function () {
+                if ($("modalOk").disabled) return;
+                var v1 = $("modalSenha").value, v2 = $("modalSenha2").value;
+                if (o.validar) {
+                    $("modalOk").disabled = true;
+                    var msg = null;
+                    try { msg = await o.validar(v1, v2); } catch (e) { msg = String(e && e.message || e); }
+                    $("modalOk").disabled = false;
+                    if (msg) { $("modalErro").textContent = msg; if (o.senha) $("modalSenha").select(); return; }
+                }
+                terminar(o.senha ? v1 : true);
+            };
+            $("modalOk").onclick = confirmar;
+            $("modalCancelar").onclick = function () { terminar(null); };
+            perguntar.tecla = function (e) {
+                if (e.key === "Enter") { e.preventDefault(); confirmar(); }
+                else if (e.key === "Escape" && o.cancelar !== false) { e.preventDefault(); terminar(null); }
+            };
+        });
+    }
+
+    async function pedirSaida() {
+        if (estado.modal || estado.pedindoSaida) return;
+        estado.pedindoSaida = true;
+        try { await atualizarAdmin(); } finally { estado.pedindoSaida = false; }
+        if (estado.modal) return;
+        var a = estado.admin || {};
+        var precisa = !!(a.temSenha && !a.desbloqueado);
+        await perguntar({
+            titulo: "Sair do aplicativo",
+            texto: precisa ? "Digite a senha do administrador para fechar o Consulta Estoque." : "Fechar o Consulta Estoque?",
+            senha: precisa, ok: "Sair",
+            validar: async function (senha) { var r = await api.sair(senha); return r && r.ok ? null : ((r && r.mensagem) || "Senha incorreta."); }
+        });
+    }
+
+    async function criarSenhaInicial() {
+        var criada = await perguntar({
+            titulo: "Crie a senha do administrador",
+            texto: "Primeira vez neste computador. A senha protege as configurações, a saída do aplicativo e a exportação (a consulta de preço continua livre para todos). Mínimo de 4 caracteres.",
+            senha: true, repetir: true, ok: "Criar senha", cancelar: false,
+            validar: async function (v1, v2) {
+                if (String(v1).length < 4) return "A senha precisa ter pelo menos 4 caracteres.";
+                if (v1 !== v2) return "As duas senhas não são iguais.";
+                var r = await api.definirSenha({ nova: v1 });
+                if (!r || !r.ok) return (r && r.mensagem) || "Não foi possível criar a senha.";
+                return null;
+            }
+        });
+        if (criada != null) {
+            try { estado.admin = await api.bloquear(); } catch (_) {}
+            toast("Senha do administrador criada.");
+        }
+    }
+
+    // ── Inatividade: limpa a busca e o cartão N segundos após a última ação ─
+    function reiniciarInatividade() {
+        clearTimeout(estado.timerInatividade);
+        var s = estado.cfg ? Number(estado.cfg.limparAposSeg) : 60;
+        if (!(s > 0)) return;
+        estado.timerInatividade = setTimeout(function () {
+            if (estado.painel || estado.modal) { reiniciarInatividade(); return; }
+            if (!q.value && $("cartao").hidden) return;
+            q.value = "";
+            $("bLimpar").hidden = true;
+            fecharCartao(false);
+            buscar(1);
+            focarBusca(false);
+        }, s * 1000);
+    }
+    function atividade() {
+        reiniciarInatividade();
+        if (estado.cfg && estado.cfg.ocultarCursor) {
+            document.body.classList.remove("sem-cursor");
+            clearTimeout(estado.timerCursor);
+            estado.timerCursor = setTimeout(function () { document.body.classList.add("sem-cursor"); }, 4000);
+        }
+    }
+    ["keydown", "keyup", "input", "mousedown", "wheel", "touchstart"].forEach(function (ev) { document.addEventListener(ev, atividade, true); });
+    document.addEventListener("mousemove", function () { if (estado.cfg && estado.cfg.ocultarCursor) atividade(); }, true);
 
     // ── Eventos ──────────────────────────────────────────────────────────────
     q.addEventListener("input", function () {
@@ -473,7 +662,6 @@
             focarBusca(false);
         });
     });
-    $("fCus").addEventListener("change", function () { salvarConfig({ mostrarCusto: $("fCus").checked }, false); focarBusca(false); });
 
     $("corpo").addEventListener("click", function (e) {
         var tr = e.target.closest("tr[data-idx]");
@@ -493,24 +681,19 @@
     $("bFecharCartao").addEventListener("click", function () { fecharCartao(false); focarBusca(true); });
 
     $("bAtualizar").addEventListener("click", function () { api.atualizar(); toast("Atualizando o estoque..."); focarBusca(false); });
-    $("bTela").addEventListener("click", function () { api.telaCheia(); focarBusca(false); });
     $("bConfig").addEventListener("click", function () { abrirPainel(); });
     $("estado").addEventListener("click", function () { abrirPainel("banco"); });
-    $("bVazioProcurar").addEventListener("click", function () { api.procurarBanco(); toast("Procurando o banco na rede e nesta máquina..."); });
+    $("bVazioProcurar").addEventListener("click", function () { abrirPainel("banco"); });
     $("bVazioTentar").addEventListener("click", function () { api.atualizar(); });
     $("bVazioConfig").addEventListener("click", function () { abrirPainel("banco"); });
-    $("bCsv").addEventListener("click", async function () {
-        var r = await api.exportarCsv(parametros(1));
-        if (r && r.ok) toast(r.linhas.toLocaleString("pt-BR") + " itens exportados.");
-        else if (r && !r.cancelado) toast("Não foi possível exportar: " + (r.mensagem || "erro"));
-        focarBusca(false);
-    });
 
     $("abas").addEventListener("click", function (e) { var b = e.target.closest("button[data-aba]"); if (b) trocarAba(b.getAttribute("data-aba")); });
     $("fundo").addEventListener("click", fecharPainel);
     $("bFecharPainel").addEventListener("click", fecharPainel);
     $("bCancelar").addEventListener("click", fecharPainel);
     $("bSalvar").addEventListener("click", function () { salvarConfig(lerFormulario(), true); });
+    $("bDesbloquear").addEventListener("click", desbloquear);
+    $("travaSenha").addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); desbloquear(); } });
     var radios = document.querySelectorAll('input[name="modo"]');
     for (var r = 0; r < radios.length; r++) radios[r].addEventListener("change", marcarModo);
     $("cfgZoom").addEventListener("input", function () { $("oZoom").textContent = Math.round(Number($("cfgZoom").value) * 100) + "%"; });
@@ -520,20 +703,53 @@
         toast("Procurando o banco na rede e nesta máquina...", 5000);
         try {
             var ok = await api.procurarBanco();
+            if (ok && ok.precisaSenha) { await atualizarAdmin(); return; }
             estado.cfg = await api.lerConfig();
             preencherFormulario(estado.cfg);
             toast(ok ? "Banco encontrado." : "Banco não encontrado — veja o motivo em Situação.", 5000);
         } finally { $("bProcurar").disabled = false; }
     });
     $("bCancelarCopia").addEventListener("click", function () { api.cancelarCopia(); toast("Cópia cancelada."); });
-    $("bPasta").addEventListener("click", function () { api.abrirPastaDados(); });
     $("bCopiarLog").addEventListener("click", function () {
         try { navigator.clipboard.writeText($("log").textContent).then(function () { toast("Log copiado."); }, function () { toast("Não foi possível copiar."); }); }
         catch (_) { toast("Não foi possível copiar."); }
     });
 
+    // Administrador
+    var resultadoAdmin = async function (r, ok) {
+        if (r && r.precisaSenha) { await atualizarAdmin(); toast("A sessão do administrador expirou — digite a senha de novo."); return false; }
+        if (r && r.ok === false) { toast(r.mensagem || "Não foi possível."); return false; }
+        if (ok) toast(ok);
+        return true;
+    };
+    $("bTrocarSenha").addEventListener("click", async function () {
+        var n1 = $("admNova").value, n2 = $("admNova2").value;
+        if (n1.length < 4) { toast("A senha precisa ter pelo menos 4 caracteres."); return; }
+        if (n1 !== n2) { toast("As duas senhas não são iguais."); return; }
+        var r = await api.definirSenha({ nova: n1 });
+        $("admNova").value = ""; $("admNova2").value = "";
+        if (await resultadoAdmin(r, "Senha do administrador trocada.")) { estado.admin = r.estado; desenharInfoAdmin(); desenharTrava(); }
+    });
+    $("bCsv").addEventListener("click", async function () {
+        var r = await api.exportarCsv(parametros(1));
+        if (r && r.ok) toast(r.linhas.toLocaleString("pt-BR") + " itens exportados.");
+        else if (r && !r.cancelado) await resultadoAdmin(r);
+    });
+    $("bPasta").addEventListener("click", async function () { await resultadoAdmin(await api.abrirPastaDados()); });
+    $("bManutencao").addEventListener("click", async function () {
+        var r = await api.manutencao(!(estado.admin && estado.admin.manutencao));
+        if (!r || r.ok === false) { await resultadoAdmin(r); return; }
+        estado.admin = r;
+        desenharInfoAdmin();
+        toast(r.manutencao ? "Modo manutenção: a tela cheia foi suspensa até você voltar ou reiniciar." : "Tela cheia de volta.");
+    });
+    $("bReiniciarApp").addEventListener("click", async function () { await resultadoAdmin(await api.reiniciar()); });
+    $("bSairApp").addEventListener("click", function () { pedirSaida(); });
+    $("bBloquear").addEventListener("click", async function () { estado.admin = await api.bloquear(); trocarAba(estado.aba); });
+
     // Teclado: atalhos e o leitor de código de barras.
     document.addEventListener("keydown", function (e) {
+        if (estado.modal) { if (perguntar.tecla) perguntar.tecla(e); return; }
         var k = e.key;
         if (k === "Escape") {
             if (estado.painel) { fecharPainel(); e.preventDefault(); return; }
@@ -541,6 +757,7 @@
             if (document.activeElement === q && q.value) { q.value = ""; $("bLimpar").hidden = true; buscar(1); e.preventDefault(); }
             return;
         }
+        if ((e.ctrlKey || e.metaKey) && e.shiftKey && (k === "q" || k === "Q")) { e.preventDefault(); pedirSaida(); return; }
         if (k === "F5") { e.preventDefault(); api.atualizar(); toast("Atualizando o estoque..."); return; }
         if (k === "F10" || (e.ctrlKey && k === ",")) { e.preventDefault(); if (estado.painel) fecharPainel(); else abrirPainel(); return; }
         if (k === "F2" || k === "F3" || (e.ctrlKey && (k === "f" || k === "F"))) { e.preventDefault(); fecharPainel(); focarBusca(true); return; }
@@ -567,6 +784,7 @@
         try { estado.info = await api.info(); } catch (_) {}
         try { estado.cfg = await api.lerConfig(); aplicarAparencia(estado.cfg); } catch (_) {}
         api.aoStatus(desenharStatus);
+        api.aoPedirSaida(function () { pedirSaida(); });
         api.aoDadosNovos(function () {
             // Estoque novo: refaz a busca atual sem mexer no que a pessoa digitou.
             buscar(1);
@@ -583,6 +801,8 @@
         if (estado.info && estado.info.demo) toast("Modo demonstração: produtos de exemplo, sem banco.", 5000);
         await buscar(1);
         focarBusca(false);
+        await atualizarAdmin();
+        if (estado.admin && !estado.admin.temSenha) await criarSenhaInicial();
     }
     iniciar();
 })();

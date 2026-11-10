@@ -218,3 +218,33 @@ test("gbak: cancelar encerra o processo e devolve CANCELADA", async () => {
         assert.strictEqual(c.status().emAndamento, false);
     } finally { delete process.env.MOCK_GBAK_ATRASO_MS; }
 });
+
+test("motor: servidor informado sem caminho → o SMALL.FDB é procurado nesse servidor", async () => {
+    let buscaGeral = 0;
+    const { motor, arquivoConfig } = montar({ "10.0.0.7|D:\\SMALLSOFT\\SMALL COMMERCE\\SMALL.FDB": bancoExemplo() }, { fbHost: "10.0.0.7", fbHostFixo: true }, {
+        portaAberta: async h => h === "10.0.0.7",
+        localizar: async () => { buscaGeral++; return { achado: null, falhas: [], mensagem: "x" }; }
+    });
+    await motor.iniciar();
+    await esperar(() => motor.status().itens === 15, 8000);
+    assert.strictEqual(buscaGeral, 0, "não precisou da busca geral (nem com fbHostFixo)");
+    const c = Config.carregar(arquivoConfig).cfg;
+    assert.strictEqual(c.fbHost, "10.0.0.7");
+    assert.strictEqual(c.fdbPath.toUpperCase(), "D:\\SMALLSOFT\\SMALL COMMERCE\\SMALL.FDB");
+    motor.encerrar();
+});
+
+test("motor: trocar só o servidor nas configurações apaga o caminho antigo e procura no novo", async () => {
+    const { motor } = montar({
+        "10.0.0.5|C:\\SMALL.FDB": bancoExemplo(),
+        "10.0.0.9|C:\\PROGRAM FILES (X86)\\SMALLSOFT\\SMALL COMMERCE\\SMALL.FDB": bancoExemplo()
+    }, { fbHost: "10.0.0.5", fdbPath: "C:\\SMALL.FDB" }, { portaAberta: async h => h === "10.0.0.5" || h === "10.0.0.9" });
+    await motor.iniciar();
+    await esperar(() => motor.status().itens === 15);
+    const c = motor.salvarConfig({ fbHost: "10.0.0.9", fdbPath: "C:\\SMALL.FDB" });
+    assert.strictEqual(c.fdbPath, "", "caminho antigo não vale para o servidor novo");
+    await esperar(() => /10\.0\.0\.9/.test(String(motor.status().fonte && motor.status().fonte.host)) && motor.status().estado === "pronto" && motor.config().fdbPath, 8000);
+    assert.match(motor.config().fdbPath, /Program Files \(x86\)\\SmallSoft\\Small Commerce\\SMALL\.FDB$/i);
+    assert.strictEqual(motor.salvarConfig({ senhaAdmin: "pbkdf2$1$" }).senhaAdmin, "", "a senha não muda por salvarConfig");
+    motor.encerrar();
+});

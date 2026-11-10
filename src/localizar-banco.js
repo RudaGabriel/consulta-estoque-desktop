@@ -1,7 +1,7 @@
 "use strict";
 /**
  * localizar-banco.js
- * @version 1.0.0
+ * @version 1.1.0
  * @author Ruda Gabriel
  * @description Descobre sozinho ONDE está o banco do Small Commerce (servidor +
  *              caminho do SMALL.FDB), sem o usuário digitar nada.
@@ -25,7 +25,7 @@
  *
  * @changelog
  *   (Histórico completo das versões: CHANGELOG.md no repositório.)
- *   1.0.0 — Primeira versão (lógica da descoberta do consulta-estoque.js 5.52.0).
+ *   1.1.0 — caminhoNoServidor: procura o SMALL.FDB só num servidor já conhecido.
  */
 
 const fs = require("fs");
@@ -441,6 +441,31 @@ async function escanearSubnet(portaAberta, porta, base, limite, log) {
     return achados;
 }
 
+/**
+ * Procura o caminho do SMALL.FDB num servidor JÁ conhecido (o configurado pelo
+ * usuário ou o achado antes): caminhos típicos de C: a H: e o anterior.
+ * dep: { host, cfg, validar, portaAberta, log, extras }. Não troca o servidor.
+ */
+async function caminhoNoServidor(dep) {
+    const d = dep || {};
+    const cfg = d.cfg || {};
+    const porta = Number(cfg.fbPorta) || 3050;
+    const host = String(d.host || "").trim();
+    if (!host) return { achado: null, falhas: [], mensagem: "Servidor não informado." };
+    let aberta = false;
+    try { aberta = await d.portaAberta(host, porta, 2000); } catch (_) {}
+    if (!aberta) return { achado: null, falhas: [], mensagem: "O servidor " + host + " não respondeu na porta " + porta + "." };
+    const combos = caminhosConhecidos(cfg.fdbPath, d.extras).map(c => ({ host, caminho: c }));
+    const r = await primeiraQueAbre(combos, d.validar, 60000);
+    if (r.combo) return { achado: r.combo, falhas: r.falhas, mensagem: "SMALL.FDB encontrado em " + host + ":" + r.combo.caminho + "." };
+    const auth = r.falhas.find(f => f.auth);
+    return {
+        achado: null, falhas: r.falhas,
+        mensagem: auth ? "O servidor " + host + " recusou o usuário/senha do Firebird. Ajuste em Configurações → Banco de dados."
+            : "O SMALL.FDB não foi encontrado nos caminhos típicos do servidor " + host + ". Informe o caminho em Configurações → Banco de dados."
+    };
+}
+
 // ── Orquestração ─────────────────────────────────────────────────────────────
 /**
  * Procura o banco. dep:
@@ -596,5 +621,5 @@ async function localizar(dep) {
 module.exports = {
     VERSAO, classificarRedes, ipsLocais, caminhosConhecidos, extrairBancosDeIni, compararLocais, primeiraQueAbre,
     unidadesSeguras, buscarFdbLocais, lerConfiguracoesSmall, escanearSubnet, localizar, ehLocal, FDB_IGNORADOS,
-    ehArquivoSmall, hostDeUnc, extrairUncDeAtalho, identidadesDestaMaquina, bancoAutoSuspeito, comPrazo, unidadesDeRede, pistasDeAtalhos
+    caminhoNoServidor, ehArquivoSmall, hostDeUnc, extrairUncDeAtalho, identidadesDestaMaquina, bancoAutoSuspeito, comPrazo, unidadesDeRede, pistasDeAtalhos
 };
