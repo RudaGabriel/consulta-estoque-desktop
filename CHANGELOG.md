@@ -248,7 +248,7 @@ CI.
 
 ### 1.2.0 — 2026-11-10
 
-**Release automática a cada versão nova na `main`:** cria a tag `v<versão do package.json>` e publica os instaladores e as versões portáteis, se a Release ainda não existir (uma tag `v*` enviada à mão continua publicando).
+**Release automática a cada versão nova na `main`:** cria a tag `v<versão do package.json>` e publica os instaladores e as versões portáteis. Release que já tem todos os arquivos é pulada; se faltar algum (envio interrompido), é completada. Tag `v*` enviada à mão ou disparo manual numa tag continuam publicando.
 
 ### 1.1.0 — 2026-11-10
 
