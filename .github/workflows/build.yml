@@ -96,13 +96,17 @@ jobs:
           if-no-files-found: error
 
   publicar:
-    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v'))
+    if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v'))
     needs: instaladores
     runs-on: ubuntu-latest
     permissions:
       contents: write
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          path: arquivos
+          merge-multiple: true
       - name: Versão a publicar
         id: versao
         env:
@@ -110,27 +114,26 @@ jobs:
         run: |
           if [[ "$GITHUB_REF" == refs/tags/v* ]]; then tag="${GITHUB_REF_NAME}"; else tag="v$(node -p "require('./package.json').version")"; fi
           echo "tag=$tag" >> "$GITHUB_OUTPUT"
-          if gh release view "$tag" >/dev/null 2>&1; then
-            echo "A Release $tag já existe — nada a publicar."
+          find arquivos -type f -name "*.exe" -printf "%f  %s bytes\n"
+          esperados=$(find arquivos -type f -name "*.exe" -printf "%f\n" | sort)
+          # Release que já tem TODOS os arquivos: nada a fazer. Se faltar algum
+          # (envio interrompido), publica de novo e completa.
+          publicados=$(gh release view "$tag" --json assets --jq '.assets[].name' 2>/dev/null | sort || true)
+          faltando=$(comm -23 <(echo "$esperados") <(echo "$publicados") | grep -c . || true)
+          if [ -n "$publicados" ] && [ "$faltando" = "0" ]; then
+            echo "A Release $tag já tem todos os arquivos — nada a publicar."
             echo "publicar=nao" >> "$GITHUB_OUTPUT"
           else
-            echo "Publicando a Release $tag."
+            echo "Publicando a Release $tag ($faltando arquivo(s) faltando)."
             echo "publicar=sim" >> "$GITHUB_OUTPUT"
           fi
-      - uses: actions/download-artifact@v4
-        if: steps.versao.outputs.publicar == 'sim'
-        with:
-          path: arquivos
-          merge-multiple: true
-      - name: Listar os arquivos
-        if: steps.versao.outputs.publicar == 'sim'
-        run: find arquivos -type f -name "*.exe" -printf "%f  %s bytes\n"
       - uses: softprops/action-gh-release@v2
         if: steps.versao.outputs.publicar == 'sim'
         with:
           tag_name: ${{ steps.versao.outputs.tag }}
           target_commitish: ${{ github.sha }}
           name: Consulta Estoque ${{ steps.versao.outputs.tag }}
+          overwrite_files: true
           body: |
             **Qual baixar?**
             - Windows 10/11 64 bits: `...-win10-11-x64-instalador.exe` (instala) ou `...-win10-11-x64-portatil.exe` (sem instalar).
