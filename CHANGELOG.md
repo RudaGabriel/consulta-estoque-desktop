@@ -7,8 +7,8 @@ Versões em uso hoje:
 
 | Arquivo | Versão |
 |---|---|
-| Aplicativo (`package.json`) | [1.6.0](#aplicativo) |
-| [`main.js`](#mainjs) | 1.5.0 |
+| Aplicativo (`package.json`) | [1.6.1](#aplicativo) |
+| [`main.js`](#mainjs) | 1.5.1 |
 | [`preload.js`](#preloadjs) | 1.5.0 |
 | [`ui/index.html`, `ui/estilo.css`, `ui/app.js`](#ui) | 1.6.0 (`app.js`); 1.4.0 (`index.html`, `estilo.css`) |
 | [`src/motor.js`](#srcmotorjs) | 1.6.0 |
@@ -16,6 +16,7 @@ Versões em uso hoje:
 | [`src/estoque-dados.js`](#srcestoque-dadosjs) | 1.1.0 |
 | [`src/estoque-busca.js`](#srcestoque-buscajs) | 1.2.0 |
 | [`src/localizar-banco.js`](#srclocalizar-bancojs) | 1.4.0 |
+| [`src/caminhos.js`](#srccaminhosjs) | 1.0.0 |
 | [`src/instalar-firebird.js`](#srcinstalar-firebirdjs) | 1.2.0 |
 | [`src/copia-gbak.js`](#srccopia-gbakjs) | 1.2.0 |
 | [`src/config.js`](#srcconfigjs) | 1.4.0 |
@@ -34,6 +35,10 @@ Versões em uso hoje:
 ## Aplicativo
 
 Versão do Consulta Estoque (a que aparece no instalador e em *Configurações → Diagnóstico*).
+
+### 1.6.1 — 2026-11-11
+
+**Correção:** "Apagar esta versão portátil" com o `.exe` guardado na raiz de uma unidade (ex.: `D:\`, pendrive) agora apaga também a pasta `ConsultaEstoque-dados` (antes ela ficava para trás). 69 testes.
 
 ### 1.6.0 — 2026-11-11
 
@@ -132,6 +137,10 @@ Versão do Consulta Estoque (a que aparece no instalador e em *Configurações �
 ## `main.js`
 
 Processo principal (janela, instância única, pasta de dados, IPC).
+
+### 1.5.1 — 2026-11-11
+
+**Autoexclusão do portátil na raiz de uma unidade:** a pasta de dados passa a ser reconhecida por `dentroDaPasta` (somar a barra a `D:\` dava `D:\\` e nada casava).
 
 ### 1.5.0 — 2026-11-11
 
@@ -328,6 +337,16 @@ Descoberta automática do banco.
 ### 1.0.0 — 2026-11-09
 
 **Primeira versão.** Rede primeiro e `127.0.0.1` por último; só `SMALL.FDB`; pistas: `.ini`/`.cfg` locais, das unidades de rede e do compartilhamento do servidor, atalhos `.lnk` do sistema de gestão, nome `SERVIDOR`, varredura (LAN, Tailscale, 169.254); IPs e nome desta máquina nunca contam como servidor; leituras de rede com prazo; unidades de rede/CD fora da busca de `.FDB`.
+
+---
+
+## `src/caminhos.js`
+
+Comparação de pastas do Windows.
+
+### 1.0.0 — 2026-11-11
+
+**Primeira versão.** `dentroDaPasta(pai, filho)`: sem diferenciar maiúsculas, funciona com a raiz de uma unidade e nunca casa uma pasta de outra unidade ou de nome parecido.
 
 ---
 

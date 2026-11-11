@@ -1,7 +1,7 @@
 {
   "name": "consulta-estoque-desktop",
   "productName": "Consulta Estoque",
-  "version": "1.6.0",
+  "version": "1.6.1",
   "description": "Consulta de preço e estoque para Windows sobre banco Firebird: acha o banco sozinho na rede, leitor de código de barras USB/Bluetooth, leitura instantânea, cópia do banco ou leitura direta.",
   "private": true,
   "main": "main.js",
@@ -10,7 +10,7 @@
   "scripts": {
     "start": "electron .",
     "demo": "electron . --demo",
-    "test": "node --test test/nucleo.test.js test/localizar.test.js test/motor.test.js test/vigia.test.js test/firebird-instalar.test.js",
+    "test": "node --test test/nucleo.test.js test/localizar.test.js test/motor.test.js test/vigia.test.js test/firebird-instalar.test.js test/caminhos.test.js",
     "dist": "electron-builder --config electron-builder.config.js --win --x64",
     "dist:legado": "node -e \"process.env.VARIANTE='legado';require('child_process').execFileSync(process.execPath,[require.resolve('electron-builder/cli.js'),'--config','electron-builder.config.js','--win','--x64','--ia32'],{stdio:'inherit',env:process.env})\""
   },

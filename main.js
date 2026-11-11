@@ -1,7 +1,7 @@
 "use strict";
 /**
  * main.js
- * @version 1.5.0
+ * @version 1.5.1
  * @author Ruda Gabriel
  * @description Processo principal do Consulta Estoque (Electron): janela em
  *              modo quiosque, senha do administrador, módulo de persistência
@@ -17,10 +17,8 @@
  *
  * @changelog
  *   (Histórico completo das versões: CHANGELOG.md no repositório.)
- *   1.5.0 — Autoexclusão da versão portátil ("app:autoexcluir", com a senha): desliga
- *           o início com o Windows, encerra o vigia e, depois de fechar, apaga o .exe
- *           portátil, a pasta de dados dele, as cópias do banco e os instaladores
- *           baixados; "app:info" diz se é a versão portátil.
+ *   1.5.1 — Autoexclusão do portátil guardado na raiz de uma unidade (ex.: D:\): a pasta
+ *           de dados agora também é apagada (a comparação de caminhos falhava).
  */
 
 const { app, BrowserWindow, ipcMain, dialog, shell, screen, powerSaveBlocker } = require("electron");
@@ -34,6 +32,7 @@ const { criarMotor } = require("./src/motor.js");
 const FB = require("./src/firebird.js");
 const InstalarFirebird = require("./src/instalar-firebird.js");
 const Localizar = require("./src/localizar-banco.js");
+const { dentroDaPasta } = require("./src/caminhos.js");
 const pacote = require("./package.json");
 
 const VERSAO = pacote.version;
@@ -458,7 +457,7 @@ if (!INSTANCIA_PRINCIPAL) {
             const dirPortatil = path.resolve(process.env.PORTABLE_EXECUTABLE_DIR || path.dirname(EXE_APP));
             const alvos = [path.resolve(EXE_APP)];
             // Pasta de dados: só a da própria versão portátil (ao lado do .exe), nunca a de uma versão instalada.
-            if (path.resolve(PASTA_DADOS).toLowerCase().startsWith(dirPortatil.toLowerCase() + path.sep)) alvos.push(path.resolve(PASTA_DADOS));
+            if (dentroDaPasta(dirPortatil, PASTA_DADOS)) alvos.push(path.resolve(PASTA_DADOS));
             alvos.push(path.join(process.env.ProgramData || "C:\\ProgramData", "ConsultaEstoqueDesktop"));
             alvos.push(path.join(os.tmpdir(), "ConsultaEstoque-firebird"));
             try { app.setLoginItemSettings({ openAtLogin: false, path: EXE_APP, args: [] }); } catch (_) {}
