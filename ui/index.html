@@ -1,13 +1,14 @@
 <!doctype html>
 <!--
   index.html — Consulta Estoque (tela)
-  @version 1.3.0
+  @version 1.4.0
   @author Ruda Gabriel
   @changelog
     (Histórico completo das versões: CHANGELOG.md no repositório.)
-    1.3.0 — Barra de andamento da cópia com estimativa; campo de texto na janela de
-            pergunta (nome da loja na configuração inicial); "Remover a senha" na aba
-            Administrador.
+    1.4.0 — Três modos na aba Consulta (Instantâneo padrão, Cópia do banco, Leitura
+            direta); botões de fechar com o X desenhado (centralizado); cartão ampliado
+            com caixas que somem quando vazias; botão de voltar ao topo da lista; volume
+            do bipe; dica do "-palavra"; apagar a versão portátil; textos neutros.
 -->
 <html lang="pt-BR">
 <head>
@@ -50,7 +51,7 @@
     <input id="q" type="search" autocomplete="off" spellcheck="false" autofocus
            placeholder="Passe o leitor ou digite nome, código, código de barras, referência..."
            title="Dicas: RAÇÃO*10KG acha os dois no mesmo nome (* = qualquer coisa) · RAÇÃO >50 = preço de R$ 50 ou mais · RAÇÃO <50 = R$ 50 ou menos">
-    <button id="bLimpar" class="limpar" type="button" title="Limpar (Esc)" hidden>×</button>
+    <button id="bLimpar" class="limpar" type="button" title="Limpar (Esc)" aria-label="Limpar" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg></button>
   </div>
   <div class="filtros">
     <label>Estoque
@@ -59,7 +60,7 @@
         <option value="com">Com estoque</option>
         <option value="sem">Sem estoque</option>
         <option value="negativo">Negativo</option>
-        <option value="abaixo">Abaixo do mínimo</option>
+        <option value="abaixo" id="opAbaixo" hidden>Abaixo do mínimo</option>
       </select>
     </label>
     <label>Ordem
@@ -83,7 +84,7 @@
 
 <main id="principal">
   <article id="cartao" class="cartao" hidden aria-live="polite">
-    <button class="fechar" id="bFecharCartao" type="button" title="Fechar (Esc)">×</button>
+    <button class="fechar" id="bFecharCartao" type="button" title="Fechar (Esc)" aria-label="Fechar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg></button>
     <div class="cartao-topo">
       <div class="cartao-cod" id="cCod"></div>
       <div class="selo" id="cSelo" hidden></div>
@@ -91,9 +92,9 @@
     <h1 class="cartao-desc" id="cDesc"></h1>
     <div class="cartao-preco" id="cPreco"></div>
     <div class="cartao-info">
-      <div><span>Estoque</span><strong id="cQtd"></strong></div>
-      <div><span>Unidade</span><strong id="cUn"></strong></div>
-      <div><span>Cód. barras</span><strong id="cBar"></strong></div>
+      <div id="cQtdBox"><span>Estoque</span><strong id="cQtd"></strong></div>
+      <div id="cUnBox"><span>Unidade</span><strong id="cUn"></strong></div>
+      <div id="cBarBox"><span>Cód. barras</span><strong id="cBar"></strong></div>
       <div id="cCustoBox" hidden><span>Custo</span><strong id="cCusto"></strong></div>
       <div id="cMinBox" hidden><span>Mínimo</span><strong id="cMin"></strong></div>
     </div>
@@ -126,6 +127,7 @@
     </table>
   </div>
   <button id="bMais" class="btn mais" type="button" hidden>Carregar mais</button>
+  <button id="bTopo" class="topo-lista" type="button" title="Voltar ao topo da lista" aria-label="Voltar ao topo da lista" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 19V5M5 12l7-7 7 7" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
 </main>
 
 <!-- Configurações -->
@@ -134,7 +136,7 @@
   <div class="painel-topo">
     <h2>Configurações</h2>
     <span class="cadeado" id="cadeado" title="Situação do administrador"></span>
-    <button class="fechar" id="bFecharPainel" type="button" title="Fechar (Esc)">×</button>
+    <button class="fechar" id="bFecharPainel" type="button" title="Fechar (Esc)" aria-label="Fechar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg></button>
   </div>
   <nav class="abas" id="abas">
     <button type="button" data-aba="tela" class="ativa">Tela</button>
@@ -163,30 +165,33 @@
         </label>
       </div>
       <label class="chk"><input type="checkbox" id="cfgSom"> Som ao ler um código (outro som quando não encontra)</label>
+      <div class="linha-volume">
+        <label>Volume do bipe <output id="oVolume"></output>
+          <input type="range" id="cfgVolume" min="10" max="100" step="5">
+        </label>
+        <button class="btn fino" id="bTestarSom" type="button">Testar o som</button>
+      </div>
       <label class="chk"><input type="checkbox" id="cfgTab"> Leitor que envia TAB no fim: tratar como Enter</label>
       <label class="chk"><input type="checkbox" id="cfgLeve"> Modo leve (sem animações — PCs antigos)</label>
     </section>
 
     <section data-pagina="consulta" hidden>
-      <div class="opcoes-modo">
+      <div class="opcoes-modo tres">
+        <label class="modo-card"><input type="radio" name="modo" value="instantaneo">
+          <strong>Instantâneo <em>padrão</em></strong>
+          <span>Uma leitura rápida só da tabela de produtos, em somente leitura, a cada intervalo. Não trava o caixa, não precisa de nada instalado neste computador e o estoque fica salvo aqui — funciona mesmo com o servidor fora do ar.</span>
+        </label>
         <label class="modo-card"><input type="radio" name="modo" value="copia">
-          <strong>Cópia do banco <em>recomendado</em></strong>
-          <span>Como o Relatórios FDB-FBK: a consulta não pesa no caixa. O estoque é copiado a cada intervalo e fica salvo neste computador — funciona mesmo com o servidor fora do ar.</span>
+          <strong>Cópia do banco</strong>
+          <span>Copia o banco inteiro para este computador (gbak) a cada intervalo e consulta a cópia. Precisa do Firebird neste computador (sem ele, usa o Instantâneo). Mais pesada: leva minutos por cópia.</span>
         </label>
         <label class="modo-card"><input type="radio" name="modo" value="direto">
           <strong>Leitura direta</strong>
-          <span>Como o Relatórios SSH: lê o banco do servidor em somente leitura, recarrega a lista a cada intervalo e, ao abrir um produto, relê o estoque e o preço do instante.</span>
+          <span>Lê o banco do servidor em somente leitura, recarrega a lista a cada intervalo e, ao abrir um produto, relê o estoque e o preço do instante.</span>
         </label>
       </div>
       <div class="grupo" id="gCopia">
-        <label>Método da cópia
-          <select id="cfgMetodo">
-            <option value="auto">Automático (gbak quando disponível)</option>
-            <option value="gbak">gbak — backup e restauração (exige Firebird neste PC)</option>
-            <option value="instantaneo">Instantâneo — leitura única da tabela de produtos</option>
-          </select>
-        </label>
-        <label>Atualizar a cópia a cada (minutos — 180 = 3 horas)
+        <label>Atualizar a cada (minutos — 180 = 3 horas)
           <input type="number" id="cfgCopiaMin" min="1" max="1440" step="1">
         </label>
       </div>
@@ -203,7 +208,7 @@
       <label class="chk"><input type="checkbox" id="cfgCusto"> Mostrar o custo (na lista e no cartão)</label>
       <label class="chk"><input type="checkbox" id="cfgCoringa"> Busca com coringa: <strong>*</strong> vale qualquer coisa (ex.: RAÇÃO*10KG)</label>
       <label class="chk"><input type="checkbox" id="cfgPreco"> Filtro de preço na busca: <strong>RAÇÃO &gt;50</strong> = R$ 50 ou mais; <strong>RAÇÃO &lt;50</strong> = R$ 50 ou menos</label>
-      <p class="dica">Nos dois modos o aplicativo <strong>nunca grava</strong> no banco do Small Commerce (só leitura).</p>
+      <p class="dica">Em todos os modos o aplicativo <strong>nunca grava</strong> no banco de dados (só leitura).</p>
     </section>
 
     <section data-pagina="banco" hidden>
@@ -236,7 +241,8 @@
         <summary>Avançado (cópia gbak)</summary>
         <label>Caminho do gbak.exe (vazio = automático)<input type="text" id="cfgGbak" placeholder="C:\Program Files\Firebird\Firebird_3_0\gbak.exe"></label>
         <label>Pasta das cópias (vazio = automático, sempre em disco local)<input type="text" id="cfgPasta"></label>
-        <label>Tempo máximo de cada cópia (minutos)<input type="number" id="cfgTimeout" min="1" max="360"></label>
+        <label>Tempo máximo de UMA cópia (minutos)<input type="number" id="cfgTimeout" min="1" max="360"></label>
+        <p class="dica">É um limite de segurança de cada cópia, não o intervalo: se uma cópia passar desse tempo (servidor travado, rede lenta), ela é cancelada e a cópia anterior continua valendo; a próxima tentativa vem no horário normal. O intervalo entre cópias é o "Atualizar a cada" da aba Consulta (padrão 3 horas) e cresce sozinho para 3× a duração da última cópia, para nunca ocupar o servidor mais que 1/3 do tempo.</p>
       </details>
     </section>
 
@@ -270,6 +276,7 @@
       <div class="botoes">
         <button class="btn" id="bCsv" type="button">Exportar a lista (planilha CSV)</button>
         <button class="btn" id="bPasta" type="button">Abrir a pasta de dados</button>
+        <button class="btn perigo" id="bAutoexcluir" type="button" hidden>Apagar esta versão portátil (e todos os dados dela)</button>
         <button class="btn" id="bManutencao" type="button">Modo manutenção (sair da tela cheia)</button>
       </div>
       <div class="botoes">

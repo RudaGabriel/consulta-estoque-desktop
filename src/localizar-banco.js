@@ -1,9 +1,9 @@
 "use strict";
 /**
  * localizar-banco.js
- * @version 1.3.0
+ * @version 1.4.0
  * @author Ruda Gabriel
- * @description Descobre sozinho ONDE está o banco do Small Commerce (servidor +
+ * @description Descobre sozinho ONDE está o banco de dados (servidor +
  *              caminho do SMALL.FDB), sem o usuário digitar nada.
  *
  * Meta (cfg.metaBusca, perguntada ao usuário): "rede" (padrão) testa o servidor
@@ -13,9 +13,9 @@
  * nenhum em lugar nenhum, os outros .FDB achados voltam em `outros` para o
  * usuário escolher (validarOutros abre cada um, em somente leitura).
  * Etapas:
- *   1. a configuração do próprio Small Commerce: .ini/.cfg desta máquina, das
+ *   1. a configuração do sistema de gestão: .ini/.cfg desta máquina, das
  *      unidades de rede mapeadas e dos compartilhamentos do servidor (o Small
- *      costuma rodar de \\SERVIDOR\SmallSoft\Small Commerce) e os atalhos do
+ *      costuma rodar de uma pasta compartilhada do servidor) e os atalhos do
  *      Small na Área de Trabalho/Menu Iniciar — com o servidor citado neles;
  *   2. os servidores da rede: os citados nessas pistas (pelo NOME, que não
  *      muda quando o IP muda), o configurado, o nome "SERVIDOR" e os achados
@@ -37,10 +37,8 @@
  *
  * @changelog
  *   (Histórico completo das versões: CHANGELOG.md no repositório.)
- *   1.3.0 — Meta da busca (rede ou este computador primeiro); varredura completa
- *           (disco local mais fundo, compartilhamentos listados por "net view" em
- *           todos os servidores achados); outros .FDB coletados e validarOutros
- *           para o usuário escolher quando não há SMALL.FDB em lugar nenhum.
+ *   1.4.0 — Textos e mensagens neutros (sem nomes de sistemas); os caminhos de pasta
+ *           típicos continuam só na lista interna da busca.
  */
 
 const fs = require("fs");
@@ -48,9 +46,9 @@ const path = require("path");
 const os = require("os");
 const { execFile } = require("child_process");
 
-const VERSAO = "1.3.0";
+const VERSAO = "1.4.0";
 
-// Pastas que nunca têm o banco do Small Commerce (ou são cópias de sistemas de consulta).
+// Pastas que nunca têm o banco de dados em uso (ou são cópias feitas por programas de consulta).
 const PASTAS_IGNORADAS = new Set([
     "windows", "$recycle.bin", "system volume information", "recovery", "perflogs",
     "$windows.~bt", "$windows.~ws", "msocache", "windowsapps", "winsxs",
@@ -62,21 +60,21 @@ const FDB_IGNORADOS = /^(security\d*|employee|help|isc4|mon\$.*|small_offline_.*
 
 const ehLocal = h => { const s = String(h || "").trim().toLowerCase(); return s === "127.0.0.1" || s === "localhost" || s === "::1"; };
 
-// Puro: o arquivo é o banco do Small Commerce? Só "SMALL.FDB" (qualquer caixa)
+// Puro: o arquivo é o banco procurado? Só "SMALL.FDB" (qualquer caixa)
 // — padrao.fdb, exemplo.fdb, off.fdb, monitor.fdb e cópias de consulta nunca.
 function ehArquivoSmall(caminho) {
     const s = String(caminho || "").trim().replace(/\//g, "\\");
     return /(?:^|[\\:])small\.fdb$/i.test(s);
 }
 
-// Puro: nome do servidor de um caminho UNC ("\\SERVIDOR\SmallSoft" → "SERVIDOR").
+// Puro: nome do servidor de um caminho UNC ("\\SERVIDOR\Dados" → "SERVIDOR").
 function hostDeUnc(unc) {
     const m = /^\\\\([A-Za-z0-9][\w.\-]*)\\/.exec(String(unc || "").trim() + "\\");
     return m ? m[1] : null;
 }
 
-// Puro: partes de um caminho UNC ("\\SRV\SmallSoft\Small Commerce\SMALL.FDB"
-// → { host: "SRV", compart: "SmallSoft", resto: "\Small Commerce\SMALL.FDB" }).
+// Puro: partes de um caminho UNC ("\\SRV\Sistema\Dados\SMALL.FDB"
+// → { host: "SRV", compart: "Sistema", resto: "\Dados\SMALL.FDB" }).
 function partesDeUnc(unc) {
     const s = String(unc || "").trim().replace(/\//g, "\\").replace(/\\+$/, "");
     const m = /^\\\\([A-Za-z0-9][\w.\-]*)\\([^\\\x00-\x1f"<>|*?:]+)((?:\\[^\\\x00-\x1f"<>|*?:]+)*)$/.exec(s);
@@ -107,7 +105,7 @@ function caminhosDoCompartilhamento(unc, qualquerFdb) {
     return lista;
 }
 
-// Puro: caminhos UNC citados num atalho (.lnk) do Small Commerce. O .lnk é
+// Puro: caminhos UNC citados num atalho (.lnk) do sistema de gestão. O .lnk é
 // binário, com os caminhos em ANSI e/ou UTF-16 — procura nos dois.
 function extrairUncDeAtalho(buf) {
     const hosts = [], pastas = [];
@@ -195,7 +193,7 @@ function comPrazo(promessa, ms, padrao) {
     });
 }
 
-// Unidades de rede mapeadas: [{ letra: "H:", unc: "\\SERVIDOR\SmallSoft" }].
+// Unidades de rede mapeadas: [{ letra: "H:", unc: "\\SERVIDOR\Sistema" }].
 function unidadesDeRede() {
     return new Promise(resolve => {
         if (process.platform !== "win32") return resolve([]);
@@ -217,7 +215,7 @@ function unidadesDeRede() {
 }
 
 // Atalhos (.lnk) da Área de Trabalho e do Menu Iniciar que apontam para o
-// Small Commerce num compartilhamento de rede.
+// sistema de gestão num compartilhamento de rede.
 async function pistasDeAtalhos() {
     const pastas = [];
     const e = process.env;
@@ -536,7 +534,7 @@ async function buscarFdbNaRede(pastas, opcoes) {
     return achados;
 }
 
-/** Lê os .ini/.cfg das pastas do Small Commerce (típicas + `pastasExtras`). */
+/** Lê os .ini/.cfg das pastas do sistema de gestão (típicas + `pastasExtras`). */
 async function lerConfiguracoesSmall(pastasExtras, log, hostDaPasta) {
     const pastas = [];
     for (const u of ["C", "D", "E", "F", "G", "H"]) {
@@ -568,7 +566,7 @@ async function lerConfiguracoesSmall(pastasExtras, log, hostDaPasta) {
                 const r = extrairBancosDeIni(texto);
                 r.bancos.forEach(b => bancos.push(Object.assign({}, b, { origemHost })));
                 r.hosts.forEach(h => { if (hosts.indexOf(h) === -1) hosts.push(h); });
-                if ((r.bancos.length || r.hosts.length) && log) log("Configuração do Small Commerce lida em " + arq);
+                if ((r.bancos.length || r.hosts.length) && log) log("Configuração do sistema lida em " + arq);
             } catch (_) {}
         }
     }
@@ -754,7 +752,7 @@ async function localizar(dep) {
     let localAtivo = false;
     try { localAtivo = await portaAberta("127.0.0.1", porta, 800); } catch (_) {}
 
-    // Pistas da rede: unidades mapeadas e atalhos do Small Commerce.
+    // Pistas da rede: unidades mapeadas e atalhos do sistema de gestão.
     let unidRede = [];
     try { unidRede = await (d.unidadesRede || unidadesDeRede)(); } catch (_) {}
     let atalhos = { hosts: [], pastas: [] };
@@ -766,7 +764,7 @@ async function localizar(dep) {
     unidRede.forEach(u => addHostRede(hostDeUnc(u.unc)));
     atalhos.hosts.forEach(addHostRede);
     if (unidRede.length) log("Unidades de rede: " + unidRede.map(u => u.letra + " = " + u.unc).join(" | "));
-    if (atalhos.pastas.length) log("Atalhos do Small Commerce apontam para: " + atalhos.pastas.join(" | "));
+    if (atalhos.pastas.length) log("Atalhos do sistema apontam para: " + atalhos.pastas.join(" | "));
     const pastasRede = [];
     const sub = ["", "\\SmallSoft\\Small Commerce", "\\Small Commerce", "\\SmallSoft", "\\Program Files (x86)\\SmallSoft\\Small Commerce"];
     unidRede.forEach(u => sub.forEach(x => { pastasRede.push(u.letra + (x || "\\")); if (u.unc) pastasRede.push(u.unc + x); }));
@@ -791,7 +789,7 @@ async function localizar(dep) {
     } catch (_) {}
     if (noDisco.length) log("SMALL.FDB neste computador: " + noDisco.map(x => x.caminho).join(" | "));
 
-    // Configuração do próprio Small Commerce.
+    // Configuração do sistema de gestão.
     let ini = { bancos: [], hosts: [] };
     try { ini = await (d.lerIni || lerConfiguracoesSmall)(pastasIni.concat(pastasRede), log, hostDaPasta); } catch (_) {}
     if (!ini || !Array.isArray(ini.bancos) || !Array.isArray(ini.hosts)) ini = { bancos: [], hosts: [] };
@@ -815,7 +813,7 @@ async function localizar(dep) {
     };
     if (meta === "local") await etapaLocal();
 
-    // (1) Configuração do próprio Small Commerce apontando para um servidor.
+    // (1) Configuração do sistema de gestão apontando para um servidor.
     if (!achado && !cancelado()) {
         const combos = [];
         for (const b of ini.bancos) {
@@ -826,7 +824,7 @@ async function localizar(dep) {
             for (const h of hostsRede) adicionar(combos, h, b.caminho);
         }
         if (combos.length) {
-            log("Testando o banco indicado pela configuração do Small Commerce...");
+            log("Testando o banco indicado pela configuração do sistema...");
             await tentar(combos, 90000);
         }
     }
@@ -897,7 +895,7 @@ async function localizar(dep) {
     let mensagem;
     if (comAuth) mensagem = "O banco foi encontrado em " + comAuth.host + " (" + comAuth.caminho + "), mas o usuário/senha do Firebird não conferem. Ajuste em Configurações → Banco de dados.";
     else if (hostAtual && !daMaquina(hostAtual) && falhas.some(f => f.host === hostAtual && f.inacessivel))
-        mensagem = "O servidor " + hostAtual + " não respondeu na porta " + porta + " e o SMALL.FDB não foi encontrado em outro servidor da rede nem neste computador. Verifique se o servidor do Small Commerce está ligado e acessível (mesma rede, cabo ou VPN).";
+        mensagem = "O servidor " + hostAtual + " não respondeu na porta " + porta + " e o SMALL.FDB não foi encontrado em outro servidor da rede nem neste computador. Verifique se o servidor do banco está ligado e acessível (mesma rede, cabo ou VPN).";
     else mensagem = "O SMALL.FDB não foi encontrado em lugar nenhum: o disco deste computador, as pastas compartilhadas e a rede inteira foram varridos." +
         (outros.length ? " Foram achados " + outros.length + " outro(s) arquivo(s) .FDB — veja se algum é o banco." : " Verifique se o servidor está ligado e acessível, ou informe o endereço em Configurações → Banco de dados.");
     return { achado: null, falhas, meta, outros, mensagem };

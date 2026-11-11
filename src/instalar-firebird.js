@@ -1,13 +1,13 @@
 "use strict";
 /**
  * instalar-firebird.js
- * @version 1.1.0
+ * @version 1.2.0
  * @author Ruda Gabriel
  * @description Instala (ou troca) o Firebird NESTE computador, na MESMA versão do
- *              servidor do Small Commerce (pedido do administrador, com a senha e
+ *              servidor do banco de dados (pedido do administrador, com a senha e
  *              sempre com confirmação). Usado pela cópia gbak e para abrir um
  *              SMALL.FDB deste computador. Nunca mexe no Firebird do servidor nem
- *              no banco do Small Commerce.
+ *              no banco de dados.
  *
  * Passos: escolhe o pacote da versão do servidor (2.5, 3.0, 4.0 ou 5.0; sem a
  * versão conhecida, 3.0), baixa o instalador oficial (GitHub do projeto
@@ -23,6 +23,7 @@
  *
  * @changelog
  *   (Histórico completo das versões: CHANGELOG.md no repositório.)
+ *   1.2.0 — Textos neutros.
  *   1.1.0 — Versão do servidor: pacotes 2.5.9, 3.0.13, 4.0.6 e 5.0.3 (escolha pela
  *           versão do servidor), troca do Firebird local (desinstala o antigo e
  *           instala o novo numa só permissão do Windows), versão do gbak local
@@ -37,7 +38,7 @@ const crypto = require("crypto");
 const https = require("https");
 const { execFile } = require("child_process");
 
-const VERSAO = "1.1.0";
+const VERSAO = "1.2.0";
 
 const BASE = "https://github.com/FirebirdSQL/firebird/releases/download/";
 // Instaladores oficiais (tamanho e SHA-256 conferidos no download).

@@ -1,8 +1,8 @@
 {
   "name": "consulta-estoque-desktop",
   "productName": "Consulta Estoque",
-  "version": "1.5.0",
-  "description": "Consulta de preço e estoque do Small Commerce para Windows: acha o banco sozinho na rede, leitor de código de barras USB/Bluetooth, modo cópia ou leitura direta.",
+  "version": "1.6.0",
+  "description": "Consulta de preço e estoque para Windows sobre banco Firebird: acha o banco sozinho na rede, leitor de código de barras USB/Bluetooth, leitura instantânea, cópia do banco ou leitura direta.",
   "private": true,
   "main": "main.js",
   "author": "Ruda Gabriel",

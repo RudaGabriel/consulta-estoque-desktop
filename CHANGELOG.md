@@ -7,22 +7,23 @@ Versões em uso hoje:
 
 | Arquivo | Versão |
 |---|---|
-| Aplicativo (`package.json`) | [1.5.0](#aplicativo) |
-| [`main.js`](#mainjs) | 1.4.0 |
-| [`preload.js`](#preloadjs) | 1.4.0 |
-| [`ui/index.html`, `ui/estilo.css`, `ui/app.js`](#ui) | 1.5.0 (`app.js`); 1.3.0 (`index.html`, `estilo.css`) |
-| [`src/motor.js`](#srcmotorjs) | 1.5.0 |
-| [`src/firebird.js`](#srcfirebirdjs) | 1.0.0 |
-| [`src/estoque-dados.js`](#srcestoque-dadosjs) | 1.0.0 |
-| [`src/estoque-busca.js`](#srcestoque-buscajs) | 1.1.0 |
-| [`src/localizar-banco.js`](#srclocalizar-bancojs) | 1.3.0 |
-| [`src/instalar-firebird.js`](#srcinstalar-firebirdjs) | 1.1.0 |
-| [`src/copia-gbak.js`](#srccopia-gbakjs) | 1.1.0 |
-| [`src/config.js`](#srcconfigjs) | 1.3.0 |
+| Aplicativo (`package.json`) | [1.6.0](#aplicativo) |
+| [`main.js`](#mainjs) | 1.5.0 |
+| [`preload.js`](#preloadjs) | 1.5.0 |
+| [`ui/index.html`, `ui/estilo.css`, `ui/app.js`](#ui) | 1.6.0 (`app.js`); 1.4.0 (`index.html`, `estilo.css`) |
+| [`src/motor.js`](#srcmotorjs) | 1.6.0 |
+| [`src/firebird.js`](#srcfirebirdjs) | 1.1.0 |
+| [`src/estoque-dados.js`](#srcestoque-dadosjs) | 1.1.0 |
+| [`src/estoque-busca.js`](#srcestoque-buscajs) | 1.2.0 |
+| [`src/localizar-banco.js`](#srclocalizar-bancojs) | 1.4.0 |
+| [`src/instalar-firebird.js`](#srcinstalar-firebirdjs) | 1.2.0 |
+| [`src/copia-gbak.js`](#srccopia-gbakjs) | 1.2.0 |
+| [`src/config.js`](#srcconfigjs) | 1.4.0 |
 | [`src/vigia.js`](#srcvigiajs) | 1.1.0 |
 | [`src/registro.js`](#srcregistrojs) | 1.0.0 |
-| [`src/demo.js`](#srcdemojs) | 1.1.0 |
-| [`electron-builder.config.js`](#electron-builderconfigjs) | 1.0.0 |
+| [`src/demo.js`](#srcdemojs) | 1.2.0 |
+| [`electron-builder.config.js`](#electron-builderconfigjs) | 1.1.0 |
+| [`build/instalador.nsh`](#buildinstaladornsh) | 1.0.0 |
 | [`gerar-instalador.bat`](#gerar-instaladorbat) | 1.0.0 |
 | [`.github/workflows/build.yml`](#githubworkflowsbuildyml) | 1.3.0 |
 
@@ -33,6 +34,24 @@ Versões em uso hoje:
 ## Aplicativo
 
 Versão do Consulta Estoque (a que aparece no instalador e em *Configurações → Diagnóstico*).
+
+### 1.6.0 — 2026-11-11
+
+**Instantâneo como padrão, cartão para ler de longe, projeto neutro e remoção completa.**
+
+- **Modos:** *Instantâneo* (padrão — um `SELECT` somente leitura, sem travar o caixa e sem instalar nada), *Cópia do banco* (gbak) e *Leitura direta*, em três cartões na aba Consulta; quem usava o automático passa para o instantâneo (uma vez só).
+- **Sem cópia repetida:** depois da primeira cópia completa não começa outra na sequência.
+- **Sem totais** de estoque somado e de valor de venda em estoque.
+- **"Abaixo do mínimo"** só aparece quando o banco tem o estoque mínimo preenchido.
+- **Cartão ampliado** centralizado, com o **preço bem maior** (até 220 px), caixas e campos vazios escondidos; fecha ao voltar a digitar.
+- **X** dos botões de fechar centralizado; **botão de voltar ao topo** da lista; dica do **`-palavra`**.
+- **Bipe** mais alto (onda quadrada) com **volume** ajustável e botão de teste.
+- **Aceleração gráfica** desligada por padrão (também em quem já usava, uma vez só).
+- **Remoção completa:** botão *Apagar esta versão portátil*; o desinstalador apaga dados, cópias, instaladores baixados e o início com o Windows.
+- **Erro "AggregateError"** virou mensagem clara (servidor não respondeu em nenhum endereço).
+- **Projeto neutro:** sem nomes de sistemas, marcas ou outros projetos nas telas, mensagens e documentação; créditos do autor explícitos no README.
+- Tempo máximo de uma cópia × intervalo explicados na tela e no README.
+- 68 testes; tela validada no Electron 44 e 22.
 
 ### 1.5.0 — 2026-11-10
 
@@ -71,7 +90,7 @@ Versão do Consulta Estoque (a que aparece no instalador e em *Configurações �
 
 **SMALL.FDB procurado nas pastas compartilhadas da rede.**
 
-- O `SMALL.FDB` agora é procurado nas pastas compartilhadas (atalhos do Small, unidades de rede, `\\SERVIDOR\SmallSoft`...) e o servidor achado é usado.
+- O `SMALL.FDB` agora é procurado nas pastas compartilhadas (atalhos do sistema, unidades de rede, pastas do servidor...) e o servidor achado é usado.
 - O arquivo nunca é aberto pela pasta: o banco é lido pelo Firebird do servidor, no caminho do disco dele.
 - Com só o servidor informado, as pastas compartilhadas dele são procuradas antes dos caminhos típicos.
 - Pasta de rede com prazo e servidor desligado pulado na hora: nada trava.
@@ -100,8 +119,8 @@ Versão do Consulta Estoque (a que aparece no instalador e em *Configurações �
 
 **Primeira versão.**
 
-- Consulta de preço e estoque do Small Commerce em janela própria (Electron), feita para o leitor de código de barras USB/Bluetooth: campo sempre em foco, cada leitura substitui a anterior, cartão de preço grande, som de achou/não achou, TAB do leitor como Enter, fechamento automático do cartão.
-- Descoberta automática do banco **pela rede primeiro** (atalhos e `.ini` do Small Commerce, unidades de rede, compartilhamento do servidor, nome `SERVIDOR`, varredura da rede) e o Firebird local só por último; só `SMALL.FDB`.
+- Consulta de preço e estoque em janela própria (Electron), feita para o leitor de código de barras USB/Bluetooth: campo sempre em foco, cada leitura substitui a anterior, cartão de preço grande, som de achou/não achou, TAB do leitor como Enter, fechamento automático do cartão.
+- Descoberta automática do banco **pela rede primeiro** (atalhos e `.ini` do sistema de gestão, unidades de rede, compartilhamento do servidor, nome `SERVIDOR`, varredura da rede) e o Firebird local só por último; só `SMALL.FDB`.
 - Modo **cópia** (padrão; gbak ou leitura instantânea, automático) e modo **leitura direta** (lista a cada 60 s e item relido ao vivo).
 - Estoque salvo em disco: abre na hora e funciona com o servidor fora do ar.
 - Somente leitura com duas travas (comando e transação).
@@ -113,6 +132,10 @@ Versão do Consulta Estoque (a que aparece no instalador e em *Configurações �
 ## `main.js`
 
 Processo principal (janela, instância única, pasta de dados, IPC).
+
+### 1.5.0 — 2026-11-11
+
+**Autoexclusão da versão portátil** (`app:autoexcluir`, com a senha): desliga o início com o Windows, encerra o vigia e, depois de fechar, apaga o `.exe`, a pasta de dados do portátil, as cópias e os instaladores baixados (PowerShell com prazo e novas tentativas). `app:info` informa se é a versão portátil. Mensagem neutra na troca do Firebird.
 
 ### 1.4.0 — 2026-11-10
 
@@ -139,6 +162,10 @@ Processo principal (janela, instância única, pasta de dados, IPC).
 ## `preload.js`
 
 Ponte segura entre a tela e o processo principal.
+
+### 1.5.0 — 2026-11-11
+
+**`autoexcluir`.**
 
 ### 1.4.0 — 2026-11-10
 
@@ -167,6 +194,10 @@ Ponte segura entre a tela e o processo principal.
 ## `ui/index.html`, `ui/estilo.css`, `ui/app.js`
 
 A tela.
+
+### 1.6.0 (`app.js`) e 1.4.0 (`index.html`, `estilo.css`) — 2026-11-11
+
+**Modos, cartão, bipe e neutralidade.** Três cartões de modo (Instantâneo padrão, Cópia do banco, Leitura direta); contador sem totais; "Abaixo do mínimo" só com mínimo preenchido; cartão centralizado com preço até 220 px, caixas e campos vazios escondidos, fecha ao digitar; X desenhado em SVG (centralizado); botão de voltar ao topo; bipe em onda quadrada com volume e teste; dica do `-palavra`; explicação do tempo máximo de uma cópia; botão de apagar a versão portátil; pergunta do Firebird só no modo cópia; textos neutros.
 
 ### 1.5.0 — 2026-11-10 (só `app.js`)
 
@@ -198,6 +229,10 @@ A tela.
 
 Modos, atualização, cache em disco e auto-correção do banco.
 
+### 1.6.0 — 2026-11-11
+
+**Sem cópia repetida.** Pedido do relógio durante uma rodada é descartado; só Atualizar/F5 ou banco trocado (`invalidar()`) refazem depois. `status.temMinimo`; mensagens com `FB.mensagemDe`; textos neutros.
+
 ### 1.5.0 — 2026-11-10
 
 **Versões do Firebird:** versão do servidor (`rdb$get_context('SYSTEM','ENGINE_VERSION')`, só leitura) e do gbak local, lidas também logo ao abrir; Firebird local mais antigo → método automático usa a cópia instantânea (método gbak explícito dá erro claro); `status.firebird`.
@@ -228,6 +263,10 @@ Modos, atualização, cache em disco e auto-correção do banco.
 
 Conexão Firebird somente leitura.
 
+### 1.1.0 — 2026-11-11
+
+**`mensagemDe()`:** o `AggregateError` do Node 18+ (IPv4 e IPv6 falharam, mensagem vazia) vira os motivos de cada tentativa; `tipoErro`/`explicarErro` usam esse texto. Textos neutros.
+
 ### 1.0.0 — 2026-11-09
 
 **Primeira versão.** Trava de comando (`SELECT`/`WITH`) e de transação (READ COMMITTED + REC_VERSION, somente leitura, sem espera; lista no node-firebird 0.x), conexão e consulta com prazo, corte de socket, teste de porta, decodificação UTF-8 → Windows-1252 → latin1, erros em linguagem simples.
@@ -237,6 +276,10 @@ Conexão Firebird somente leitura.
 ## `src/estoque-dados.js`
 
 Leitura da tabela de produtos.
+
+### 1.1.0 — 2026-11-11
+
+**Textos neutros** (sem nomes de outros sistemas).
 
 ### 1.0.0 — 2026-11-09
 
@@ -248,19 +291,27 @@ Leitura da tabela de produtos.
 
 Regras da busca.
 
+### 1.2.0 — 2026-11-11
+
+**Sem totais** de estoque e de valor na pesquisa; textos neutros.
+
 ### 1.1.0 — 2026-11-10
 
 **Coringa e preço.** `*` vale qualquer coisa dentro do mesmo campo (também sem "Contém" e na exclusão); `>valor`/`<valor` (e `>=`/`<=`) filtram pelo preço com o próprio valor incluído, aceitando `49,90`, `49.90`, `1.500,00` e `R$`; opções `coringa` e `preco`; `separarPreco` e `lerValor` exportados.
 
 ### 1.0.0 — 2026-11-09
 
-**Primeira versão.** Mesmas regras do `estoque-busca.js` 1.0.0 do Relatórios FDB-FBK.
+**Primeira versão.** Termos, frase exata, exclusão com `-`, código com zeros à esquerda e filtros.
 
 ---
 
 ## `src/localizar-banco.js`
 
 Descoberta automática do banco.
+
+### 1.4.0 — 2026-11-11
+
+**Textos e mensagens neutros**; os caminhos de pasta típicos continuam só na lista interna da busca.
 
 ### 1.3.0 — 2026-11-10
 
@@ -276,13 +327,17 @@ Descoberta automática do banco.
 
 ### 1.0.0 — 2026-11-09
 
-**Primeira versão.** Rede primeiro e `127.0.0.1` por último; só `SMALL.FDB`; pistas: `.ini`/`.cfg` locais, das unidades de rede e do compartilhamento do servidor, atalhos `.lnk` do Small Commerce, nome `SERVIDOR`, varredura (LAN, Tailscale, 169.254); IPs e nome desta máquina nunca contam como servidor; leituras de rede com prazo; unidades de rede/CD fora da busca de `.FDB`.
+**Primeira versão.** Rede primeiro e `127.0.0.1` por último; só `SMALL.FDB`; pistas: `.ini`/`.cfg` locais, das unidades de rede e do compartilhamento do servidor, atalhos `.lnk` do sistema de gestão, nome `SERVIDOR`, varredura (LAN, Tailscale, 169.254); IPs e nome desta máquina nunca contam como servidor; leituras de rede com prazo; unidades de rede/CD fora da busca de `.FDB`.
 
 ---
 
 ## `src/instalar-firebird.js`
 
 Instalação automática do Firebird neste computador.
+
+### 1.2.0 — 2026-11-11
+
+**Textos neutros.**
 
 ### 1.1.0 — 2026-11-10
 
@@ -298,6 +353,10 @@ Instalação automática do Firebird neste computador.
 
 Cópia por gbak.
 
+### 1.2.0 — 2026-11-11
+
+**Textos neutros.**
+
 ### 1.1.0 — 2026-11-10
 
 **Andamento e gbak rápido.** Manifesto com a duração do backup e da restauração; `status()` com início, etapa e estimativas (manifesto lido uma vez por cópia); gbak dos serviços do Firebird pelo registro do Windows (`reg query`) em vez do PowerShell/WMI.
@@ -311,6 +370,10 @@ Cópia por gbak.
 ## `src/config.js`
 
 Configuração validada.
+
+### 1.4.0 — 2026-11-11
+
+**Padrões novos:** `metodoCopia` "instantaneo", `aceleracaoGrafica` desligada e `volumeSom` (público). Migração única (`versaoConfig` 3): "auto" → "instantaneo" e aceleração desligada.
 
 ### 1.3.0 — 2026-11-10
 
@@ -358,6 +421,10 @@ Log.
 
 Firebird simulado.
 
+### 1.2.0 — 2026-11-11
+
+**Textos neutros.**
+
 ### 1.1.0 — 2026-11-10
 
 **Versão do Firebird simulada** (`versao` no banco de exemplo responde a `ENGINE_VERSION`).
@@ -372,9 +439,23 @@ Firebird simulado.
 
 Geração do instalador e da versão portátil.
 
+### 1.1.0 — 2026-11-11
+
+**Desinstalador sem rastros:** `deleteAppDataOnUninstall` e `build/instalador.nsh`.
+
 ### 1.0.0 — 2026-11-09
 
 **Primeira versão.** Variante moderna (Electron 44, Windows 10/11 x64) e legado (Electron 22.3.27, Windows 7 a 11 x64 e ia32).
+
+---
+
+## `build/instalador.nsh`
+
+Passos extras do desinstalador.
+
+### 1.0.0 — 2026-11-11
+
+**Primeira versão.** Avisa o vigia para encerrar; numa desinstalação de verdade (não numa atualização), tira o início com o Windows e apaga as cópias do banco (`ProgramData\ConsultaEstoqueDesktop`) e os instaladores do Firebird baixados.
 
 ---
 

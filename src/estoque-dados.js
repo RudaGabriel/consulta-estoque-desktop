@@ -1,9 +1,9 @@
 "use strict";
 /**
  * estoque-dados.js
- * @version 1.0.0
+ * @version 1.1.0
  * @author Ruda Gabriel
- * @description Lê a tabela de produtos do Small Commerce (ESTOQUE) e monta o
+ * @description Lê a tabela de produtos (ESTOQUE) e monta o
  *              "retrato" do estoque em memória, pronto para a busca.
  *
  * O esquema não é fixo: as colunas vêm do catálogo do Firebird e são
@@ -18,13 +18,13 @@
  *
  * @changelog
  *   (Histórico completo das versões: CHANGELOG.md no repositório.)
- *   1.0.0 — Primeira versão (regras de leitura do estoque-offline.js 1.2.1 do Relatórios FDB-FBK).
+ *   1.1.0 — Textos neutros (sem nomes de outros sistemas).
  */
 
 const Busca = require("./estoque-busca.js");
 const { consultar, decodificarTexto } = require("./firebird.js");
 
-const VERSAO = "1.0.0";
+const VERSAO = "1.1.0";
 const FORMATO_DISCO = 1;
 const TABELAS = ["ESTOQUE", "PRODUTOS", "PRODUTO", "CADPRO", "MERCADORIAS"];
 

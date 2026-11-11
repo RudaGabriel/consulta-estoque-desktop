@@ -1,9 +1,9 @@
 "use strict";
 /**
  * copia-gbak.js
- * @version 1.1.0
+ * @version 1.2.0
  * @author Ruda Gabriel
- * @description Cópia do banco pelo gbak (método do Relatórios FDB-FBK): backup
+ * @description Cópia do banco pelo gbak: backup
  *              do banco principal SEM coleta de lixo (-g, leitura numa "foto" da
  *              transação) e restauração SOMENTE LEITURA no Firebird desta
  *              máquina. A consulta lê só a cópia — o banco do caixa recebe
@@ -19,6 +19,7 @@
  *
  * @changelog
  *   (Histórico completo das versões: CHANGELOG.md no repositório.)
+ *   1.2.0 — Textos neutros (sem nomes de outros sistemas).
  *   1.1.0 — Andamento com estimativa: o manifesto guarda a duração do backup e da
  *           restauração, e status() devolve inicioEm, etapaDesde e as estimativas
  *           (da última cópia). gbak procurado pelo registro do Windows em vez da
@@ -31,7 +32,7 @@ const os = require("os");
 const cp = require("child_process");
 const { decodificarTexto } = require("./firebird.js");
 
-const VERSAO = "1.1.0";
+const VERSAO = "1.2.0";
 const RE_COPIA = /^SMALL_OFFLINE_\d{8}_\d{6}(?:_\d+)?\.FDB$/i;
 const RE_TEMP = /^SMALL_OFFLINE_\d{8}_\d{6}(?:_\d+)?\.(?:FBK|FDB)\.tmp$/i;
 const MANIFESTO = "copia.json";
@@ -78,6 +79,7 @@ async function localizarGbak(preferido) {
         for (const r of raizes) {
             ["Firebird_5_0", "Firebird_4_0", "Firebird_3_0", "Firebird_2_5", "Firebird_2_1"].forEach(v => cands.push(path.join(r, "Firebird", v, "bin", nome), path.join(r, "Firebird", v, nome)));
             try { (await fs.promises.readdir(path.join(r, "Firebird"))).forEach(d => cands.push(path.join(r, "Firebird", d, "bin", nome), path.join(r, "Firebird", d, nome))); } catch (_) {}
+            // Firebird embutido na pasta do sistema de gestão (caminho típico; só procura, não mostra).
             cands.push(path.join(r, "SmallSoft", "Small Commerce", "Firebird", "bin", nome));
         }
     } else {

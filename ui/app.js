@@ -1,6 +1,6 @@
 /**
  * app.js — Consulta Estoque (tela)
- * @version 1.5.0
+ * @version 1.6.0
  * @author Ruda Gabriel
  * @description Tela de consulta de preço e estoque. Pensada para o leitor de
  *              código de barras USB/Bluetooth (que "digita" o código e manda
@@ -10,9 +10,11 @@
  *              Compatível com o Chromium 108 (versão para Windows 7/8).
  * @changelog
  *   (Histórico completo das versões: CHANGELOG.md no repositório.)
- *   1.5.0 — Firebird na versão do servidor: Firebird deste computador mais antigo
- *           que o do servidor → oferece a troca, sempre com confirmação (e a senha);
- *           instalação nova já na versão do servidor; versões na aba Banco de dados.
+ *   1.6.0 — Modos Instantâneo (padrão) / Cópia do banco / Leitura direta; sem totais de
+ *           estoque e de valor; "Abaixo do mínimo" só com mínimo preenchido no banco;
+ *           cartão: fecha ao voltar a digitar, caixas e campos vazios escondidos;
+ *           botão de voltar ao topo; bipe mais alto com volume ajustável; dica do
+ *           "-palavra"; apagar a versão portátil; textos neutros.
  */
 (function () {
     "use strict";
@@ -100,20 +102,25 @@
 
     // Bipe (Web Audio): agudo curto = achou; dois graves = não achou.
     var audio = null;
-    function bipe(tipo) {
-        if (!estado.cfg || !estado.cfg.som) return;
+    function bipe(tipo, volume) {
+        if (volume == null && (!estado.cfg || !estado.cfg.som)) return;
+        var vol = volume != null ? volume : Number(estado.cfg.volumeSom);
+        if (!(vol > 0)) vol = 100;
+        var pico = Math.max(0.02, Math.min(1, vol / 100)) * 0.9;
         try {
             audio = audio || new (window.AudioContext || window.webkitAudioContext)();
+            if (audio.state === "suspended" && audio.resume) audio.resume();
             var tocar = function (freq, ini, dur) {
+                // Onda quadrada: bem mais audível que a senoidal no mesmo volume.
                 var o = audio.createOscillator(), g = audio.createGain();
-                o.type = "sine"; o.frequency.value = freq;
+                o.type = "square"; o.frequency.value = freq;
                 g.gain.setValueAtTime(0.0001, audio.currentTime + ini);
-                g.gain.exponentialRampToValueAtTime(0.25, audio.currentTime + ini + 0.01);
+                g.gain.exponentialRampToValueAtTime(pico, audio.currentTime + ini + 0.01);
                 g.gain.exponentialRampToValueAtTime(0.0001, audio.currentTime + ini + dur);
                 o.connect(g); g.connect(audio.destination);
                 o.start(audio.currentTime + ini); o.stop(audio.currentTime + ini + dur + 0.02);
             };
-            if (tipo === "erro") { tocar(330, 0, 0.14); tocar(260, 0.18, 0.18); } else tocar(1320, 0, 0.12);
+            if (tipo === "erro") { tocar(330, 0, 0.18); tocar(250, 0.22, 0.24); } else tocar(1500, 0, 0.16);
         } catch (_) {}
     }
 
@@ -217,8 +224,6 @@
         partes.push(r.q || estado.ultimaQ ? "mostrando " + estado.itens.length.toLocaleString("pt-BR") + " de " + r.total.toLocaleString("pt-BR") + " encontrados"
             : r.total.toLocaleString("pt-BR") + " itens");
         partes.push(r.totalItens.toLocaleString("pt-BR") + " itens no estoque");
-        if (r.somaQtd != null) partes.push("estoque somado: " + numero.format(r.somaQtd));
-        if (r.somaValorVenda != null) partes.push("valor de venda em estoque: " + moeda.format(r.somaValorVenda));
         $("res").textContent = partes.join(" · ");
     }
 
@@ -232,12 +237,18 @@
         var cq = $("cQtd");
         cq.textContent = fmtQtd(it.qtd);
         cq.className = classeQtd(it.qtd);
-        $("cUn").textContent = it.unidade || "—";
-        $("cBar").textContent = it.barras || it.referencia || "—";
+        $("cQtdBox").hidden = typeof it.qtd !== "number";
+        var un = String(it.unidade == null ? "" : it.unidade).trim();
+        $("cUn").textContent = un;
+        $("cUnBox").hidden = !un;
+        var bar = String(it.barras || it.referencia || "").trim();
+        $("cBar").textContent = bar;
+        $("cBarBox").hidden = !bar;
         var mostraCusto = !!(estado.cfg && estado.cfg.mostrarCusto) && typeof it.custo === "number";
         $("cCustoBox").hidden = !mostraCusto;
         $("cCusto").textContent = fmtPreco(it.custo);
-        $("cMinBox").hidden = typeof it.qtdMin !== "number";
+        // Mínimo só quando preenchido de verdade (acima de zero).
+        $("cMinBox").hidden = !(typeof it.qtdMin === "number" && it.qtdMin > 0);
         $("cMin").textContent = fmtQtd(it.qtdMin);
         var selo = $("cSelo");
         selo.hidden = !(aoVivo || it.ativo === false);
@@ -263,10 +274,12 @@
         if (it.foraDoFiltro) avisos.push("Este produto não aparece na lista por causa dos filtros escolhidos.");
         if (det.avisoAoVivo) avisos.push(det.avisoAoVivo);
         if (avisos.length) { $("cAviso").textContent = avisos.join(" "); $("cAviso").hidden = false; }
-        $("cCampos").innerHTML = (det.campos || []).map(function (c) {
+        // Só os campos com algum valor preenchido.
+        $("cCampos").innerHTML = (det.campos || []).filter(function (c) {
+            return c.valor != null && String(c.valor).trim() !== "";
+        }).map(function (c) {
             var v = c.valor;
-            if (v == null || v === "") v = "—";
-            else if (c.tipo === "TIMESTAMP" || c.tipo === "DATE") { var d = new Date(v); v = isNaN(d.getTime()) ? v : d.toLocaleString("pt-BR"); }
+            if (c.tipo === "TIMESTAMP" || c.tipo === "DATE") { var d = new Date(v); v = isNaN(d.getTime()) ? v : d.toLocaleString("pt-BR"); }
             return "<dt>" + esc(c.nome) + "</dt><dd>" + esc(v) + "</dd>";
         }).join("");
     }
@@ -279,7 +292,7 @@
         $("cCod").textContent = "Código lido: " + String(texto).trim();
         $("cDesc").textContent = "Produto não encontrado";
         $("cPreco").textContent = "Confira o código ou procure pelo nome.";
-        ["cQtd", "cUn", "cBar"].forEach(function (id) { $(id).textContent = "—"; $(id).className = ""; });
+        ["cQtdBox", "cUnBox", "cBarBox"].forEach(function (id) { $(id).hidden = true; });
         $("cCustoBox").hidden = true; $("cMinBox").hidden = true; $("cSelo").hidden = true;
         $("cAviso").hidden = true; $("cCampos").innerHTML = "";
         c.hidden = false;
@@ -328,6 +341,10 @@
     function desenharStatus(s) {
         if (!s) return;
         estado.status = s;
+        // "Abaixo do mínimo" só quando o banco tem estoque mínimo preenchido (senão seria igual a nada).
+        var op = $("opAbaixo");
+        if (op) op.hidden = !s.temMinimo;
+        if (op && !s.temMinimo && s.itens && $("fEst").value === "abaixo") { $("fEst").value = "todos"; guardar("fEst", "todos"); buscar(1); }
         var ponto = $("estadoPonto"), txt = $("estadoTexto");
         var partes = [];
         var classe = "ok";
@@ -395,7 +412,7 @@
         var v = $("vazio");
         var carregando = !s.erro && s.estado !== "erro";
         v.classList.toggle("carregando", carregando);
-        $("vazioTitulo").textContent = carregando ? (s.procurando ? "Procurando o banco do Small Commerce..." : "Carregando o estoque...") : "Não foi possível carregar o estoque";
+        $("vazioTitulo").textContent = carregando ? (s.procurando ? "Procurando o banco de dados..." : "Carregando o estoque...") : "Não foi possível carregar o estoque";
         $("vazioTexto").textContent = carregando ? "Na primeira vez pode levar alguns instantes. Depois o estoque fica salvo neste computador e aparece na hora." : (s.erro || s.mensagem || "");
         $("bVazioProcurar").hidden = carregando;
         $("bVazioTentar").hidden = carregando;
@@ -415,6 +432,7 @@
         var dicas = [];
         if (cfg.buscaCoringa !== false) dicas.push("* = qualquer coisa");
         if (cfg.buscaPreco !== false) dicas.push(">50 = preço 50 ou mais", "<50 = 50 ou menos");
+        dicas.push("-palavra = tira da busca");
         $("dicaBusca").textContent = dicas.join(" · ");
         $("dicaBusca").hidden = !dicas.length;
         reiniciarInatividade();
@@ -519,6 +537,7 @@
         $("bRemoverSenha").hidden = !a.temSenha;
         $("bManutencao").textContent = a.manutencao ? "Voltar para a tela cheia" : "Modo manutenção (sair da tela cheia)";
         $("bManutencao").hidden = !a.quiosque;
+        $("bAutoexcluir").hidden = !(estado.info && estado.info.portatil);
     }
     function desenharWindows() {
         var a = estado.admin || {};
@@ -536,10 +555,10 @@
 
     function marcarModo() {
         var modo = document.querySelector('input[name="modo"]:checked');
-        var v = modo ? modo.value : "copia";
+        var v = modo ? modo.value : "instantaneo";
         var cards = document.querySelectorAll(".modo-card");
         for (var i = 0; i < cards.length; i++) cards[i].classList.toggle("marcado", cards[i].querySelector("input").checked);
-        $("gCopia").hidden = v !== "copia";
+        $("gCopia").hidden = v === "direto";
         $("gDireto").hidden = v !== "direto";
     }
 
@@ -553,10 +572,13 @@
 
     function preencherFormulario(c) {
         if (!c) return;
-        var r = document.querySelector('input[name="modo"][value="' + c.modo + '"]');
+        // Três escolhas na tela: Instantâneo (modo cópia + leitura instantânea), Cópia do banco (gbak) e Leitura direta.
+        var escolha = c.modo === "direto" ? "direto" : (c.metodoCopia === "instantaneo" ? "instantaneo" : "copia");
+        var r = document.querySelector('input[name="modo"][value="' + escolha + '"]');
         if (r) r.checked = true;
+        estado.metodoCopiaAtual = c.metodoCopia;
         marcarModo();
-        $("cfgMetodo").value = c.metodoCopia; $("cfgCopiaMin").value = c.copiaACadaMin;
+        $("cfgCopiaMin").value = c.copiaACadaMin;
         $("cfgDiretoSeg").value = c.diretoRecarregarSeg; $("cfgAoVivo").checked = c.diretoItemAoVivo;
         $("cfgHost").value = c.fbHost; $("cfgPorta").value = c.fbPorta; $("cfgPath").value = c.fdbPath;
         $("cfgUser").value = c.fbUser; $("cfgPass").value = c.fbPass == null ? "" : c.fbPass; $("cfgPass").type = "password";
@@ -566,6 +588,7 @@
         $("cfgCoringa").checked = c.buscaCoringa !== false; $("cfgPreco").checked = c.buscaPreco !== false; $("cfgMeta").value = c.metaBusca || "";
         $("cfgTema").value = c.tema; $("cfgZoom").value = c.zoom; $("oZoom").textContent = Math.round(c.zoom * 100) + "%";
         $("cfgSom").checked = c.som; $("cfgTab").checked = c.tabComoEnter; $("cfgLeve").checked = c.modoLeve;
+        $("cfgVolume").value = c.volumeSom || 100; $("oVolume").textContent = (c.volumeSom || 100) + "%";
         $("cfgIniciar").checked = c.iniciarComWindows; $("cfgPersistente").checked = c.persistente; $("cfgTopo").checked = c.sempreNoTopo;
         $("cfgFoco").checked = c.manterFoco; $("cfgDescanso").checked = c.impedirDescanso; $("cfgBarra").checked = c.ocultarBarraTarefas;
         $("cfgCursor").checked = c.ocultarCursor; $("cfgReiniciar").value = c.reiniciarDiario || ""; $("cfgGpu").checked = c.aceleracaoGrafica;
@@ -577,13 +600,17 @@
         // Tela pública: só as opções visuais. Desbloqueado: todas.
         var o = {
             tema: $("cfgTema").value, zoom: Number($("cfgZoom").value),
-            som: $("cfgSom").checked, tabComoEnter: $("cfgTab").checked, modoLeve: $("cfgLeve").checked
+            som: $("cfgSom").checked, tabComoEnter: $("cfgTab").checked, modoLeve: $("cfgLeve").checked,
+            volumeSom: Number($("cfgVolume").value) || 100
         };
         if (!livre()) return o;
         var modo = document.querySelector('input[name="modo"]:checked');
+        var escolha = modo ? modo.value : "instantaneo";
+        // "Cópia do banco" mantém "gbak" se já era (senão "auto": gbak quando houver Firebird aqui).
+        var metodo = escolha === "instantaneo" ? "instantaneo" : (estado.metodoCopiaAtual === "gbak" ? "gbak" : "auto");
         Object.assign(o, {
-            modo: modo ? modo.value : "copia",
-            metodoCopia: $("cfgMetodo").value, copiaACadaMin: $("cfgCopiaMin").value,
+            modo: escolha === "direto" ? "direto" : "copia",
+            metodoCopia: escolha === "direto" ? (estado.metodoCopiaAtual || "instantaneo") : metodo, copiaACadaMin: $("cfgCopiaMin").value,
             diretoRecarregarSeg: $("cfgDiretoSeg").value, diretoItemAoVivo: $("cfgAoVivo").checked,
             nomeLoja: $("cfgLoja").value.trim(), limparAposSeg: $("cfgLimpar").value, mostrarCusto: $("cfgCusto").checked,
             buscaCoringa: $("cfgCoringa").checked, buscaPreco: $("cfgPreco").checked, metaBusca: $("cfgMeta").value,
@@ -773,7 +800,7 @@
     // ── Primeira abertura: onde está o banco e o Firebird deste computador ──
     async function perguntarMeta() {
         var r = await perguntar({
-            titulo: "Onde está o banco do Small Commerce?",
+            titulo: "Onde está o banco de dados?",
             texto: "A busca automática começa pelo lugar escolhido, mas varre tudo: o disco deste computador, as pastas compartilhadas e a rede inteira. Dá para mudar depois em Configurações → Banco de dados.",
             ok: "Na rede (servidor)", extra: "Neste computador", cancelar: "Decidir depois"
         });
@@ -815,10 +842,10 @@
             estado.trocaOferecida = v.local + ">" + v.servidor;
             r = await perguntar({
                 titulo: "Trocar o Firebird deste computador?",
-                texto: "O servidor do Small Commerce usa o Firebird " + v.servidor + ", mas este computador tem o Firebird " + v.local + ", mais antigo. " +
+                texto: "O servidor do banco de dados usa o Firebird " + v.servidor + ", mas este computador tem o Firebird " + v.local + ", mais antigo. " +
                     "Com versões assim a cópia completa (gbak) não funciona — enquanto isso o aplicativo usa a cópia instantânea. " +
                     "Se você confirmar, o aplicativo DESINSTALA o Firebird " + v.local + " deste computador, baixa o instalador oficial do Firebird " + (v.pacote || v.servidor) + " (precisa de internet) e instala; o Windows vai pedir permissão. " +
-                    "O Firebird do servidor e o banco do caixa não são tocados. Não confirme se outro programa deste computador usa o Firebird " + v.local + ".",
+                    "O Firebird do servidor e o banco de dados não são tocados. Não confirme se outro programa deste computador usa o Firebird " + v.local + ".",
                 ok: "Sim, trocar pelo " + (v.pacote || v.servidor), extra: manual ? null : "Não perguntar mais", cancelar: "Agora não"
             });
             if (r === "extra") { try { await api.firebirdNaoPerguntar(); } catch (_) {} toast("Tudo bem — dá para trocar depois em Configurações → Banco de dados."); return; }
@@ -843,6 +870,7 @@
     function talvezOferecerTroca() {
         var v = (estado.status || {}).firebird || {};
         if (!v.localMaisAntiga || estado.iniciando || algoAberto() || !estado.cfg || estado.cfg.perguntarFirebird === false) return;
+        if (estado.cfg.modo !== "copia" || estado.cfg.metodoCopia === "instantaneo") return; // só a cópia completa usa o Firebird daqui
         if (estado.trocaOferecida === v.local + ">" + v.servidor) return;
         estado.trocaOferecida = v.local + ">" + v.servidor;
         perguntarFirebird(false);
@@ -877,7 +905,7 @@
         var escolha = await perguntar({
             titulo: "Escolha o banco",
             texto: usaveis ? "Nenhum arquivo se chama SMALL.FDB. Escolha o banco certo — só dá para escolher os que abrem e têm a tabela de produtos."
-                : "Nenhum destes arquivos abre com a tabela de produtos do Small Commerce. Confira o servidor e a senha do Firebird em Configurações → Banco de dados.",
+                : "Nenhum destes arquivos abre com uma tabela de produtos. Confira o servidor e a senha do Firebird em Configurações → Banco de dados.",
             ok: "Usar este banco", cancelar: usaveis ? "Cancelar" : "Fechar",
             lista: lista.map(function (x) {
                 return { valor: x, titulo: x.exibir, texto: x.ok ? "Abre e tem a tabela de produtos → " + x.host + ":" + x.caminho : x.motivo, desabilitado: !x.ok };
@@ -921,6 +949,8 @@
     // ── Eventos ──────────────────────────────────────────────────────────────
     q.addEventListener("input", function () {
         $("bLimpar").hidden = !q.value;
+        // Voltou a digitar (ou o leitor começou outra leitura): o cartão ampliado fecha.
+        if (!$("cartao").hidden) fecharCartao(false);
         clearTimeout(estado.debounce);
         estado.debounce = setTimeout(function () { buscar(1); }, 220);
     });
@@ -950,8 +980,14 @@
         focarBusca(false);
     });
     $("bMais").addEventListener("click", function () { buscar(estado.pagina + 1); focarBusca(false); });
+    $("bTopo").addEventListener("click", function () {
+        var m = $("principal");
+        try { m.scrollTo({ top: 0, behavior: document.body.classList.contains("leve") ? "auto" : "smooth" }); } catch (_) { m.scrollTop = 0; }
+        focarBusca(false);
+    });
     $("principal").addEventListener("scroll", function () {
         var m = $("principal");
+        $("bTopo").hidden = m.scrollTop < 600;
         if (!$("bMais").hidden && m.scrollTop + m.clientHeight > m.scrollHeight - 300 && !buscar.carregandoMais) {
             buscar.carregandoMais = true;
             buscar(estado.pagina + 1).then(function () { buscar.carregandoMais = false; }, function () { buscar.carregandoMais = false; });
@@ -973,10 +1009,10 @@
             var proxima = s.proximaEm && s.proximaEm > Date.now() ? new Date(s.proximaEm) : null;
             var hora = proxima ? String(proxima.getHours()).padStart(2, "0") + ":" + String(proxima.getMinutes()).padStart(2, "0") : "";
             var texto = gbak
-                ? "Isto faz agora uma CÓPIA COMPLETA do banco do Small Commerce: backup no servidor do caixa e restauração neste computador. " +
+                ? "Isto faz agora uma CÓPIA COMPLETA do banco de dados: backup no servidor e restauração neste computador. " +
                   (est ? "A última cópia levou cerca de " + fmtDuracao(est) + ". " : "Pode levar alguns minutos. ") +
                   "Enquanto copia, o servidor do caixa fica um pouco mais lento; a consulta continua funcionando com o estoque atual."
-                : "Isto lê agora a tabela de produtos no servidor do Small Commerce (cópia instantânea). Leva alguns segundos e a consulta continua funcionando.";
+                : "Isto lê agora a tabela de produtos no servidor (leitura instantânea). Leva alguns segundos e a consulta continua funcionando.";
             if (hora) texto += " A próxima cópia automática já está marcada para as " + hora + ".";
             var ok = await perguntar({ titulo: "Fazer uma nova cópia do banco agora?", texto: texto, ok: "Sim, copiar agora", cancelar: "Não" });
             if (!ok) return;
@@ -1003,6 +1039,8 @@
     $("travaSenha").addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); desbloquear(); } });
     var radios = document.querySelectorAll('input[name="modo"]');
     for (var r = 0; r < radios.length; r++) radios[r].addEventListener("change", marcarModo);
+    $("cfgVolume").addEventListener("input", function () { $("oVolume").textContent = $("cfgVolume").value + "%"; });
+    $("bTestarSom").addEventListener("click", function () { bipe("ok", Number($("cfgVolume").value) || 100); });
     $("cfgZoom").addEventListener("input", function () { $("oZoom").textContent = Math.round(Number($("cfgZoom").value) * 100) + "%"; });
     $("bVerSenha").addEventListener("click", function () { var p = $("cfgPass"); p.type = p.type === "password" ? "text" : "password"; $("bVerSenha").textContent = p.type === "password" ? "Ver" : "Ocultar"; });
     $("bProcurar").addEventListener("click", async function () {
@@ -1049,6 +1087,16 @@
         else if (r && !r.cancelado) await resultadoAdmin(r);
     });
     $("bPasta").addEventListener("click", async function () { await resultadoAdmin(await api.abrirPastaDados()); });
+    $("bAutoexcluir").addEventListener("click", async function () {
+        var sim = await perguntar({
+            titulo: "Apagar esta versão portátil?",
+            texto: "O aplicativo fecha e, em seguida, apaga para sempre: o arquivo .exe da versão portátil, a pasta de dados dela (configurações, senha, log e estoque salvo), as cópias do banco feitas neste computador e os instaladores baixados. Também deixa de abrir junto com o Windows. Não dá para desfazer. O banco de dados do servidor não é tocado.",
+            ok: "Apagar tudo e fechar", cancelar: "Cancelar"
+        });
+        if (!sim) return;
+        var r = await api.autoexcluir();
+        if (await resultadoAdmin(r)) toast("Apagando a versão portátil...", 5000);
+    });
     $("bManutencao").addEventListener("click", async function () {
         var r = await api.manutencao(!(estado.admin && estado.admin.manutencao));
         if (!r || r.ok === false) { await resultadoAdmin(r); return; }
@@ -1122,7 +1170,8 @@
             if (!(estado.info && estado.info.demo)) {
                 var c = estado.cfg || {}, st = estado.status || {};
                 if (!c.metaBusca && (recemCriada || !st.fonte)) await perguntarMeta();
-                await perguntarFirebird(false);
+                // O Firebird deste computador só interessa à cópia completa (gbak).
+                if (c.modo === "copia" && c.metodoCopia !== "instantaneo") await perguntarFirebird(false);
             }
             // Configuração inicial terminou: com senha, a tela volta a ser pública.
             if (recemCriada) { try { estado.admin = await api.bloquear(); } catch (_) {} }

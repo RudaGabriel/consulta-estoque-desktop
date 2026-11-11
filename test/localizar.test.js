@@ -155,7 +155,7 @@ test("localizar: unidade mapeada → servidor pelo NOME, e .ini do compartilhame
         unidadesRede: async () => [{ letra: "H:", unc: "\\\\loja-srv\\SmallSoft" }],
         lerIni: async (pastas, log, hostDaPasta) => {
             assert.ok(pastas.includes("\\\\loja-srv\\SmallSoft\\Small Commerce"), "lê o .ini no compartilhamento");
-            return { bancos: [{ host: null, caminho: "D:\\Banco\\SMALL.FDB", origemHost: hostDaPasta("H:\\Small Commerce") }], hosts: [] };
+            return { bancos: [{ host: null, caminho: "D:\\Banco\\SMALL.FDB", origemHost: hostDaPasta("H:\\Sistema") }], hosts: [] };
         },
         portaAberta: async h => h === "loja-srv",
         validar: async (h, c) => ({ ok: h === "loja-srv" && c === "D:\\Banco\\SMALL.FDB" })
@@ -312,10 +312,10 @@ test("rede: nomes dos compartilhamentos no \"net view\" (português e inglês) e
         "Recursos compartilhados em \\\\SERVIDOR", "", "Nome do compartilhamento  Tipo  Usado como  Comentário", "",
         "-------------------------------------------------------------------------------",
         "ADMIN$                    Disco             Administração remota", "C$                        Disco             Recurso compartilhado padrão",
-        "IPC$                      IPC               IPC remoto", "Small Commerce            Disco", "Impressora                Impressão", "SmallSoft                 Disco",
+        "IPC$                      IPC               IPC remoto", "Sistema                   Disco", "Impressora                Impressão", "Dados                     Disco",
         "Comando concluído com êxito.", ""
     ].join("\r\n");
-    assert.deepStrictEqual(L.extrairCompartilhamentos(pt), ["C$", "Small Commerce", "SmallSoft"]);
+    assert.deepStrictEqual(L.extrairCompartilhamentos(pt), ["C$", "Sistema", "Dados"]);
     assert.deepStrictEqual(L.extrairCompartilhamentos("Share name  Type  Used as  Comment\n\n------------------------------------\nDados       Disk\nThe command completed successfully.\n"), ["Dados"]);
     assert.deepStrictEqual(L.extrairCompartilhamentos("Erro de sistema 53."), []);
     const outros = [];

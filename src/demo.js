@@ -1,7 +1,7 @@
 "use strict";
 /**
  * demo.js
- * @version 1.1.0
+ * @version 1.2.0
  * @author Ruda Gabriel
  * @description Firebird SIMULADO: usado pelos testes automáticos e pelo modo de
  *              demonstração (Consulta Estoque.exe --demo), que mostra a tela com
@@ -9,6 +9,7 @@
  *
  * @changelog
  *   (Histórico completo das versões: CHANGELOG.md no repositório.)
+ *   1.2.0 — Textos neutros.
  *   1.1.0 — Responde a versão do Firebird (ENGINE_VERSION) quando o banco simulado tem `versao`.
  */
 // Firebird simulado (substitui o node-firebird).
@@ -89,7 +90,7 @@ function criarFbFalso(bancos) {
     return FB;
 }
 
-// Tabela do Small Commerce de exemplo (nomes neutros).
+// Tabela de produtos de exemplo (nomes neutros).
 const COLS = [
     { n: "CODIGO", tp: 37, tam: 5 }, { n: "DESCRICAO", tp: 37, tam: 45 }, { n: "REFERENCIA", tp: 37, tam: 20 },
     { n: "QTD_ATUAL", tp: 27, tam: 8 }, { n: "PRECO", tp: 27, tam: 8 }, { n: "MEDIDA", tp: 37, tam: 3 },
