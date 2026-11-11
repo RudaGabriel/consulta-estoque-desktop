@@ -6,7 +6,8 @@
   sem color-mix, sem :has().
   @changelog
     (Histórico completo das versões: CHANGELOG.md no repositório.)
-    1.4.0 — Cartão ampliado centralizado com o preço bem maior (dá para ler de longe);
+    1.4.0 — Cartão ampliado centralizado como etiqueta: preço com ~1/4 da altura da tela e
+            "R$" pequeno no alto (dá para ler de longe);
             X dos botões de fechar desenhado e centralizado; botão de voltar ao topo;
             três cartões de modo; linha do volume do bipe.
 */
@@ -127,10 +128,16 @@ main { flex: 1; overflow: auto; padding: 0 16px 16px; }
 .selo { font-size: 11.5px; font-weight: 700; letter-spacing: .3px; text-transform: uppercase; padding: 3px 8px; border-radius: 999px; background: var(--superficie2); }
 .selo.vivo { background: rgba(19, 138, 74, .15); color: var(--ok); }
 .selo.inativo { background: rgba(198, 40, 40, .12); color: var(--ruim); }
-.cartao-desc { margin: 6px 0 2px; font-size: clamp(24px, 3vw, 38px); line-height: 1.2; font-weight: 700; word-break: break-word; }
+.cartao-desc { margin: 6px 0 2px; font-size: clamp(26px, 6vh, 64px); line-height: 1.15; font-weight: 600; word-break: break-word; }
 /* Preço para ler de longe: cresce com a tela (até 220 px). */
-.cartao-preco { font-size: clamp(72px, 13vw, 220px); font-weight: 800; color: var(--destaque); letter-spacing: -2px; line-height: 1.05; margin: 2px 0 12px; white-space: nowrap; }
-.cartao.nao-achou .cartao-preco { font-size: 24px; color: var(--ruim); font-weight: 600; letter-spacing: 0; white-space: normal; }
+/* Preço para ler de longe (como etiqueta de gôndola): ~1/4 da altura da tela, "R$" pequeno no alto. */
+.cartao-preco {
+  display: flex; justify-content: center; align-items: flex-start;
+  font-size: clamp(72px, min(26vh, 17vw), 320px); font-weight: 800; color: var(--destaque);
+  letter-spacing: -2px; line-height: 1; margin: 4px 0 .2em; white-space: nowrap;
+}
+.cartao-preco .moeda { font-size: .3em; letter-spacing: 0; margin: .55em .2em 0 0; }
+.cartao.nao-achou .cartao-preco { display: block; font-size: 24px; color: var(--ruim); font-weight: 600; letter-spacing: 0; white-space: normal; }
 .cartao-info { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px 36px; }
 .cartao-info div { display: flex; flex-direction: column; align-items: center; min-width: 90px; }
 .cartao-info div[hidden] { display: none; }
@@ -277,7 +284,7 @@ body.sem-cursor, body.sem-cursor * { cursor: none !important; }
   .loja { display: none; }
   .dica-busca { display: none; }
   .cartao { padding: 18px 48px; }
-  .cartao-preco { font-size: clamp(48px, 16vw, 120px); }
+  .cartao-preco { font-size: clamp(56px, min(22vh, 20vw), 160px); }
   .cartao-desc { font-size: 22px; }
   th:nth-child(3), td:nth-child(3), th:nth-child(5), td:nth-child(5) { display: none; }
 }

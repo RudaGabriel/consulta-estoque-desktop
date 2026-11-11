@@ -43,7 +43,7 @@ Versão do Consulta Estoque (a que aparece no instalador e em *Configurações �
 - **Sem cópia repetida:** depois da primeira cópia completa não começa outra na sequência.
 - **Sem totais** de estoque somado e de valor de venda em estoque.
 - **"Abaixo do mínimo"** só aparece quando o banco tem o estoque mínimo preenchido.
-- **Cartão ampliado** centralizado, com o **preço bem maior** (até 220 px), caixas e campos vazios escondidos; fecha ao voltar a digitar.
+- **Cartão ampliado** centralizado como etiqueta de gôndola: nome maior e **preço com ~1/4 da altura da tela** ("R$" pequeno no alto; 200 px numa tela de 768 px), caixas e campos vazios escondidos; fecha ao voltar a digitar.
 - **X** dos botões de fechar centralizado; **botão de voltar ao topo** da lista; dica do **`-palavra`**.
 - **Bipe** mais alto (onda quadrada) com **volume** ajustável e botão de teste.
 - **Aceleração gráfica** desligada por padrão (também em quem já usava, uma vez só).
@@ -197,7 +197,7 @@ A tela.
 
 ### 1.6.0 (`app.js`) e 1.4.0 (`index.html`, `estilo.css`) — 2026-11-11
 
-**Modos, cartão, bipe e neutralidade.** Três cartões de modo (Instantâneo padrão, Cópia do banco, Leitura direta); contador sem totais; "Abaixo do mínimo" só com mínimo preenchido; cartão centralizado com preço até 220 px, caixas e campos vazios escondidos, fecha ao digitar; X desenhado em SVG (centralizado); botão de voltar ao topo; bipe em onda quadrada com volume e teste; dica do `-palavra`; explicação do tempo máximo de uma cópia; botão de apagar a versão portátil; pergunta do Firebird só no modo cópia; textos neutros.
+**Modos, cartão, bipe e neutralidade.** Três cartões de modo (Instantâneo padrão, Cópia do banco, Leitura direta); contador sem totais; "Abaixo do mínimo" só com mínimo preenchido; cartão centralizado como etiqueta (preço com ~1/4 da altura da tela e "R$" pequeno no alto), caixas e campos vazios escondidos, fecha ao digitar; X desenhado em SVG (centralizado); botão de voltar ao topo; bipe em onda quadrada com volume e teste; dica do `-palavra`; explicação do tempo máximo de uma cópia; botão de apagar a versão portátil; pergunta do Firebird só no modo cópia; textos neutros.
 
 ### 1.5.0 — 2026-11-10 (só `app.js`)
 

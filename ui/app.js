@@ -12,7 +12,8 @@
  *   (Histórico completo das versões: CHANGELOG.md no repositório.)
  *   1.6.0 — Modos Instantâneo (padrão) / Cópia do banco / Leitura direta; sem totais de
  *           estoque e de valor; "Abaixo do mínimo" só com mínimo preenchido no banco;
- *           cartão: fecha ao voltar a digitar, caixas e campos vazios escondidos;
+ *           cartão como etiqueta ("R$" pequeno + preço enorme), fecha ao voltar a
+ *           digitar, caixas e campos vazios escondidos;
  *           botão de voltar ao topo; bipe mais alto com volume ajustável; dica do
  *           "-palavra"; apagar a versão portátil; textos neutros.
  */
@@ -24,6 +25,7 @@
     var DIACRITICOS = new RegExp("[" + String.fromCharCode(0x300) + "-" + String.fromCharCode(0x36f) + "]", "g");
     var moeda = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
     var numero = new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 3 });
+    var numero2 = new Intl.NumberFormat("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
     var estado = {
         seq: 0, pagina: 1, paginas: 1, total: 0, itens: [], ultimaQ: "",
@@ -233,7 +235,10 @@
         c.classList.remove("nao-achou");
         $("cCod").textContent = "Código " + (it.codigo != null ? it.codigo : "—");
         $("cDesc").textContent = it.descricao || "(sem descrição)";
-        $("cPreco").textContent = fmtPreco(it.preco);
+        // Preço grande no estilo de etiqueta: "R$" pequeno no alto, o número enorme.
+        if (typeof it.preco === "number" && isFinite(it.preco)) {
+            $("cPreco").innerHTML = '<span class="moeda">R$</span><span class="valor">' + esc(numero2.format(it.preco)) + "</span>";
+        } else $("cPreco").textContent = "Sem preço";
         var cq = $("cQtd");
         cq.textContent = fmtQtd(it.qtd);
         cq.className = classeQtd(it.qtd);

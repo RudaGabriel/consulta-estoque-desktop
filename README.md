@@ -114,7 +114,7 @@ Abra com o parâmetro `--demo` (ex.: um atalho para `"Consulta Estoque.exe" --de
 | Filtrar pelo preço | `racao >50` = rações de **R$ 50 ou mais**; `racao <50` = de **R$ 50 ou menos** (o próprio valor entra). Vale `>=`, `<=`, centavos (`<49,90`) e os dois juntos (`racao >50 <100`). |
 | Procurar pelo código interno | Digite o código: `123` também acha `00123`. |
 | Frase exata / tirar uma palavra | `"racao gato"` · `racao -filhote` (o `-` na frente tira da busca os produtos com aquela palavra; a dica aparece ao lado dos filtros) |
-| Ver o produto em tamanho grande | O produto lido (ou clicado) abre num cartão **centralizado**, com o **preço bem grande** para ler de longe. Caixas vazias (unidade, código de barras, mínimo) não aparecem. |
+| Ver o produto em tamanho grande | O produto lido (ou clicado) abre num cartão **centralizado**, como uma etiqueta de gôndola: nome grande e o **preço ocupando cerca de 1/4 da altura da tela** ("R$" pequeno no alto), para ler de longe. Caixas vazias (unidade, código de barras, mínimo) não aparecem. |
 | Ver todos os campos do produto | No cartão, clique em **Todos os campos do produto** (só aparecem os campos preenchidos). |
 | Fechar o cartão | **Esc**, o **X** ou simplesmente **voltar a digitar** na busca. Um segundo **Esc** limpa a busca. |
 | Voltar ao topo da lista | Depois de rolar bastante, aparece um botão redondo com uma seta no canto: ele volta ao começo da lista. |
