@@ -1,12 +1,15 @@
 /*
   estilo.css — Consulta Estoque (tela)
-  @version 1.3.0
+  @version 1.4.0
   @author Ruda Gabriel
   Compatível com o Chromium 108 (versão para Windows 7/8): sem CSS aninhado,
   sem color-mix, sem :has().
   @changelog
     (Histórico completo das versões: CHANGELOG.md no repositório.)
-    1.3.0 — Barra de andamento da cópia (com estimativa ou indeterminada).
+    1.4.0 — Cartão ampliado centralizado como etiqueta: preço com ~1/4 da altura da tela e
+            "R$" pequeno no alto (dá para ler de longe);
+            X dos botões de fechar desenhado e centralizado; botão de voltar ao topo;
+            três cartões de modo; linha do volume do bipe.
 */
 :root {
   --fundo: #f4f6f8; --superficie: #ffffff; --superficie2: #eef1f4; --borda: #d9dee4;
@@ -90,9 +93,12 @@ svg { width: 18px; height: 18px; flex: 0 0 auto; }
 #q:focus { border-color: var(--destaque); box-shadow: 0 0 0 4px rgba(11, 107, 203, .15); }
 #q::-webkit-search-cancel-button { display: none; }
 .limpar {
-  position: absolute; right: 10px; width: 34px; height: 34px; border-radius: 50%; border: 0;
-  background: var(--superficie2); cursor: pointer; font-size: 22px; line-height: 1; color: var(--texto2);
+  position: absolute; right: 10px; top: 50%; transform: translateY(-50%); width: 34px; height: 34px; border-radius: 50%; border: 0;
+  background: var(--superficie2); cursor: pointer; color: var(--texto2);
+  display: flex; align-items: center; justify-content: center; padding: 0;
 }
+.limpar[hidden] { display: none; }
+.limpar svg, .fechar svg { width: 18px; height: 18px; display: block; }
 .filtros { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; margin-top: 10px; font-size: 13.5px; color: var(--texto2); }
 .filtros label { display: inline-flex; align-items: center; gap: 6px; }
 .filtros select { padding: 5px 8px; border-radius: 7px; border: 1px solid var(--borda); background: var(--superficie); }
@@ -108,27 +114,39 @@ main { flex: 1; overflow: auto; padding: 0 16px 16px; }
 
 .cartao {
   position: relative; background: var(--superficie); border: 1px solid var(--borda); border-radius: 14px;
-  box-shadow: var(--sombra); padding: 18px 22px; margin: 4px 0 14px; animation: entrar .18s ease-out;
+  box-shadow: var(--sombra); padding: 20px 64px; margin: 4px 0 14px; animation: entrar .18s ease-out;
+  text-align: center;
 }
+.cartao[hidden] { display: none; }
 .cartao.nao-achou { border-color: var(--ruim); }
 @keyframes entrar { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } }
-.cartao .fechar { position: absolute; top: 10px; right: 12px; }
-.fechar { width: 34px; height: 34px; border-radius: 50%; border: 0; background: var(--superficie2); cursor: pointer; font-size: 22px; line-height: 1; color: var(--texto2); }
-.cartao-topo { display: flex; align-items: center; gap: 10px; color: var(--texto2); font-size: 14px; }
+.cartao .fechar { position: absolute; top: 12px; right: 12px; }
+.fechar { width: 38px; height: 38px; border-radius: 50%; border: 0; background: var(--superficie2); cursor: pointer; color: var(--texto2);
+  display: flex; align-items: center; justify-content: center; padding: 0; flex: 0 0 auto; }
+.fechar:hover, .limpar:hover { color: var(--texto); }
+.cartao-topo { display: flex; align-items: center; justify-content: center; gap: 10px; color: var(--texto2); font-size: 15px; }
 .selo { font-size: 11.5px; font-weight: 700; letter-spacing: .3px; text-transform: uppercase; padding: 3px 8px; border-radius: 999px; background: var(--superficie2); }
 .selo.vivo { background: rgba(19, 138, 74, .15); color: var(--ok); }
 .selo.inativo { background: rgba(198, 40, 40, .12); color: var(--ruim); }
-.cartao-desc { margin: 6px 44px 4px 0; font-size: 28px; line-height: 1.2; font-weight: 700; word-break: break-word; }
-.cartao-preco { font-size: 64px; font-weight: 800; color: var(--destaque); letter-spacing: -1px; line-height: 1.1; margin: 4px 0 10px; }
-.cartao.nao-achou .cartao-preco { font-size: 22px; color: var(--ruim); font-weight: 600; letter-spacing: 0; }
-.cartao-info { display: flex; flex-wrap: wrap; gap: 10px 28px; }
-.cartao-info div { display: flex; flex-direction: column; min-width: 90px; }
+.cartao-desc { margin: 6px 0 2px; font-size: clamp(26px, 6vh, 64px); line-height: 1.15; font-weight: 600; word-break: break-word; }
+/* Preço para ler de longe: cresce com a tela (até 220 px). */
+/* Preço para ler de longe (como etiqueta de gôndola): ~1/4 da altura da tela, "R$" pequeno no alto. */
+.cartao-preco {
+  display: flex; justify-content: center; align-items: flex-start;
+  font-size: clamp(72px, min(26vh, 17vw), 320px); font-weight: 800; color: var(--destaque);
+  letter-spacing: -2px; line-height: 1; margin: 4px 0 .2em; white-space: nowrap;
+}
+.cartao-preco .moeda { font-size: .3em; letter-spacing: 0; margin: .55em .2em 0 0; }
+.cartao.nao-achou .cartao-preco { display: block; font-size: 24px; color: var(--ruim); font-weight: 600; letter-spacing: 0; white-space: normal; }
+.cartao-info { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px 36px; }
+.cartao-info div { display: flex; flex-direction: column; align-items: center; min-width: 90px; }
+.cartao-info div[hidden] { display: none; }
 .cartao-info span { font-size: 12px; color: var(--texto2); text-transform: uppercase; letter-spacing: .4px; }
-.cartao-info strong { font-size: 20px; }
+.cartao-info strong { font-size: 24px; }
 .cartao-aviso { margin-top: 10px; font-size: 13px; color: var(--alerta); }
 .cartao-mais { margin-top: 12px; }
 .cartao-mais summary { cursor: pointer; color: var(--texto2); font-size: 13.5px; }
-.cartao-mais dl { display: grid; grid-template-columns: minmax(140px, max-content) 1fr; gap: 4px 16px; margin: 10px 0 0; font-size: 13.5px; }
+.cartao-mais dl { display: grid; grid-template-columns: minmax(140px, max-content) 1fr; gap: 4px 16px; margin: 10px auto 0; font-size: 13.5px; text-align: left; max-width: 760px; }
 .cartao-mais dt { color: var(--texto2); }
 .cartao-mais dd { margin: 0; word-break: break-word; }
 .qtd-pos { color: var(--ok); }
@@ -248,6 +266,15 @@ h3.sub { margin: 8px 0 0; font-size: 15px; }
 .andamento-barra { position: absolute; left: 0; top: 0; bottom: 0; width: 0; border-radius: 4px; background: var(--destaque); transition: width .8s linear; }
 .andamento-barra.indeterminada { width: 35%; animation: andamentoVai 1.4s ease-in-out infinite; }
 @keyframes andamentoVai { 0% { left: -35%; } 100% { left: 100%; } }
+.topo-lista {
+  position: fixed; right: 26px; bottom: 26px; z-index: 15; width: 52px; height: 52px; border-radius: 50%; border: 0;
+  background: var(--destaque); color: var(--destaque-texto); box-shadow: var(--sombra); cursor: pointer;
+  display: flex; align-items: center; justify-content: center; padding: 0;
+}
+.topo-lista[hidden] { display: none; }
+.topo-lista svg { width: 26px; height: 26px; }
+.linha-volume { display: flex; align-items: flex-end; gap: 12px; }
+.linha-volume label { flex: 1; }
 .dica-busca { font-size: 12.5px; color: var(--texto2); margin-left: auto; }
 body.sem-cursor, body.sem-cursor * { cursor: none !important; }
 
@@ -256,7 +283,8 @@ body.sem-cursor, body.sem-cursor * { cursor: none !important; }
   .acoes .btn span { display: none; }
   .loja { display: none; }
   .dica-busca { display: none; }
-  .cartao-preco { font-size: 48px; }
+  .cartao { padding: 18px 48px; }
+  .cartao-preco { font-size: clamp(56px, min(22vh, 20vw), 160px); }
   .cartao-desc { font-size: 22px; }
   th:nth-child(3), td:nth-child(3), th:nth-child(5), td:nth-child(5) { display: none; }
 }

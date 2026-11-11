@@ -225,3 +225,23 @@ test("config: barra de tarefas oculta por padrão (também em config antigo, uma
     assert.ok(Config.SENSIVEIS.includes("metaBusca") && Config.SENSIVEIS.includes("buscaCoringa"));
     assert.ok(!Config.SENSIVEIS.includes("versaoConfig") && !Config.SENSIVEIS.includes("senhaAdmin"));
 });
+
+test("config 3: instantâneo e aceleração gráfica desligada por padrão (migrados uma vez), volume do bipe público; erro de conexão agrupado legível", () => {
+    const c = Config.padrao();
+    assert.strictEqual(c.metodoCopia, "instantaneo");
+    assert.strictEqual(c.aceleracaoGrafica, false);
+    assert.strictEqual(c.volumeSom, 100);
+    assert.ok(Config.PUBLICAS.includes("volumeSom"));
+    const antigo = Config.normalizar({ metodoCopia: "auto", aceleracaoGrafica: true, versaoConfig: 2 });
+    assert.strictEqual(antigo.metodoCopia, "instantaneo", "auto antigo vira instantâneo");
+    assert.strictEqual(antigo.aceleracaoGrafica, false);
+    assert.strictEqual(Config.normalizar({ metodoCopia: "gbak", versaoConfig: 2 }).metodoCopia, "gbak", "escolha explícita do gbak é mantida");
+    const novo = Config.normalizar({ metodoCopia: "auto", aceleracaoGrafica: true, versaoConfig: 3 });
+    assert.strictEqual(novo.metodoCopia, "auto", "depois da migração a escolha vale");
+    assert.strictEqual(novo.aceleracaoGrafica, true);
+    assert.strictEqual(Config.validarValor("volumeSom", 300), 100);
+    const ag = new AggregateError([Object.assign(new Error("connect ECONNREFUSED ::1:3050"), { code: "ECONNREFUSED" }), Object.assign(new Error("connect ECONNREFUSED 127.0.0.1:3050"), { code: "ECONNREFUSED" })], "");
+    assert.match(FB.mensagemDe(ag), /ECONNREFUSED ::1:3050 \| connect ECONNREFUSED 127\.0\.0\.1:3050/);
+    assert.strictEqual(FB.tipoErro(ag), "inacessivel");
+    assert.doesNotMatch(FB.explicarErro(new AggregateError([], "")), /AggregateError/);
+});

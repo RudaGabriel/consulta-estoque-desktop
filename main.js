@@ -1,7 +1,7 @@
 "use strict";
 /**
  * main.js
- * @version 1.4.0
+ * @version 1.5.0
  * @author Ruda Gabriel
  * @description Processo principal do Consulta Estoque (Electron): janela em
  *              modo quiosque, senha do administrador, módulo de persistência
@@ -17,10 +17,10 @@
  *
  * @changelog
  *   (Histórico completo das versões: CHANGELOG.md no repositório.)
- *   1.4.0 — Firebird na versão do servidor: o estado traz as versões (servidor e
- *           este computador); "firebird:instalar" instala a versão do servidor e,
- *           com { trocar: true }, troca o Firebird local mais antigo (recusado se o
- *           banco em uso estiver neste computador).
+ *   1.5.0 — Autoexclusão da versão portátil ("app:autoexcluir", com a senha): desliga
+ *           o início com o Windows, encerra o vigia e, depois de fechar, apaga o .exe
+ *           portátil, a pasta de dados dele, as cópias do banco e os instaladores
+ *           baixados; "app:info" diz se é a versão portátil.
  */
 
 const { app, BrowserWindow, ipcMain, dialog, shell, screen, powerSaveBlocker } = require("electron");
@@ -43,6 +43,7 @@ const QUIOSQUE = process.env.CONSULTA_SEM_QUIOSQUE !== "1";
 // Vigia e "iniciar com o Windows" só no aplicativo instalado/portátil de verdade.
 const PODE_PERSISTIR = app.isPackaged && !DEMO && process.platform === "win32";
 const EXE_APP = process.env.PORTABLE_EXECUTABLE_FILE || process.execPath;
+const PORTATIL = !!process.env.PORTABLE_EXECUTABLE_FILE;
 const DESBLOQUEIO_MS = 5 * 60000;
 
 // ── Pasta de dados ───────────────────────────────────────────────────────────
@@ -447,8 +448,40 @@ if (!INSTANCIA_PRINCIPAL) {
             sistema: os.type() + " " + os.release() + " (" + process.arch + ")",
             pastaDados: PASTA_DADOS, arquivoLog: reg.arquivo,
             monitores: screen.getAllDisplays().map((t, i) => ({ i, nome: "Monitor " + (i + 1) + " (" + t.size.width + "×" + t.size.height + ")" + (t.id === screen.getPrimaryDisplay().id ? " — principal" : "") })),
-            vigiaAtivo: pidVivo(lerPid(ARQ.vigiaPid))
+            vigiaAtivo: pidVivo(lerPid(ARQ.vigiaPid)),
+            portatil: PORTATIL && process.platform === "win32" && !DEMO
         }));
+        // Versão portátil: apaga a si mesma e todos os rastros (a instalada sai pelo desinstalador do Windows).
+        tratar("app:autoexcluir", () => {
+            exigirAdmin();
+            if (!PORTATIL || process.platform !== "win32" || DEMO) return { ok: false, mensagem: "Só a versão portátil se apaga sozinha. A versão instalada é removida em Configurações do Windows → Aplicativos (o desinstalador também apaga os dados)." };
+            const dirPortatil = path.resolve(process.env.PORTABLE_EXECUTABLE_DIR || path.dirname(EXE_APP));
+            const alvos = [path.resolve(EXE_APP)];
+            // Pasta de dados: só a da própria versão portátil (ao lado do .exe), nunca a de uma versão instalada.
+            if (path.resolve(PASTA_DADOS).toLowerCase().startsWith(dirPortatil.toLowerCase() + path.sep)) alvos.push(path.resolve(PASTA_DADOS));
+            alvos.push(path.join(process.env.ProgramData || "C:\\ProgramData", "ConsultaEstoqueDesktop"));
+            alvos.push(path.join(os.tmpdir(), "ConsultaEstoque-firebird"));
+            try { app.setLoginItemSettings({ openAtLogin: false, path: EXE_APP, args: [] }); } catch (_) {}
+            const pids = [process.pid];
+            const vigia = lerPid(ARQ.vigiaPid);
+            if (pidVivo(vigia)) { pids.push(vigia); try { fs.writeFileSync(ARQ.saida, String(Date.now())); } catch (_) {} }
+            const q = t => "'" + String(t).replace(/'/g, "''") + "'";
+            // Espera o aplicativo (e o vigia) fecharem; tenta por até 1 min (o lançador do portátil solta o .exe ao terminar).
+            const ps = "$ErrorActionPreference='SilentlyContinue'; foreach ($i in @(" + pids.join(",") + ")) { Wait-Process -Id $i -Timeout 30 }; " +
+                "$alvos = @(" + alvos.map(q).join(",") + "); " +
+                "for ($t = 0; $t -lt 30; $t++) { $resta = @($alvos | Where-Object { Test-Path -LiteralPath $_ }); if ($resta.Count -eq 0) { break }; " +
+                "foreach ($a in $resta) { Remove-Item -LiteralPath $a -Recurse -Force }; Start-Sleep -Seconds 2 }";
+            try {
+                const filho = cp.spawn("powershell.exe", ["-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-WindowStyle", "Hidden", "-EncodedCommand", Buffer.from(ps, "utf16le").toString("base64")],
+                    { detached: true, stdio: "ignore", windowsHide: true });
+                filho.on("error", () => {});
+                filho.unref();
+            } catch (e) { return { ok: false, mensagem: "Não foi possível iniciar a remoção: " + e.message }; }
+            reg.info("Autoexclusão da versão portátil pedida pelo administrador: " + alvos.join(" | "));
+            saidaAutorizada = true;
+            setTimeout(() => app.exit(0), 400);
+            return { ok: true };
+        });
         tratar("app:abrir-pasta", () => { exigirAdmin(); return shell.openPath(PASTA_DADOS); });
         tratar("janela:zoom", v => {
             const z = Config.validarValor("zoom", v);
@@ -484,7 +517,7 @@ if (!INSTANCIA_PRINCIPAL) {
                 const cfg = motor.config();
                 const host = String(cfg.fbHost || "127.0.0.1").trim().toLowerCase();
                 if (Localizar.ehLocal(host) || Localizar.identidadesDestaMaquina().has(host))
-                    return { ok: false, mensagem: "O banco em uso está neste computador: trocar o Firebird daqui pararia o Small Commerce. Troque à mão, com o caixa fechado." };
+                    return { ok: false, mensagem: "O banco em uso está neste computador: trocar o Firebird daqui pararia o sistema que usa esse banco. Troque à mão, com o sistema fechado." };
                 if (!fbs.localMaisAntiga) return { ok: false, mensagem: "O Firebird deste computador já é compatível com o do servidor — nada a trocar." };
                 desinstalador = InstalarFirebird.acharDesinstalador(fbs.gbak);
                 if (!desinstalador) return { ok: false, mensagem: "Não achei o desinstalador do Firebird " + fbs.local + " deste computador. Desinstale-o pelo Painel de Controle e use \"Instalar o Firebird\"." };

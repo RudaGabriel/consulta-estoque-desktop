@@ -1,9 +1,9 @@
 /**
  * estoque-busca.js
- * @version 1.1.0
+ * @version 1.2.0
  * @author Ruda Gabriel
  * @description Regras da busca do estoque, num só lugar (as mesmas da página
- *              /estoque do Relatórios FDB-FBK, mais o coringa "*" e o filtro de
+ *              de busca do estoque, com o coringa "*" e o filtro de
  *              preço ">valor" / "<valor").
  *
  * "fonte" é qualquer conjunto de itens que responda:
@@ -16,17 +16,15 @@
  *
  * @changelog
  *   (Histórico completo das versões: CHANGELOG.md no repositório.)
- *   1.1.0 — Coringa "*" (RACAO*10KG: "RACAO", qualquer coisa e "10KG" no mesmo
- *           campo) e filtro de preço no texto: ">50" = preço de 50 ou mais, "<50" =
- *           preço de 50 ou menos (">=" e "<=" também valem; "49,90", "1.500,00").
- *           Opções coringa/preco (padrão ligadas).
+ *   1.2.0 — Sem totais de estoque e de valor em estoque na pesquisa (removidos do
+ *           aplicativo); textos neutros.
  */
 (function (raiz, fabrica) {
     if (typeof module === "object" && module.exports) module.exports = fabrica();
     else raiz.EstoqueBusca = fabrica();
 })(typeof self !== "undefined" ? self : this, function () {
     "use strict";
-    var VERSAO = "1.1.0";
+    var VERSAO = "1.2.0";
 
     var semAcento = function (s) { return String(s == null ? "" : s).normalize("NFD").replace(/[̀-ͯ]/g, ""); };
     var normalizar = function (s) { return semAcento(s).toUpperCase().replace(/\s+/g, " ").trim(); };
@@ -194,14 +192,10 @@
         var limite = Math.min(Math.max(parseInt(p.limite, 10) || 100, 1), 1000);
         var pagina = Math.max(parseInt(p.pagina, 10) || 1, 1);
         var ini = (pagina - 1) * limite;
-        var somaQtd = 0, somaValor = 0;
-        if (fonte.temQtd) res.forEach(function (r) { var q = num(fonte.val(r.i, "qtd")) || 0; somaQtd += q; var pr = num(fonte.val(r.i, "preco")); if (pr != null && q > 0) somaValor += q * pr; });
         return {
             ok: true, total: res.length, totalItens: fonte.n, pagina: pagina, limite: limite,
             paginas: Math.max(1, Math.ceil(res.length / limite)),
             itens: res.slice(ini, ini + limite).map(function (r) { return resumo(r.i); }),
-            somaQtd: fonte.temQtd ? Math.round(somaQtd * 1000) / 1000 : null,
-            somaValorVenda: fonte.temQtd && fonte.temPreco ? Math.round(somaValor * 100) / 100 : null,
             _res: res
         };
     }

@@ -1,9 +1,9 @@
 "use strict";
 /**
  * firebird.js
- * @version 1.0.0
+ * @version 1.1.0
  * @author Ruda Gabriel
- * @description Acesso ao Firebird do Small Commerce, SEMPRE em somente leitura.
+ * @description Acesso ao banco Firebird do sistema da loja, SEMPRE em somente leitura.
  *
  * Duas travas em toda conexão aberta por este aplicativo:
  *   1. Comando: só passa SQL que começa com SELECT ou WITH; qualquer outro
@@ -20,13 +20,15 @@
  *
  * @changelog
  *   (Histórico completo das versões: CHANGELOG.md no repositório.)
- *   1.0.0 — Primeira versão.
+ *   1.1.0 — mensagemDe(): erro de conexão agrupado do Node 18+ (AggregateError: tentou
+ *           IPv4 e IPv6 e os dois falharam, mensagem vazia) vira texto legível com os
+ *           motivos de cada tentativa; tipoErro/explicarErro usam esse texto.
  */
 
 const net = require("net");
 const { TextDecoder } = require("util");
 
-const VERSAO = "1.0.0";
+const VERSAO = "1.1.0";
 const SQL_LEITURA = /^\s*(?:(?:--[^\n]*\n|\/\*[\s\S]*?\*\/)\s*)*(select|with)\b/i;
 const ISO_REC_VERSION = [15, 17]; // isc_tpb_read_committed + isc_tpb_rec_version
 
@@ -34,7 +36,7 @@ const ISO_REC_VERSION = [15, 17]; // isc_tpb_read_committed + isc_tpb_rec_versio
 const _decUtf8 = (() => { try { return new TextDecoder("utf-8", { fatal: true }); } catch (_) { return null; } })();
 const _dec1252 = (() => { try { return new TextDecoder("windows-1252"); } catch (_) { return null; } })();
 
-/** Bytes de coluna sem charset (Small Commerce) → texto com acentos corretos. */
+/** Bytes de coluna sem charset → texto com acentos corretos. */
 function decodificarTexto(buf) {
     if (!Buffer.isBuffer(buf)) return buf;
     if (_decUtf8) { try { return _decUtf8.decode(buf); } catch (_) { /* não é UTF-8 */ } }
@@ -216,16 +218,36 @@ function portaAberta(host, porta, prazoMs) {
 
 // ── Erros em linguagem simples ───────────────────────────────────────────────
 /**
+ * Texto de um erro. O Node 18+ tenta os endereços IPv4 e IPv6 do servidor ao
+ * mesmo tempo; se todos falham, o erro é um AggregateError SEM mensagem (aparecia
+ * só "AggregateError"). Aqui ele vira os motivos de cada tentativa, sem repetir.
+ */
+function mensagemDe(e) {
+    if (!e) return "";
+    const partes = [];
+    const add = x => {
+        if (!x) return;
+        const t = String(x.message || x.code || "").trim();
+        if (t && partes.indexOf(t) < 0) partes.push(t);
+    };
+    add(e);
+    if (Array.isArray(e.errors)) e.errors.forEach(add);
+    if (!partes.length && e.code) partes.push(String(e.code));
+    if (!partes.length) partes.push(String(e.name || e) === "AggregateError" ? "falha de conexão com o servidor" : String(e));
+    return partes.join(" | ");
+}
+
+/**
  * Classifica um erro do Firebird/gbak: "auth" (usuário/senha), "inacessivel"
  * (servidor não responde), "arquivo" (caminho do banco errado), "tempo",
  * "bloqueado" (shutdown/uso exclusivo), "tabela" (não é banco do Small), "outro".
  */
 function tipoErro(e) {
-    const s = String((e && (e.message || e)) || "");
+    const s = mensagemDe(e);
     if (e && e.codigo === "TEMPO") return "tempo";
     if (e && e.codigo === "TABELA") return "tabela";
     if (/password|user name|login|not defined as|autentica|senha/i.test(s)) return "auth";
-    if (/ECONNREFUSED|EHOSTUNREACH|ENETUNREACH|ETIMEDOUT|ECONNRESET|unavailable database|failed to establish|network (?:error|request)|connection refused|getaddrinfo|ENOTFOUND/i.test(s)) return "inacessivel";
+    if (/ECONNREFUSED|EHOSTUNREACH|ENETUNREACH|ETIMEDOUT|ECONNRESET|unavailable database|failed to establish|network (?:error|request)|connection refused|getaddrinfo|ENOTFOUND|falha de conexão/i.test(s)) return "inacessivel";
     if (/I\/O error|No such file|cannot find|not found|does not exist|ENOENT|CreateFile|open file|is not a valid database/i.test(s)) return "arquivo";
     if (/shutdown|lock time-?out|object .* in use|is in use/i.test(s)) return "bloqueado";
     if (/tempo esgotado|timeout|demorou|não respondeu/i.test(s)) return "tempo";
@@ -233,13 +255,13 @@ function tipoErro(e) {
 }
 
 function explicarErro(e) {
-    const s = String((e && (e.message || e)) || "");
+    const s = mensagemDe(e);
     switch (tipoErro(e)) {
         case "auth": return "Usuário ou senha do Firebird recusados. Ajuste em Configurações → Banco de dados.";
         case "inacessivel": return "O servidor do banco não respondeu (computador desligado, serviço do Firebird parado ou porta 3050 bloqueada).";
         case "arquivo": return "O arquivo do banco não foi encontrado nesse servidor (caminho do SMALL.FDB incorreto).";
         case "bloqueado": return "O banco está em manutenção ou bloqueado por outro programa.";
-        case "tabela": return "O banco abriu, mas não é um banco do Small Commerce (sem a tabela de produtos).";
+        case "tabela": return "O banco abriu, mas não tem uma tabela de produtos reconhecida.";
         case "tempo": return "O banco demorou demais para responder.";
         default:
             if (/unsupported on-disk structure|ODS|wrong version/i.test(s)) return "Versão do Firebird local incompatível com a do servidor.";
@@ -250,5 +272,5 @@ function explicarErro(e) {
 
 module.exports = {
     VERSAO, SQL_LEITURA, blindar, carregarDriver, conectar, consultar, desconectar, matarConexao,
-    portaAberta, decodificarTexto, tipoErro, explicarErro
+    portaAberta, decodificarTexto, tipoErro, explicarErro, mensagemDe
 };

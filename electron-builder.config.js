@@ -1,7 +1,7 @@
 "use strict";
 /**
  * electron-builder.config.js
- * @version 1.0.0
+ * @version 1.1.0
  * @author Ruda Gabriel
  * @description Como o instalador e a versão portátil são gerados.
  *   VARIANTE=moderno (padrão) → Electron atual, Windows 10 e 11 de 64 bits.
@@ -10,7 +10,10 @@
  *   (O Electron atual não é mais publicado em 32 bits para Windows.)
  * @changelog
  *   (Histórico completo das versões: CHANGELOG.md no repositório.)
- *   1.0.0 — Primeira versão.
+ *   1.1.0 — Desinstalador sem rastros: apaga a pasta de dados (deleteAppDataOnUninstall)
+ *           e, por build/instalador.nsh, encerra o vigia, tira o início com o Windows
+ *           e apaga as cópias do banco e os instaladores do Firebird baixados (nada
+ *           disso numa atualização).
  */
 const legado = process.env.VARIANTE === "legado";
 const sufixo = legado ? "legado-win7-a-11" : "win10-11";
@@ -43,7 +46,8 @@ module.exports = {
         shortcutName: "Consulta Estoque",
         uninstallDisplayName: "Consulta Estoque",
         artifactName: "ConsultaEstoque-${version}-" + sufixo + "-${arch}-instalador.${ext}",
-        deleteAppDataOnUninstall: false
+        deleteAppDataOnUninstall: true,
+        include: "build/instalador.nsh"
     },
     portable: {
         artifactName: "ConsultaEstoque-${version}-" + sufixo + "-${arch}-portatil.${ext}"

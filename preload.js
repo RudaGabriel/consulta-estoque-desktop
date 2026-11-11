@@ -1,14 +1,14 @@
 "use strict";
 /**
  * preload.js
- * @version 1.4.0
+ * @version 1.5.0
  * @author Ruda Gabriel
  * @description Ponte segura entre a tela e o processo principal: expõe só as
  *              funções da consulta (window.consulta), nunca o Node inteiro.
  *
  * @changelog
  *   (Histórico completo das versões: CHANGELOG.md no repositório.)
- *   1.4.0 — instalarFirebird({ trocar }) troca o Firebird local pela versão do servidor.
+ *   1.5.0 — autoexcluir (apaga a versão portátil e os dados dela).
  */
 const { contextBridge, ipcRenderer } = require("electron");
 
@@ -32,6 +32,7 @@ contextBridge.exposeInMainWorld("consulta", {
     log: () => ipcRenderer.invoke("app:log"),
     info: () => ipcRenderer.invoke("app:info"),
     abrirPastaDados: () => ipcRenderer.invoke("app:abrir-pasta"),
+    autoexcluir: () => ipcRenderer.invoke("app:autoexcluir"),
     zoom: v => ipcRenderer.invoke("janela:zoom", v),
     reiniciar: () => ipcRenderer.invoke("app:reiniciar"),
     sair: senha => ipcRenderer.invoke("app:sair", senha),

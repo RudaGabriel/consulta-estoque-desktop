@@ -1,21 +1,21 @@
 "use strict";
 /**
  * motor.js
- * @version 1.5.0
+ * @version 1.6.0
  * @author Ruda Gabriel
  * @description O coração do aplicativo: mantém o estoque em memória e atualizado
  *              conforme o modo escolhido, acha o banco sozinho e responde às
  *              buscas da tela.
  *
  * Modos:
- *   - "copia" (padrão, como o Relatórios FDB-FBK): a consulta nunca depende do
+  *   - "copia" (padrão): a consulta nunca depende do
  *     banco do caixa a cada busca. Método da cópia:
  *       · "gbak": backup sem coleta de lixo + restauração somente leitura no
  *         Firebird desta máquina; o estoque é lido da cópia;
  *       · "instantaneo": uma única leitura (SELECT, somente leitura) da tabela
  *         de produtos a cada intervalo, guardada em memória e em disco;
  *       · "auto": gbak quando há gbak e Firebird nesta máquina; senão instantâneo.
- *   - "direto" (como o Relatórios SSH): lê o banco principal em somente leitura,
+ *   - "direto": lê o banco principal em somente leitura,
  *     recarrega a tabela a cada N segundos e, ao abrir um item, relê aquele item
  *     ao vivo (estoque e preço do instante).
  * Em todos: o último estoque carregado fica salvo em disco (estoque-cache.json.gz)
@@ -27,10 +27,11 @@
  *
  * @changelog
  *   (Histórico completo das versões: CHANGELOG.md no repositório.)
- *   1.5.0 — Versão do Firebird do servidor (SELECT de uma linha em RDB$DATABASE, só
- *           leitura) e do gbak deste computador; Firebird local mais antigo que o
- *           do servidor: o método automático usa a cópia instantânea (o gbak não
- *           serve) e o status avisa (status.firebird) para a tela oferecer a troca.
+ *   1.6.0 — Sem cópia repetida: atualização pedida pelo relógio enquanto outra está em
+ *           andamento é descartada (só um pedido do usuário ou uma mudança de banco
+ *           refaz depois) — antes, a primeira cópia era seguida de outra na hora.
+ *           status.temMinimo (o banco tem estoque mínimo preenchido?); mensagens de
+ *           erro legíveis (AggregateError) e textos neutros.
  */
 
 const fs = require("fs");
@@ -44,7 +45,7 @@ const Localizar = require("./localizar-banco.js");
 const Copia = require("./copia-gbak.js");
 const InstalarFb = require("./instalar-firebird.js");
 
-const VERSAO = "1.5.0";
+const VERSAO = "1.6.0";
 const ARQ_CACHE = "estoque-cache.json.gz";
 const CHAVES_CONEXAO = ["modo", "metodoCopia", "fbHost", "fbPorta", "fdbPath", "fbUser", "fbPass", "gbakPath", "pastaCopias", "copiaTimeoutMin"];
 
@@ -108,6 +109,7 @@ function criarMotor(dep) {
             temCusto: !!(retrato && retrato.idxPapel.custo >= 0),
             proximaEm,
             erro: ultimoErro,
+            temMinimo: temMinimo(),
             metaBusca: cfg.metaBusca,
             firebird: situacaoFirebird(),
             buscaSemSmall: semSmall && semSmall.outros.length ? { quando: semSmall.quando, outros: semSmall.outros.length } : null,
@@ -150,6 +152,21 @@ function criarMotor(dep) {
         try { v = await (d.versaoGbak || InstalarFb.versaoDoGbak)(gbak); } catch (_) {}
         versaoLoc = { gbak, v };
         if (v) reg.copia("Firebird deste computador (gbak): " + v.texto + ".");
+        return v;
+    };
+
+    /** Banco/configuração mudou: a rodada em andamento é descartada e refeita logo depois. */
+    const invalidar = () => { geracao++; if (ocupado) pedidoPendente = true; };
+
+    /** O estoque tem a coluna de mínimo com algum valor acima de zero? (senão "Abaixo do mínimo" não faz sentido) */
+    let minimoCache = { r: null, v: false };
+    const temMinimo = () => {
+        if (!retrato) return false;
+        if (minimoCache.r === retrato) return minimoCache.v;
+        const k = retrato.idxPapel && retrato.idxPapel.qtdMin;
+        let v = false;
+        if (k >= 0) for (const l of retrato.linhas) { const n = Number(l[k]); if (n > 0) { v = true; break; } }
+        minimoCache = { r: retrato, v };
         return v;
     };
 
@@ -237,7 +254,7 @@ function criarMotor(dep) {
             return ok ? { ok: true } : { ok: false, motivo: "o banco abriu, mas não tem a tabela de produtos" };
         } catch (e) {
             const t = FB.tipoErro(e);
-            return { ok: false, auth: t === "auth", inacessivel: t === "inacessivel", motivo: String(e.message || e).slice(0, 200) };
+            return { ok: false, auth: t === "auth", inacessivel: t === "inacessivel", motivo: FB.mensagemDe(e).slice(0, 200) };
         } finally {
             if (db) FB.matarConexao(db);
         }
@@ -303,7 +320,7 @@ function criarMotor(dep) {
             try { Config.salvar(d.arquivoConfig, cfg); } catch (e) { reg.erro("Falha ao salvar config.json: " + e.message); }
             return true;
         } catch (e) {
-            reg.erro("Falha ao procurar o caminho no servidor: " + e.message);
+            reg.erro("Falha ao procurar o caminho no servidor: " + FB.mensagemDe(e));
             return false;
         } finally { emitir(); }
     }
@@ -312,7 +329,7 @@ function criarMotor(dep) {
         if (procurando) return false;
         procurando = true;
         ultimaBuscaAutomatica = Date.now();
-        definir(estado === "pronto" ? "pronto" : "carregando", "Procurando o banco do Small Commerce" + (motivo ? " (" + motivo + ")" : "") + "...");
+        definir(estado === "pronto" ? "pronto" : "carregando", "Procurando o banco de dados" + (motivo ? " (" + motivo + ")" : "") + "...");
         reg.busca("Busca automática do banco iniciada" + (motivo ? " — motivo: " + motivo : "") + ".");
         try {
             const r = await localizarBanco({
@@ -334,7 +351,7 @@ function criarMotor(dep) {
             try { Config.salvar(d.arquivoConfig, cfg); } catch (e) { reg.erro("Falha ao salvar config.json: " + e.message); }
             return true;
         } catch (e) {
-            reg.erro("Falha na busca automática: " + e.message);
+            reg.erro("Falha na busca automática: " + FB.mensagemDe(e));
             return false;
         } finally {
             procurando = false;
@@ -386,9 +403,15 @@ function criarMotor(dep) {
         await salvarCacheDisco(retrato);
     }
 
+    /**
+     * Uma atualização. Chamada pelo relógio (agendar): se já houver uma em
+     * andamento, este pedido é DESCARTADO (a que está rodando já resolve) — refazer
+     * na sequência fazia uma segunda cópia completa logo depois da primeira. Quem
+     * precisa mesmo de outra rodada (Atualizar/F5, banco trocado) marca pedidoPendente.
+     */
     async function ciclo() {
         if (encerrado) return;
-        if (ocupado) { pedidoPendente = true; return; }
+        if (ocupado) return;
         ocupado = true;
         ocupadoDesde = Date.now();
         const gen = geracao;
@@ -400,7 +423,7 @@ function criarMotor(dep) {
             if (!cfg.fdbPath) {
                 if (!buscaLiberada()) throw Object.assign(new Error("Banco não configurado. Informe o servidor e o caminho do SMALL.FDB em Configurações → Banco de dados."), { codigo: "SEMCFG" });
                 await procurarBanco("primeira execução");
-                if (!cfg.fdbPath) throw Object.assign(new Error(ultimoErro || "Banco do Small Commerce não encontrado."), { codigo: "NAOACHOU" });
+                if (!cfg.fdbPath) throw Object.assign(new Error(ultimoErro || "Banco de dados não encontrado."), { codigo: "NAOACHOU" });
             }
             try {
                 await carregarUmaVez(gen);
@@ -443,7 +466,7 @@ function criarMotor(dep) {
                     (cfg.metaBusca === "local" ? "este computador" : "a rede") + ") — procurando de novo em segundo plano...");
                 const antes = cfg.fbHost + "|" + cfg.fdbPath;
                 setImmediate(() => procurarBanco("banco adotado fora da meta").then(ok => {
-                    if (ok && antes !== cfg.fbHost + "|" + cfg.fdbPath && !encerrado) { geracao++; agendar(0); }
+                    if (ok && antes !== cfg.fbHost + "|" + cfg.fdbPath && !encerrado) { invalidar(); agendar(0); }
                 }).catch(() => {}));
             }
         } catch (e) {
@@ -451,7 +474,7 @@ function criarMotor(dep) {
             falhasSeguidas++;
             tipoUltimoErro = e.codigo === "CANCELADA" ? "cancelada" : FB.tipoErro(e);
             ultimoErro = e.codigo === "CANCELADA" ? "Cópia cancelada." : (["GBAK", "SEMCFG", "NAOACHOU"].indexOf(e.codigo) >= 0 ? e.message : FB.explicarErro(e));
-            reg.erro("Falha ao atualizar o estoque: " + String(e.message || e).slice(0, 400));
+            reg.erro("Falha ao atualizar o estoque: " + FB.mensagemDe(e).slice(0, 400));
             if (retrato) definir("pronto", "Mostrando o estoque de " + new Date(retrato.carregadoEm).toLocaleString("pt-BR") + " — " + ultimoErro);
             else definir("erro", ultimoErro);
             agendar(e.codigo === "CANCELADA" ? Math.max(intervaloNormal(), 30 * 60000) : intervaloErro());
@@ -568,7 +591,7 @@ function criarMotor(dep) {
         reg.info("Configuração salva: " + JSON.stringify(Config.semSenha(cfg)));
         const mudouConexao = CHAVES_CONEXAO.some(k => antes[k] !== cfg[k]);
         if (mudouConexao) {
-            geracao++;
+            invalidar(); // a rodada atual (se houver) é descartada e refeita com o banco novo
             if (copia) { copia.cancelar(); copia = null; }
             if (antes.gbakPath !== cfg.gbakPath) { gbak = ""; gbakProcurado = false; }
             if (antes.pastaCopias !== cfg.pastaCopias) estimativaDisco = undefined;
@@ -654,7 +677,7 @@ function criarMotor(dep) {
         async procurarAgora() {
             if (procurando) return false;
             const ok = await procurarBanco("pedido pelo usuário");
-            if (ok) { geracao++; agendar(0); }
+            if (ok) { invalidar(); agendar(0); }
             return ok;
         },
         cancelarCopia() { return copia ? copia.cancelar() : false; },

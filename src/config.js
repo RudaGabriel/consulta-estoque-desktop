@@ -1,7 +1,7 @@
 "use strict";
 /**
  * config.js
- * @version 1.3.0
+ * @version 1.4.0
  * @author Ruda Gabriel
  * @description Configuração do aplicativo (config.json na pasta de dados):
  *              valores padrão, validação de cada chave e gravação atômica.
@@ -12,22 +12,24 @@
  *
  * @changelog
  *   (Histórico completo das versões: CHANGELOG.md no repositório.)
- *   1.3.0 — configInicial (interna): a configuração inicial (nome da loja e senha
- *           opcional) já foi feita.
+ *   1.4.0 — Padrões novos: leitura instantânea (metodoCopia "instantaneo"), aceleração
+ *           gráfica desligada e volumeSom (volume do bipe, 10 a 100%, público).
+ *           config.json antigo (versaoConfig < 3) migra uma vez: "auto" vira
+ *           "instantaneo" e a aceleração gráfica é desligada.
  */
 
 const fs = require("fs");
 const path = require("path");
 
-const VERSAO = "1.3.0";
+const VERSAO = "1.4.0";
 // Versão do formato do config.json (migrações feitas uma vez só).
-const VERSAO_CONFIG = 2;
+const VERSAO_CONFIG = 3;
 
 // [padrão, tipo, mínimo, máximo] ou [padrão, lista de valores aceitos].
 const ESQUEMA = {
     // Leitura do banco
     modo:                ["copia", ["copia", "direto"]],
-    metodoCopia:         ["auto", ["auto", "gbak", "instantaneo"]],
+    metodoCopia:         ["instantaneo", ["auto", "gbak", "instantaneo"]],
     copiaACadaMin:       [180, "int", 1, 1440],
     copiaTimeoutMin:     [30, "int", 1, 360],
     diretoRecarregarSeg: [60, "int", 15, 3600],
@@ -55,11 +57,12 @@ const ESQUEMA = {
     ocultarCursor:       [false, "bool"],
     reiniciarDiario:     ["", "hora"],
     monitor:             [0, "int", 0, 9],
-    aceleracaoGrafica:   [true, "bool"],
+    aceleracaoGrafica:   [false, "bool"],
     // Tela
     tema:                ["auto", ["auto", "claro", "escuro"]],
     modoLeve:            [false, "bool"],
     som:                 [true, "bool"],
+    volumeSom:           [100, "int", 10, 100],
     zoom:                [1, "num", 0.6, 2.5],
     limparAposSeg:       [60, "int", 0, 3600],
     mostrarCusto:        [false, "bool"],
@@ -78,7 +81,7 @@ const ESQUEMA = {
 
 // Chaves que só mudam com a senha do administrador (a tela de consulta fica
 // aberta ao público: cliente não pode trocar o banco, sair do quiosque etc.).
-const PUBLICAS = ["tema", "modoLeve", "som", "zoom", "tabComoEnter"];
+const PUBLICAS = ["tema", "modoLeve", "som", "volumeSom", "zoom", "tabComoEnter"];
 const INTERNAS = ["senhaAdmin", "fbHostAuto", "versaoConfig", "configInicial"];
 const SENSIVEIS = Object.keys(ESQUEMA).filter(k => PUBLICAS.indexOf(k) < 0 && INTERNAS.indexOf(k) < 0);
 
@@ -126,6 +129,11 @@ function normalizar(obj) {
     // "Ocultar da barra de tarefas" passa a vir ligado, uma vez só.
     const versao = Number(src.versaoConfig);
     if (Object.keys(src).length && !(versao >= 2)) o.ocultarBarraTarefas = true;
+    // Antes da 3: leitura instantânea passa a ser o padrão e a aceleração gráfica vem desligada.
+    if (Object.keys(src).length && !(versao >= 3)) {
+        if (o.metodoCopia === "auto") o.metodoCopia = "instantaneo";
+        o.aceleracaoGrafica = false;
+    }
     o.versaoConfig = VERSAO_CONFIG;
     return o;
 }

@@ -306,7 +306,7 @@ test("motor: estimativa da última cópia gbak no status, mesmo antes de copiar 
 
 test("motor: Firebird daqui mais antigo que o do servidor → cópia instantânea e aviso para trocar", async () => {
     const banco = Object.assign(bancoExemplo(), { versao: "4.0.4" });
-    const { motor } = montar({ "10.0.0.5|C:\\SMALL.FDB": banco }, { fbHost: "10.0.0.5", fdbPath: "C:\\SMALL.FDB" }, {
+    const { motor } = montar({ "10.0.0.5|C:\\SMALL.FDB": banco }, { fbHost: "10.0.0.5", fdbPath: "C:\\SMALL.FDB", metodoCopia: "auto", versaoConfig: 3 }, {
         localizarGbak: async () => "C:\\Firebird_3_0\\gbak.exe",
         portaAberta: async () => true,
         versaoGbak: async () => ({ maior: 3, menor: 0, texto: "3.0.13" })
@@ -316,5 +316,28 @@ test("motor: Firebird daqui mais antigo que o do servidor → cópia instantâne
     assert.strictEqual(motor.status().metodoEfetivo, "instantaneo", "gbak mais antigo que o servidor não é usado");
     const fb = motor.status().firebird;
     assert.deepStrictEqual([fb.servidor, fb.local, fb.pacote, fb.localMaisAntiga], ["4.0.4", "3.0.13", "4.0", true]);
+    motor.encerrar();
+});
+
+test("motor: pedido do relógio durante uma atualização não faz outra em seguida; Atualizar e troca de banco fazem", async () => {
+    const pasta = tmp();
+    const arquivoConfig = path.join(pasta, "config.json");
+    Config.salvar(arquivoConfig, Config.normalizar({ fbHost: "10.0.0.5", fdbPath: "C:\\SMALL.FDB", fbHostAuto: true, versaoConfig: 3 }));
+    const falso = criarFbFalso({ "10.0.0.5|C:\\SMALL.FDB": bancoExemplo() });
+    // Banco "lento": cada conexão leva 300 ms.
+    const lento = Object.assign({}, falso, { attach(o, cb) { setTimeout(() => falso.attach(o, cb), 300); } });
+    const motor = criarMotor({ pastaDados: pasta, arquivoConfig, log: logMudo, Firebird: FB.blindar(lento, 2), localizarGbak: async () => "", portaAberta: async () => false,
+        localizar: async () => ({ achado: null, falhas: [], outros: [], mensagem: "nada" }) });
+    await motor.iniciar();
+    await esperar(() => motor.status().ocupado, 5000);
+    motor.salvarConfig({ metaBusca: "local" }); // pede uma rodada pelo relógio no meio da atual
+    await esperar(() => motor.status().estado === "pronto" && !motor.status().ocupado && motor.status().itens === 15, 5000);
+    await new Promise(r => setTimeout(r, 900));
+    assert.strictEqual(falso.attaches.length, 1, "uma leitura só (sem repetir na sequência)");
+    // Atualizar pedido pelo usuário durante uma rodada: refaz depois.
+    motor.atualizarAgora();
+    await esperar(() => motor.status().ocupado, 3000);
+    motor.atualizarAgora();
+    await esperar(() => falso.attaches.length === 3 && !motor.status().ocupado, 5000);
     motor.encerrar();
 });
