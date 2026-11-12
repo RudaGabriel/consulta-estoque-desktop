@@ -12,7 +12,7 @@
 <img alt="idioma: pt-BR" src="https://img.shields.io/badge/idioma-pt--BR-16A34A?style=flat">
 <img alt="banco: somente leitura" src="https://img.shields.io/badge/banco-somente%20leitura-DC2626?style=flat&logo=data%3Aimage%2Fsvg%2Bxml%3Bbase64%2CPHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHZpZXdCb3g9JzAgMCAyNCAyNCcgZmlsbD0nbm9uZScgc3Ryb2tlPSd3aGl0ZScgc3Ryb2tlLXdpZHRoPScyLjInIHN0cm9rZS1saW5lY2FwPSdyb3VuZCcgc3Ryb2tlLWxpbmVqb2luPSdyb3VuZCc%2BPHBhdGggZD0nTTEyIDIyczgtNCA4LTEwVjVsLTgtMy04IDN2N2MwIDYgOCAxMCA4IDEweicvPjxwYXRoIGQ9J205IDEyIDIgMiA0LTQnLz48L3N2Zz4%3D&logoColor=white">
 <img alt="funciona: sem internet" src="https://img.shields.io/badge/funciona-sem%20internet-0891B2?style=flat">
-<img alt="testes: 69 passando" src="https://img.shields.io/badge/testes-69%20passando-22C55E?style=flat&logo=data%3Aimage%2Fsvg%2Bxml%3Bbase64%2CPHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHZpZXdCb3g9JzAgMCAyNCAyNCcgZmlsbD0nbm9uZScgc3Ryb2tlPSd3aGl0ZScgc3Ryb2tlLXdpZHRoPScyLjInIHN0cm9rZS1saW5lY2FwPSdyb3VuZCcgc3Ryb2tlLWxpbmVqb2luPSdyb3VuZCc%2BPHBhdGggZD0nTTkgMnY2TDQgMTlhMiAyIDAgMCAwIDEuOCAzaDEyLjRhMiAyIDAgMCAwIDEuOC0zTDE1IDhWMicvPjxwYXRoIGQ9J004IDJoOCcvPjxwYXRoIGQ9J003IDE1aDEwJy8%2BPC9zdmc%2B&logoColor=white">
+<img alt="testes: 75 passando" src="https://img.shields.io/badge/testes-75%20passando-22C55E?style=flat&logo=data%3Aimage%2Fsvg%2Bxml%3Bbase64%2CPHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHZpZXdCb3g9JzAgMCAyNCAyNCcgZmlsbD0nbm9uZScgc3Ryb2tlPSd3aGl0ZScgc3Ryb2tlLXdpZHRoPScyLjInIHN0cm9rZS1saW5lY2FwPSdyb3VuZCcgc3Ryb2tlLWxpbmVqb2luPSdyb3VuZCc%2BPHBhdGggZD0nTTkgMnY2TDQgMTlhMiAyIDAgMCAwIDEuOCAzaDEyLjRhMiAyIDAgMCAwIDEuOC0zTDE1IDhWMicvPjxwYXRoIGQ9J004IDJoOCcvPjxwYXRoIGQ9J003IDE1aDEwJy8%2BPC9zdmc%2B&logoColor=white">
 <img alt="licença: proprietária" src="https://img.shields.io/badge/licen%C3%A7a-propriet%C3%A1ria-6B7280?style=flat">
 
 <img alt="Electron: 44.9.3" src="https://img.shields.io/badge/Electron-44.9.3-47848F?style=flat&logo=electron&logoColor=white">
@@ -438,7 +438,7 @@ Uma única biblioteca em uso pelo aplicativo (`node-firebird`); o resto é o pr�
 | Instalador | [electron-builder](https://www.electron.build) | 26.18.0 | Instalador NSIS e versão portátil, x64 e ia32 |
 | Tela | HTML5, CSS e JavaScript sem framework | — | Leve para PCs fracos; temas claro e escuro |
 | Som | Web Audio API | — | Bipe da leitura, sem arquivos de áudio |
-| Testes | `node:test` + `node:assert` | Node 20+ | 69 testes com Firebird, gbak e aplicativo simulados |
+| Testes | `node:test` + `node:assert` | Node 20+ | 75 testes com Firebird, gbak e aplicativo simulados |
 | Senha | `crypto.pbkdf2` (Node) | — | *Hash* da senha do administrador com sal, comparação em tempo constante |
 | Teste da tela | Playwright + Electron | — | Fluxo do leitor, cartão, configurações, tema e Electron 22 |
 | Build | GitHub Actions | — | Testes + instaladores a cada push |
@@ -451,7 +451,7 @@ Uma única biblioteca em uso pelo aplicativo (`node-firebird`); o resto é o pr�
 npm test
 ```
 
-- **69 testes**, sem Firebird real:
+- **75 testes**, sem Firebird real:
   - **Firebird simulado** (`src/demo.js`): registra toda SQL e transação, para provar que nada de escrita sai;
   - **gbak simulado** (`test/mock-gbak.js`): backup, restauração, falhas e atraso.
 - **Trava de somente leitura:** comandos recusados, transação somente leitura, `node-firebird` 0.x e 1.x+.
@@ -465,6 +465,7 @@ npm test
 - **Cópia gbak:** senha por variável de ambiente, cópia nova atômica, limpeza segura, falha mantém a anterior, cancelamento.
 - **Administrador:** senha só como *hash*, chaves sensíveis, padrões do quiosque (barra de tarefas oculta, também em config antigo), cópia a cada 3 horas.
 - **Caminho no servidor:** servidor informado sem o caminho, troca de servidor apaga o caminho antigo.
+- **Apagar o portátil (processos de verdade):** espera o aplicativo fechar antes de apagar, apaga o `.exe` e a pasta de dados, reconhece a pasta temporária do portátil, nunca mexe em pasta de outro programa.
 - **Vigia (processos de verdade):** reabre o aplicativo fechado à força (rápido, sem abrir duas vezes enquanto o novo grava o PID), espera o reinício avisado, encerra com a saída autorizada e com a persistência desligada, um vigia só.
 - **Abertura:** cópia salva em dia não toca no banco ao abrir; estimativa da cópia pela duração de cada etapa (também antes da primeira cópia da abertura).
 - **Tela (Playwright, Electron 44 e 22):** três modos (Instantâneo padrão), cartão centralizado com preço grande e X centralizado, caixas e campos vazios escondidos, cartão fecha ao digitar, voltar ao topo, volume do bipe, sem totais, "Abaixo do mínimo" escondido sem mínimo, tela sem nomes de sistemas, configuração inicial (nome da loja, senha opcional, sem senha tudo livre, criar e remover a senha depois), barra de andamento da cópia, confirmação do Atualizar/F5, troca do Firebird, pergunta da meta, foco de volta na busca após 30 s, coringa e preço, leitura, limpeza após inatividade, fechar bloqueado, trava das abas, desbloqueio, ações sensíveis recusadas sem a senha, saída com Ctrl+Shift+Q, instalação do Firebird e escolha de outro `.FDB`.
@@ -484,6 +485,7 @@ npm test
 | `src/estoque-busca.js` | Regras da busca (termos, frase, `-palavra`, coringa `*` e preço `>`/`<`) |
 | `src/localizar-banco.js` | Descoberta automática do banco (meta, disco, pastas compartilhadas, rede) e os outros `.FDB` |
 | `src/caminhos.js` | Comparação de pastas do Windows (usada para apagar a versão portátil com segurança) |
+| `src/autoexcluir.js` | Ajudante que apaga a versão portátil depois que ela fecha |
 | `src/instalar-firebird.js` | Instalação automática do Firebird 3.0 neste computador |
 | `src/copia-gbak.js` | Cópia por gbak (backup + restauração somente leitura) |
 | `src/config.js`, `src/registro.js` | Configuração validada e log |
@@ -519,7 +521,8 @@ npm test
 | Como fechar o aplicativo? | **Ctrl+Shift+Q** e a senha do administrador |
 | Esqueci a senha do administrador | Veja [Esqueci a senha](#quiosque) |
 | Mensagem "falha de conexão com o servidor" / "AggregateError" | Era o aviso cru de quando o servidor não responde em nenhum endereço (IPv4 e IPv6). Agora aparece explicado: confira se o servidor está ligado e na mesma rede |
-| Quero tirar o aplicativo do computador sem deixar nada | **Instalado:** *Configurações do Windows → Aplicativos → Consulta Estoque → Desinstalar* — o desinstalador apaga também a pasta de dados, as cópias do banco, os instaladores baixados e o início com o Windows. **Portátil:** *Administrador → Apagar esta versão portátil* (com confirmação): o aplicativo fecha e apaga o `.exe`, a pasta `ConsultaEstoque-dados`, as cópias e o início com o Windows. O Firebird instalado à parte (se houver) continua, pois outros programas podem usá-lo |
+| "Installer integrity check has failed" ao abrir o instalador | O arquivo chegou estragado no download (conexão caiu, cópia por pendrive, antivírus). **Baixe de novo** da página de Releases. Para conferir: no PowerShell, `Get-FileHash .\NOME-DO-ARQUIVO.exe -Algorithm SHA256` e compare com o `SHA256SUMS.txt` da Release — tem de ser igual |
+| Quero tirar o aplicativo do computador sem deixar nada | **Instalado:** *Configurações do Windows → Aplicativos → Consulta Estoque → Desinstalar* — o desinstalador apaga também a pasta de dados, as cópias do banco, os instaladores baixados e o início com o Windows. **Portátil:** *Administrador → Apagar esta versão portátil* (com confirmação): o aplicativo fecha e, em alguns segundos (até 2 minutos se o antivírus estiver examinando o arquivo), apaga o `.exe`, a pasta `ConsultaEstoque-dados`, as cópias e o início com o Windows. O Firebird instalado à parte (se houver) continua, pois outros programas podem usá-lo |
 | Preciso usar outro programa nesse computador | *Administrador → Modo manutenção* (sai da tela cheia até você voltar) |
 | Fechei pelo Gerenciador de Tarefas e ele voltou | É a persistência. Para desligar: *Windows → Persistência* (com a senha) |
 | Acentos estranhos | Informe o log ao desenvolvedor; o aplicativo tenta UTF-8, Windows-1252 e latin1 sozinho |

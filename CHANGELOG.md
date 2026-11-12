@@ -8,7 +8,7 @@ Versões em uso hoje:
 | Arquivo | Versão |
 |---|---|
 | Aplicativo (`package.json`) | [1.6.1](#aplicativo) |
-| [`main.js`](#mainjs) | 1.5.1 |
+| [`main.js`](#mainjs) | 1.5.2 |
 | [`preload.js`](#preloadjs) | 1.5.0 |
 | [`ui/index.html`, `ui/estilo.css`, `ui/app.js`](#ui) | 1.6.0 (`app.js`); 1.4.0 (`index.html`, `estilo.css`) |
 | [`src/motor.js`](#srcmotorjs) | 1.6.0 |
@@ -17,6 +17,7 @@ Versões em uso hoje:
 | [`src/estoque-busca.js`](#srcestoque-buscajs) | 1.2.0 |
 | [`src/localizar-banco.js`](#srclocalizar-bancojs) | 1.4.0 |
 | [`src/caminhos.js`](#srccaminhosjs) | 1.0.0 |
+| [`src/autoexcluir.js`](#srcautoexcluirjs) | 1.0.0 |
 | [`src/instalar-firebird.js`](#srcinstalar-firebirdjs) | 1.2.0 |
 | [`src/copia-gbak.js`](#srccopia-gbakjs) | 1.2.0 |
 | [`src/config.js`](#srcconfigjs) | 1.4.0 |
@@ -26,7 +27,7 @@ Versões em uso hoje:
 | [`electron-builder.config.js`](#electron-builderconfigjs) | 1.1.0 |
 | [`build/instalador.nsh`](#buildinstaladornsh) | 1.0.0 |
 | [`gerar-instalador.bat`](#gerar-instaladorbat) | 1.0.0 |
-| [`.github/workflows/build.yml`](#githubworkflowsbuildyml) | 1.3.0 |
+| [`.github/workflows/build.yml`](#githubworkflowsbuildyml) | 1.4.0 |
 
 ---
 
@@ -36,9 +37,14 @@ Versões em uso hoje:
 
 Versão do Consulta Estoque (a que aparece no instalador e em *Configurações → Diagnóstico*).
 
-### 1.6.1 — 2026-11-11
+### 1.6.1 — 2026-11-12
 
-**Correção:** "Apagar esta versão portátil" com o `.exe` guardado na raiz de uma unidade (ex.: `D:\`, pendrive) agora apaga também a pasta `ConsultaEstoque-dados` (antes ela ficava para trás). 69 testes.
+**Correções da remoção da versão portátil e do download.**
+
+- **"Apagar esta versão portátil" funciona de verdade:** a remoção era feita por um comando PowerShell oculto, que o antivírus do Windows costuma barrar quando vem de um programa sem assinatura — o aplicativo fechava e nada era apagado. Agora um ajudante próprio (o mesmo mecanismo do vigia) espera o aplicativo, o vigia e o lançador do portátil fecharem, apaga o `.exe` e os dados (tentando por até 2 minutos se algo estiver preso) e limpa a pasta temporária onde o portátil abriu. O aplicativo só fecha depois de ver o ajudante de pé; se ele não iniciar, avisa e não fecha.
+- Com o `.exe` guardado na raiz de uma unidade (ex.: `D:\`, pendrive), a pasta `ConsultaEstoque-dados` também é apagada (antes ficava para trás).
+- **Release com `SHA256SUMS.txt`:** as "impressões digitais" dos arquivos, para conferir se o download chegou inteiro (o erro "Installer integrity check has failed" é arquivo estragado no download).
+- 75 testes.
 
 ### 1.6.0 — 2026-11-11
 
@@ -137,6 +143,10 @@ Versão do Consulta Estoque (a que aparece no instalador e em *Configurações �
 ## `main.js`
 
 Processo principal (janela, instância única, pasta de dados, IPC).
+
+### 1.5.2 — 2026-11-12
+
+**Autoexclusão do portátil refeita:** um ajudante próprio (`src/autoexcluir.js`, roda como Node, como o vigia) no lugar do comando PowerShell oculto e codificado (barrado por antivírus). Espera também o lançador do portátil (`process.ppid`), que segura o `.exe` enquanto limpa a pasta temporária; só fecha o aplicativo depois do evento `spawn` do ajudante (falhou → mensagem e o aplicativo continua aberto); o vigia só é avisado depois disso.
 
 ### 1.5.1 — 2026-11-11
 
@@ -350,6 +360,16 @@ Comparação de pastas do Windows.
 
 ---
 
+## `src/autoexcluir.js`
+
+Ajudante que apaga a versão portátil depois que ela fecha.
+
+### 1.0.0 — 2026-11-12
+
+**Primeira versão.** Copiado para a pasta temporária e iniciado pelo `main.js` (Electron como Node): espera os processos (aplicativo, lançador do portátil, vigia; até 1 min), apaga o `.exe`, a pasta de dados, as cópias e os instaladores baixados (tentando por até 2 min), as sobras de aberturas antigas do portátil (`nsXXXX.tmp` com o pacote deste aplicativo) e a própria cópia; a pasta temporária atual é apagada pelo `cmd` uns segundos depois que ele fecha. Só módulos do Node.
+
+---
+
 ## `src/instalar-firebird.js`
 
 Instalação automática do Firebird neste computador.
@@ -491,6 +511,10 @@ Gera os instaladores com dois cliques.
 ## `.github/workflows/build.yml`
 
 CI.
+
+### 1.4.0 — 2026-11-12
+
+**`SHA256SUMS.txt` na Release** com a impressão digital de cada `.exe`, e no texto da Release como conferir no PowerShell (`Get-FileHash`) — para quem receber "Installer integrity check has failed" (download estragado).
 
 ### 1.3.0 — 2026-11-10
 

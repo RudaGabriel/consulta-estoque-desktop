@@ -1,5 +1,5 @@
 # build.yml — testes e instaladores do Consulta Estoque (Windows)
-# v1.3.0 — Autor: Ruda Gabriel
+# v1.4.0 — Autor: Ruda Gabriel
 # Gera, a cada push e PR:
 #   - moderno: Windows 10/11, 64 bits (Electron 44)
 #   - legado:  Windows 7 a 11, 64 e 32 bits (Electron 22)
@@ -130,6 +130,10 @@ jobs:
           if [[ "$GITHUB_REF" == refs/tags/v* ]]; then tag="${GITHUB_REF_NAME}"; else tag="v$(node -p "require('./package.json').version")"; fi
           echo "tag=$tag" >> "$GITHUB_OUTPUT"
           find arquivos -type f -name "*.exe" -printf "%f  %s bytes\n"
+          # Impressões digitais (SHA-256) para conferir se o download chegou inteiro.
+          (cd arquivos && find . -type f -name "*.exe" -printf "%P\n" | sort | while read -r f; do sha256sum "$f" | sed "s#  .*/#  #"; done) > SHA256SUMS.txt
+          mv SHA256SUMS.txt arquivos/SHA256SUMS.txt
+          cat arquivos/SHA256SUMS.txt
           esperados=$(find arquivos -type f -name "*.exe" -printf "%f\n" | sort)
           # Release que já tem TODOS os arquivos: nada a fazer. Se faltar algum
           # (envio interrompido), publica de novo e completa.
@@ -157,6 +161,9 @@ jobs:
             Na primeira abertura o aplicativo pede o nome da loja e a senha do administrador — os dois opcionais (sem senha, tudo fica livre).
             Para sair: Ctrl+Shift+Q (e a senha, se houver).
             O Windows pode avisar "O Windows protegeu o computador" (aplicativo sem assinatura paga): Mais informações → Executar assim mesmo.
+            Para conferir se o download chegou inteiro (erro "Installer integrity check has failed" = arquivo estragado no download): no PowerShell, `Get-FileHash .\NOME-DO-ARQUIVO.exe -Algorithm SHA256` e compare com o arquivo `SHA256SUMS.txt` desta página. Diferente? Baixe de novo.
             Histórico completo: CHANGELOG.md.
-          files: arquivos/**/*.exe
+          files: |
+            arquivos/**/*.exe
+            arquivos/SHA256SUMS.txt
           fail_on_unmatched_files: true

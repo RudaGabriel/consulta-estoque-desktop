@@ -10,7 +10,7 @@
   "scripts": {
     "start": "electron .",
     "demo": "electron . --demo",
-    "test": "node --test test/nucleo.test.js test/localizar.test.js test/motor.test.js test/vigia.test.js test/firebird-instalar.test.js test/caminhos.test.js",
+    "test": "node --test test/nucleo.test.js test/localizar.test.js test/motor.test.js test/vigia.test.js test/firebird-instalar.test.js test/caminhos.test.js test/autoexcluir.test.js",
     "dist": "electron-builder --config electron-builder.config.js --win --x64",
     "dist:legado": "node -e \"process.env.VARIANTE='legado';require('child_process').execFileSync(process.execPath,[require.resolve('electron-builder/cli.js'),'--config','electron-builder.config.js','--win','--x64','--ia32'],{stdio:'inherit',env:process.env})\""
   },
