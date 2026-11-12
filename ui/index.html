@@ -1,14 +1,12 @@
 <!doctype html>
 <!--
   index.html — Consulta Estoque (tela)
-  @version 1.4.0
+  @version 1.5.0
   @author Ruda Gabriel
   @changelog
     (Histórico completo das versões: CHANGELOG.md no repositório.)
-    1.4.0 — Três modos na aba Consulta (Instantâneo padrão, Cópia do banco, Leitura
-            direta); botões de fechar com o X desenhado (centralizado); cartão ampliado
-            com caixas que somem quando vazias; botão de voltar ao topo da lista; volume
-            do bipe; dica do "-palavra"; apagar a versão portátil; textos neutros.
+    1.5.0 — "Localização do banco de dados" com a opção "Seleção manual" (e dica de
+            cada opção); filtro de peso na busca (>9kg); textos em linguagem formal.
 -->
 <html lang="pt-BR">
 <head>
@@ -50,7 +48,7 @@
     <svg class="lupa" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="M20 20l-4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
     <input id="q" type="search" autocomplete="off" spellcheck="false" autofocus
            placeholder="Passe o leitor ou digite nome, código, código de barras, referência..."
-           title="Dicas: RAÇÃO*10KG acha os dois no mesmo nome (* = qualquer coisa) · RAÇÃO >50 = preço de R$ 50 ou mais · RAÇÃO <50 = R$ 50 ou menos">
+           title="Dicas: RAÇÃO*10KG encontra os dois termos no mesmo nome (* = qualquer trecho) · RAÇÃO >50 = preço de R$ 50 ou mais · RAÇÃO <50 = até R$ 50 · RAÇÃO >9KG = 9 kg ou mais">
     <button id="bLimpar" class="limpar" type="button" title="Limpar (Esc)" aria-label="Limpar" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg></button>
   </div>
   <div class="filtros">
@@ -76,7 +74,7 @@
     </label>
     <label class="chk" title="Desmarcado: o texto precisa estar no começo de algum campo"><input type="checkbox" id="fCon" checked> Contém</label>
     <label class="chk"><input type="checkbox" id="fAtv"> Só ativos</label>
-    <span class="dica-busca" id="dicaBusca">* = qualquer coisa · &gt;50 = preço 50 ou mais · &lt;50 = 50 ou menos</span>
+    <span class="dica-busca" id="dicaBusca">* = qualquer trecho · &gt;50 = preço de R$ 50 ou mais · &lt;50 = até R$ 50 · &gt;9kg = 9 kg ou mais</span>
   </div>
 </section>
 
@@ -112,7 +110,7 @@
     <div class="vazio-acoes">
       <button class="btn primario" id="bVazioProcurar" type="button">Procurar o banco</button>
       <button class="btn primario" id="bVazioOutros" type="button" hidden>Ver outros arquivos .FDB</button>
-      <button class="btn" id="bVazioTentar" type="button">Tentar de novo</button>
+      <button class="btn" id="bVazioTentar" type="button">Tentar novamente</button>
       <button class="btn" id="bVazioConfig" type="button">Configurações</button>
     </div>
   </div>
@@ -179,7 +177,7 @@
       <div class="opcoes-modo tres">
         <label class="modo-card"><input type="radio" name="modo" value="instantaneo">
           <strong>Instantâneo <em>padrão</em></strong>
-          <span>Uma leitura rápida só da tabela de produtos, em somente leitura, a cada intervalo. Não trava o caixa, não precisa de nada instalado neste computador e o estoque fica salvo aqui — funciona mesmo com o servidor fora do ar.</span>
+          <span>Uma leitura rápida só da tabela de produtos, em somente leitura, a cada intervalo. Não bloqueia o caixa, não exige instalação neste computador e o estoque fica salvo localmente, inclusive com o servidor fora do ar.</span>
         </label>
         <label class="modo-card"><input type="radio" name="modo" value="copia">
           <strong>Cópia do banco</strong>
@@ -206,8 +204,8 @@
         <input type="number" id="cfgLimpar" min="0" max="3600">
       </label>
       <label class="chk"><input type="checkbox" id="cfgCusto"> Mostrar o custo (na lista e no cartão)</label>
-      <label class="chk"><input type="checkbox" id="cfgCoringa"> Busca com coringa: <strong>*</strong> vale qualquer coisa (ex.: RAÇÃO*10KG)</label>
-      <label class="chk"><input type="checkbox" id="cfgPreco"> Filtro de preço na busca: <strong>RAÇÃO &gt;50</strong> = R$ 50 ou mais; <strong>RAÇÃO &lt;50</strong> = R$ 50 ou menos</label>
+      <label class="chk"><input type="checkbox" id="cfgCoringa"> Busca com coringa: <strong>*</strong> representa qualquer trecho (ex.: RAÇÃO*10KG)</label>
+      <label class="chk"><input type="checkbox" id="cfgPreco"> Filtro de preço e de peso na busca: <strong>RAÇÃO &gt;50</strong> = R$ 50 ou mais; <strong>RAÇÃO &lt;50</strong> = até R$ 50; <strong>RAÇÃO &gt;9KG</strong> = 9 kg ou mais (peso informado na descrição)</label>
       <p class="dica">Em todos os modos o aplicativo <strong>nunca grava</strong> no banco de dados (só leitura).</p>
     </section>
 
@@ -217,20 +215,22 @@
         <label>Servidor (nome ou IP)<input type="text" id="cfgHost" placeholder="ex.: SERVIDOR ou 192.168.0.10"></label>
         <label class="curto">Porta<input type="number" id="cfgPorta" min="1" max="65535"></label>
       </div>
-      <label>Caminho do SMALL.FDB no servidor (vazio = procurar sozinho)<input type="text" id="cfgPath" placeholder="automático"></label>
+      <label>Caminho do SMALL.FDB no servidor (em branco = busca automática no servidor)<input type="text" id="cfgPath" placeholder="automático"></label>
       <div class="linha2">
         <label>Usuário<input type="text" id="cfgUser" autocomplete="off"></label>
         <label>Senha<span class="senha"><input type="password" id="cfgPass" autocomplete="off"><button type="button" id="bVerSenha" class="btn fino">Ver</button></span></label>
       </div>
-      <label class="chk"><input type="checkbox" id="cfgFixo"> Não trocar o servidor sozinho (desliga a correção automática)</label>
+      <label class="chk"><input type="checkbox" id="cfgFixo"> Não trocar o servidor automaticamente (desativa a correção automática)</label>
       <label class="chk"><input type="checkbox" id="cfgVarrer"> Procurar servidores na rede local</label>
-      <label>Onde o banco deve estar (a busca automática começa por aqui, mas varre tudo)
+      <label>Localização do banco de dados
         <select id="cfgMeta">
-          <option value="">Ainda não escolhido (rede primeiro)</option>
-          <option value="rede">Na rede — em outro computador (servidor)</option>
-          <option value="local">Neste computador</option>
+          <option value="">Não escolhida (busca automática pela rede)</option>
+          <option value="rede">Na rede (servidor) — busca automática pelos servidores</option>
+          <option value="local">Neste computador — busca automática por este computador</option>
+          <option value="manual">Seleção manual — servidor e caminho informados acima</option>
         </select>
       </label>
+      <p class="dica" id="dicaMeta"></p>
       <div class="botoes">
         <button class="btn primario" id="bProcurar" type="button">Procurar o banco agora</button>
         <button class="btn" id="bOutrosFdb" type="button" hidden>Ver outros arquivos .FDB</button>
@@ -242,14 +242,14 @@
         <label>Caminho do gbak.exe (vazio = automático)<input type="text" id="cfgGbak" placeholder="C:\Program Files\Firebird\Firebird_3_0\gbak.exe"></label>
         <label>Pasta das cópias (vazio = automático, sempre em disco local)<input type="text" id="cfgPasta"></label>
         <label>Tempo máximo de UMA cópia (minutos)<input type="number" id="cfgTimeout" min="1" max="360"></label>
-        <p class="dica">É um limite de segurança de cada cópia, não o intervalo: se uma cópia passar desse tempo (servidor travado, rede lenta), ela é cancelada e a cópia anterior continua valendo; a próxima tentativa vem no horário normal. O intervalo entre cópias é o "Atualizar a cada" da aba Consulta (padrão 3 horas) e cresce sozinho para 3× a duração da última cópia, para nunca ocupar o servidor mais que 1/3 do tempo.</p>
+        <p class="dica">É um limite de segurança de cada cópia, não o intervalo: se uma cópia passar desse tempo (servidor travado, rede lenta), ela é cancelada e a cópia anterior continua valendo; a próxima tentativa vem no horário normal. O intervalo entre cópias é o "Atualizar a cada" da aba Consulta (padrão 3 horas) e aumenta automaticamente para 3× a duração da última cópia, para nunca ocupar o servidor mais que 1/3 do tempo.</p>
       </details>
     </section>
 
     <section data-pagina="windows" hidden>
       <p class="dica">A tela fica <strong>sempre em tela cheia</strong> (modo quiosque). Para sair do aplicativo: <strong>Ctrl+Shift+Q</strong> ou <em>Administrador → Sair do aplicativo</em>, com a senha.</p>
       <label class="chk"><input type="checkbox" id="cfgIniciar"> Abrir junto com o Windows</label>
-      <label class="chk"><input type="checkbox" id="cfgPersistente"> Persistência: se o aplicativo for fechado sem a senha (ou travar), ele abre de novo sozinho</label>
+      <label class="chk"><input type="checkbox" id="cfgPersistente"> Persistência: se o aplicativo for fechado sem a senha (ou travar), ele é reaberto automaticamente</label>
       <label class="chk"><input type="checkbox" id="cfgTopo"> Sempre acima das outras janelas</label>
       <label class="chk"><input type="checkbox" id="cfgFoco"> Manter em primeiro plano (volta para a frente se outra janela pegar o foco)</label>
       <label class="chk"><input type="checkbox" id="cfgDescanso"> Impedir que a tela apague ou o PC entre em descanso</label>

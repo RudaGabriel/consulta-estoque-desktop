@@ -341,3 +341,20 @@ test("motor: pedido do relógio durante uma atualização não faz outra em segu
     await esperar(() => falso.attaches.length === 3 && !motor.status().ocupado, 5000);
     motor.encerrar();
 });
+
+test("motor: seleção manual do banco → sem busca automática; com servidor e caminho informados, carrega normalmente", async () => {
+    let buscas = 0;
+    const loc = async () => { buscas++; return { achado: null, falhas: [], mensagem: "x" }; };
+    const sem = montar({}, { metaBusca: "manual" }, { portaAberta: async () => false, localizar: loc });
+    await sem.motor.iniciar();
+    await esperar(() => sem.motor.status().estado === "erro", 8000);
+    assert.strictEqual(buscas, 0, "nenhuma busca automática");
+    assert.match(String(sem.motor.status().erro || sem.motor.status().mensagem), /Configurações → Banco de dados/);
+    sem.motor.encerrar();
+    const com = montar({ "10.0.0.7|D:\\DADOS\\SMALL.FDB": bancoExemplo() }, { metaBusca: "manual", fbHost: "10.0.0.7", fdbPath: "D:\\DADOS\\SMALL.FDB" },
+        { portaAberta: async h => h === "10.0.0.7", localizar: loc });
+    await com.motor.iniciar();
+    await esperar(() => com.motor.status().itens === 15, 8000);
+    assert.strictEqual(buscas, 0);
+    com.motor.encerrar();
+});

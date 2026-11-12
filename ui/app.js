@@ -1,6 +1,6 @@
 /**
  * app.js — Consulta Estoque (tela)
- * @version 1.6.1
+ * @version 1.7.0
  * @author Ruda Gabriel
  * @description Tela de consulta de preço e estoque. Pensada para o leitor de
  *              código de barras USB/Bluetooth (que "digita" o código e manda
@@ -10,9 +10,10 @@
  *              Compatível com o Chromium 108 (versão para Windows 7/8).
  * @changelog
  *   (Histórico completo das versões: CHANGELOG.md no repositório.)
- *   1.6.1 — Atualizar/F5 no modo Instantâneo pergunta "Ler o estoque do servidor
- *           agora?" (não fala em cópia, que esse modo não faz); barra de status com os
- *           nomes da tela de modos (instantâneo, cópia do banco, leitura direta).
+ *   1.7.0 — Pergunta "Onde está o banco de dados?" com três opções em lista (Na rede,
+ *           Neste computador, Seleção manual) e "Decidir mais tarde"; a seleção
+ *           manual abre a aba Banco de dados. Dica do filtro de peso (>9kg). Textos
+ *           em linguagem formal.
  */
 (function () {
     "use strict";
@@ -432,9 +433,9 @@
         $("loja").hidden = !cfg.nomeLoja;
         if (!cfg.ocultarCursor) document.body.classList.remove("sem-cursor");
         var dicas = [];
-        if (cfg.buscaCoringa !== false) dicas.push("* = qualquer coisa");
-        if (cfg.buscaPreco !== false) dicas.push(">50 = preço 50 ou mais", "<50 = 50 ou menos");
-        dicas.push("-palavra = tira da busca");
+        if (cfg.buscaCoringa !== false) dicas.push("* = qualquer trecho");
+        if (cfg.buscaPreco !== false) dicas.push(">50 = preço de R$ 50 ou mais", "<50 = até R$ 50", ">9kg = 9 kg ou mais");
+        dicas.push("-palavra = exclui da busca");
         $("dicaBusca").textContent = dicas.join(" · ");
         $("dicaBusca").hidden = !dicas.length;
         reiniciarInatividade();
@@ -513,7 +514,7 @@
         var s = estado.status || {};
         var html = "";
         if (s.fonte) html += "<b>Banco em uso:</b> " + esc(s.fonte.host + ":" + s.fonte.caminho) + (s.fbHostAuto ? " <i>(encontrado automaticamente)</i>" : "") + "<br>";
-        else html += "<b>Banco:</b> ainda não definido — o aplicativo procura sozinho na rede.<br>";
+        else html += "<b>Banco:</b> ainda não definido — a busca automática começa pela rede.<br>";
         html += "<b>Situação:</b> " + esc(s.mensagem || "") + (s.erro ? "<br><b>Último erro:</b> " + esc(s.erro) : "");
         var fv = s.firebird || {};
         if (fv.servidor || fv.local) html += "<br><b>Firebird:</b> servidor " + esc(fv.servidor || "?") + " · este computador " + esc(fv.local || "não instalado") + (fv.localMaisAntiga ? " <i>(mais antigo — a cópia gbak não funciona)</i>" : "");
@@ -587,7 +588,7 @@
         $("cfgFixo").checked = c.fbHostFixo; $("cfgVarrer").checked = c.varrerRede;
         $("cfgGbak").value = c.gbakPath; $("cfgPasta").value = c.pastaCopias; $("cfgTimeout").value = c.copiaTimeoutMin;
         $("cfgLoja").value = c.nomeLoja; $("cfgLimpar").value = c.limparAposSeg; $("cfgCusto").checked = c.mostrarCusto;
-        $("cfgCoringa").checked = c.buscaCoringa !== false; $("cfgPreco").checked = c.buscaPreco !== false; $("cfgMeta").value = c.metaBusca || "";
+        $("cfgCoringa").checked = c.buscaCoringa !== false; $("cfgPreco").checked = c.buscaPreco !== false; $("cfgMeta").value = c.metaBusca || ""; desenharDicaMeta();
         $("cfgTema").value = c.tema; $("cfgZoom").value = c.zoom; $("oZoom").textContent = Math.round(c.zoom * 100) + "%";
         $("cfgSom").checked = c.som; $("cfgTab").checked = c.tabComoEnter; $("cfgLeve").checked = c.modoLeve;
         $("cfgVolume").value = c.volumeSom || 100; $("oVolume").textContent = (c.volumeSom || 100) + "%";
@@ -777,7 +778,7 @@
     async function configuracaoInicial() {
         var r = await perguntar({
             titulo: "Bem-vindo ao Consulta Estoque",
-            texto: "Os dois campos são opcionais. O nome da loja aparece no topo da tela. A senha do administrador protege as configurações, a saída do aplicativo e a exportação (a consulta de preço continua livre); em branco, tudo fica livre — dá para criar a senha depois em Configurações → Administrador.",
+            texto: "Os dois campos são opcionais. O nome da loja aparece no topo da tela. A senha do administrador protege as configurações, a saída do aplicativo e a exportação (a consulta de preço continua livre); sem senha, todas as funções ficam liberadas. A senha pode ser criada depois em Configurações → Administrador.",
             campo: { placeholder: "Nome da loja (opcional)" },
             senha: true, repetir: true, senhaPlaceholder: "Senha do administrador (opcional, mínimo 4)", senha2Placeholder: "Repita a senha",
             ok: "Começar", cancelar: false,
@@ -795,21 +796,37 @@
             }
         });
         if (r && r.senha) toast("Senha do administrador criada.");
-        else if (r) toast("Sem senha do administrador: tudo fica livre (dá para criar depois em Configurações → Administrador).", 5000);
+        else if (r) toast("Sem senha do administrador: todas as funções ficam liberadas. A senha pode ser criada depois em Configurações → Administrador.", 5000);
         return r != null;
     }
 
     // ── Primeira abertura: onde está o banco e o Firebird deste computador ──
+    // As mesmas três escolhas da aba Banco de dados (campo "Localização do banco de dados").
+    var OPCOES_META = [
+        { valor: "rede", titulo: "Na rede (servidor)", texto: "O banco de dados está em outro computador da rede. A busca automática começa pelos servidores." },
+        { valor: "local", titulo: "Neste computador", texto: "O banco de dados está neste computador. A busca automática começa por ele." },
+        { valor: "manual", titulo: "Seleção manual", texto: "O administrador informa o servidor e o caminho do banco de dados em Configurações → Banco de dados. A busca automática não altera o banco escolhido." }
+    ];
+    function desenharDicaMeta() {
+        var v = $("cfgMeta").value;
+        var o = OPCOES_META.filter(function (x) { return x.valor === v; })[0];
+        $("dicaMeta").textContent = o ? o.texto : "Enquanto a localização não for escolhida, a busca automática começa pela rede.";
+    }
     async function perguntarMeta() {
-        var r = await perguntar({
+        var meta = await perguntar({
             titulo: "Onde está o banco de dados?",
-            texto: "A busca automática começa pelo lugar escolhido, mas varre tudo: o disco deste computador, as pastas compartilhadas e a rede inteira. Dá para mudar depois em Configurações → Banco de dados.",
-            ok: "Na rede (servidor)", extra: "Neste computador", cancelar: "Decidir depois"
+            texto: "Na busca automática, o aplicativo começa pelo local escolhido e, se necessário, examina também o disco deste computador, as pastas compartilhadas e a rede. A escolha pode ser alterada em Configurações → Banco de dados.",
+            lista: OPCOES_META, ok: "Confirmar", cancelar: "Decidir mais tarde"
         });
-        if (r == null) return;
-        var meta = r === "extra" ? "local" : "rede";
-        if (!(await garantirAdmin("Digite a senha do administrador para guardar a escolha."))) return;
-        if (await salvarConfig({ metaBusca: meta }, false)) toast(meta === "local" ? "A busca vai começar por este computador." : "A busca vai começar pela rede.");
+        if (meta == null) return null;
+        if (!(await garantirAdmin("Digite a senha do administrador para salvar a escolha."))) return null;
+        if (!(await salvarConfig({ metaBusca: meta }, false))) return null;
+        if (meta === "manual") {
+            toast("Informe o servidor e o caminho do banco de dados e clique em Salvar.", 6000);
+            abrirPainel("banco");
+            setTimeout(function () { try { $("cfgHost").focus(); } catch (_) {} }, 80);
+        } else toast(meta === "local" ? "A busca automática começará por este computador." : "A busca automática começará pela rede.");
+        return meta;
     }
 
     async function instalarFirebird(opcoes) {
@@ -821,7 +838,7 @@
         try { r = await api.instalarFirebird({ trocar: trocar }); } catch (e) { r = { ok: false, mensagem: String(e && e.message || e) }; }
         try { if (typeof parar === "function") parar(); } catch (_) {}
         tela.fechar();
-        if (r && r.precisaSenha) { await atualizarAdmin(); toast("A sessão do administrador expirou — tente de novo."); return; }
+        if (r && r.precisaSenha) { await atualizarAdmin(); toast("A sessão do administrador expirou. Tente novamente."); return; }
         await perguntar({ titulo: r && r.ok ? (trocar ? "Firebird trocado" : "Firebird instalado") : (trocar ? "O Firebird não foi trocado" : "O Firebird não foi instalado"), texto: (r && r.mensagem) || "Erro desconhecido.", ok: "OK", cancelar: false });
         if (estado.painel) desenharFirebird();
     }
@@ -850,7 +867,7 @@
                     "O Firebird do servidor e o banco de dados não são tocados. Não confirme se outro programa deste computador usa o Firebird " + v.local + ".",
                 ok: "Sim, trocar pelo " + (v.pacote || v.servidor), extra: manual ? null : "Não perguntar mais", cancelar: "Agora não"
             });
-            if (r === "extra") { try { await api.firebirdNaoPerguntar(); } catch (_) {} toast("Tudo bem — dá para trocar depois em Configurações → Banco de dados."); return; }
+            if (r === "extra") { try { await api.firebirdNaoPerguntar(); } catch (_) {} toast("A troca pode ser feita depois em Configurações → Banco de dados."); return; }
             if (r == null) return;
             await instalarFirebird({ trocar: true });
             return;
@@ -860,10 +877,10 @@
         r = await perguntar({
             titulo: "Este computador não tem o Firebird",
             texto: "O Firebird deste computador é usado na cópia completa do banco (gbak) e para abrir um SMALL.FDB que esteja aqui. Sem ele o aplicativo funciona, lendo o estoque do servidor. " +
-                "Instalar agora " + qual + "? O aplicativo baixa o instalador oficial (precisa de internet) e instala sozinho — o Windows vai pedir permissão.",
+                "Instalar agora " + qual + "? O aplicativo baixa o instalador oficial (é necessária conexão com a internet) e faz a instalação automaticamente; o Windows solicitará permissão.",
             ok: "Instalar", extra: manual ? null : "Não perguntar mais", cancelar: "Agora não"
         });
-        if (r === "extra") { try { await api.firebirdNaoPerguntar(); } catch (_) {} toast("Tudo bem — dá para instalar depois em Configurações → Banco de dados."); return; }
+        if (r === "extra") { try { await api.firebirdNaoPerguntar(); } catch (_) {} toast("A instalação pode ser feita depois em Configurações → Banco de dados."); return; }
         if (r == null) return;
         await instalarFirebird({});
     }
@@ -896,17 +913,17 @@
         var s = estado.status || {};
         if (s.buscaSemSmall) estado.semSmallVisto = s.buscaSemSmall.quando;
         if (!(await garantirAdmin("Digite a senha do administrador para escolher o banco."))) return;
-        var tela = andamento("Testando os arquivos .FDB", "Abrindo cada arquivo pelo Firebird, só para leitura... pode levar até 2 minutos.");
+        var tela = andamento("Testando os arquivos .FDB", "Abrindo cada arquivo pelo Firebird, somente para leitura. Isso pode levar até 2 minutos.");
         var lista;
         try { lista = await api.outrosFdb(); } catch (e) { lista = { ok: false, mensagem: String(e && e.message || e) }; }
         tela.fechar();
-        if (lista && lista.precisaSenha) { await atualizarAdmin(); toast("A sessão do administrador expirou — tente de novo."); return; }
+        if (lista && lista.precisaSenha) { await atualizarAdmin(); toast("A sessão do administrador expirou. Tente novamente."); return; }
         if (!Array.isArray(lista)) { toast((lista && lista.mensagem) || "Não foi possível testar os arquivos."); return; }
-        if (!lista.length) { toast("Não há outros arquivos .FDB para mostrar — procure o banco de novo."); return; }
+        if (!lista.length) { toast("Não há outros arquivos .FDB para exibir. Procure o banco de dados novamente."); return; }
         var usaveis = lista.filter(function (x) { return x.ok; }).length;
         var escolha = await perguntar({
             titulo: "Escolha o banco",
-            texto: usaveis ? "Nenhum arquivo se chama SMALL.FDB. Escolha o banco certo — só dá para escolher os que abrem e têm a tabela de produtos."
+            texto: usaveis ? "Nenhum arquivo se chama SMALL.FDB. Escolha o banco de dados correto; somente os arquivos que abrem e contêm a tabela de produtos podem ser escolhidos."
                 : "Nenhum destes arquivos abre com uma tabela de produtos. Confira o servidor e a senha do Firebird em Configurações → Banco de dados.",
             ok: "Usar este banco", cancelar: usaveis ? "Cancelar" : "Fechar",
             lista: lista.map(function (x) {
@@ -914,7 +931,7 @@
             }),
             validar: async function (_a, _b, x) {
                 var r = await api.usarBanco({ host: x.host, caminho: x.caminho });
-                if (r && r.precisaSenha) return "A sessão do administrador expirou — feche e tente de novo.";
+                if (r && r.precisaSenha) return "A sessão do administrador expirou. Feche esta janela e tente novamente.";
                 return r && r.ok ? null : ((r && r.mensagem) || "Não foi possível usar este banco.");
             }
         });
@@ -1033,6 +1050,7 @@
     $("bVazioOutros").addEventListener("click", function () { escolherOutroFdb(); });
     $("bOutrosFdb").addEventListener("click", function () { escolherOutroFdb(); });
     $("bInstalarFb").addEventListener("click", function () { perguntarFirebird(true); });
+    $("cfgMeta").addEventListener("change", desenharDicaMeta);
     $("bVazioConfig").addEventListener("click", function () { abrirPainel("banco"); });
 
     $("abas").addEventListener("click", function (e) { var b = e.target.closest("button[data-aba]"); if (b) trocarAba(b.getAttribute("data-aba")); });
@@ -1067,7 +1085,7 @@
 
     // Administrador
     var resultadoAdmin = async function (r, ok) {
-        if (r && r.precisaSenha) { await atualizarAdmin(); toast("A sessão do administrador expirou — digite a senha de novo."); return false; }
+        if (r && r.precisaSenha) { await atualizarAdmin(); toast("A sessão do administrador expirou. Digite a senha novamente."); return false; }
         if (r && r.ok === false) { toast(r.mensagem || "Não foi possível."); return false; }
         if (ok) toast(ok);
         return true;
@@ -1095,7 +1113,7 @@
     $("bAutoexcluir").addEventListener("click", async function () {
         var sim = await perguntar({
             titulo: "Apagar esta versão portátil?",
-            texto: "O aplicativo fecha e, em seguida, apaga para sempre: o arquivo .exe da versão portátil, a pasta de dados dela (configurações, senha, log e estoque salvo), as cópias do banco feitas neste computador e os instaladores baixados. Também deixa de abrir junto com o Windows. Não dá para desfazer. O banco de dados do servidor não é tocado.",
+            texto: "O aplicativo fecha e, em seguida, apaga para sempre: o arquivo .exe da versão portátil, a pasta de dados dela (configurações, senha, log e estoque salvo), as cópias do banco feitas neste computador e os instaladores baixados. O aplicativo também deixa de iniciar com o Windows. Esta ação não pode ser desfeita. O banco de dados do servidor não é alterado.",
             ok: "Apagar tudo e fechar", cancelar: "Cancelar"
         });
         if (!sim) return;
@@ -1169,17 +1187,19 @@
         focarBusca(false);
         try {
             await atualizarAdmin();
-            var recemCriada = false;
+            var recemCriada = false, metaEscolhida = null;
             // Primeira abertura (sem configuração inicial e sem senha): nome da loja e senha opcional.
             if (!(estado.cfg && estado.cfg.configInicial) && !(estado.admin && estado.admin.temSenha)) recemCriada = await configuracaoInicial();
             if (!(estado.info && estado.info.demo)) {
                 var c = estado.cfg || {}, st = estado.status || {};
-                if (!c.metaBusca && (recemCriada || !st.fonte)) await perguntarMeta();
+                if (!c.metaBusca && (recemCriada || !st.fonte)) metaEscolhida = await perguntarMeta();
                 // O Firebird deste computador só interessa à cópia completa (gbak).
                 if (c.modo === "copia" && c.metodoCopia !== "instantaneo") await perguntarFirebird(false);
             }
             // Configuração inicial terminou: com senha, a tela volta a ser pública.
-            if (recemCriada) { try { estado.admin = await api.bloquear(); } catch (_) {} }
+            // Exceção: "Seleção manual" abriu a aba Banco de dados para o administrador preencher;
+            // o desbloqueio termina ao fechar as configurações (ou em 5 minutos).
+            if (recemCriada && metaEscolhida !== "manual") { try { estado.admin = await api.bloquear(); } catch (_) {} }
         } finally {
             estado.iniciando = false;
             focarBusca(true);
