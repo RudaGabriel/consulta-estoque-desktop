@@ -1,7 +1,7 @@
 "use strict";
 /**
  * motor.js
- * @version 1.6.0
+ * @version 1.6.1
  * @author Ruda Gabriel
  * @description O coração do aplicativo: mantém o estoque em memória e atualizado
  *              conforme o modo escolhido, acha o banco sozinho e responde às
@@ -27,11 +27,8 @@
  *
  * @changelog
  *   (Histórico completo das versões: CHANGELOG.md no repositório.)
- *   1.6.0 — Sem cópia repetida: atualização pedida pelo relógio enquanto outra está em
- *           andamento é descartada (só um pedido do usuário ou uma mudança de banco
- *           refaz depois) — antes, a primeira cópia era seguida de outra na hora.
- *           status.temMinimo (o banco tem estoque mínimo preenchido?); mensagens de
- *           erro legíveis (AggregateError) e textos neutros.
+ *   1.6.1 — Log e avisos chamam o modo padrão de "leitura instantânea" (o nome da
+ *           tela é "Instantâneo"; não é uma cópia).
  */
 
 const fs = require("fs");
@@ -45,7 +42,7 @@ const Localizar = require("./localizar-banco.js");
 const Copia = require("./copia-gbak.js");
 const InstalarFb = require("./instalar-firebird.js");
 
-const VERSAO = "1.6.0";
+const VERSAO = "1.6.1";
 const ARQ_CACHE = "estoque-cache.json.gz";
 const CHAVES_CONEXAO = ["modo", "metodoCopia", "fbHost", "fbPorta", "fdbPath", "fbUser", "fbPass", "gbakPath", "pastaCopias", "copiaTimeoutMin"];
 
@@ -285,7 +282,7 @@ function criarMotor(dep) {
             if (sv && lv && InstalarFb.localMaisAntiga(lv, sv)) {
                 const msg = "O Firebird deste computador (" + lv.texto + ") é mais antigo que o do servidor (" + sv.texto + "): a cópia gbak não funciona com ele.";
                 if (cfg.metodoCopia === "gbak") { const e = new Error(msg + " Troque o Firebird deste computador ou use o método Instantâneo."); e.codigo = "GBAK"; throw e; }
-                if (avisouVersao !== lv.texto + ">" + sv.texto) { avisouVersao = lv.texto + ">" + sv.texto; reg.aviso(msg + " Usando a cópia instantânea até a troca."); }
+                if (avisouVersao !== lv.texto + ">" + sv.texto) { avisouVersao = lv.texto + ">" + sv.texto; reg.aviso(msg + " Usando a leitura instantânea até a troca."); }
                 return "instantaneo";
             }
             return "gbak";
@@ -398,7 +395,7 @@ function criarMotor(dep) {
             const novo = await lerDe(alvo, origem);
             novo.modo = metodoEfetivo;
             if (gen !== geracao) return;
-            trocarRetrato(novo, (metodoEfetivo === "direto" ? "leitura direta de " : "cópia instantânea de ") + origem);
+            trocarRetrato(novo, (metodoEfetivo === "direto" ? "leitura direta de " : "leitura instantânea de ") + origem);
         }
         await salvarCacheDisco(retrato);
     }

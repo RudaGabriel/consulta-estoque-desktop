@@ -1,6 +1,6 @@
 /**
  * app.js — Consulta Estoque (tela)
- * @version 1.6.0
+ * @version 1.6.1
  * @author Ruda Gabriel
  * @description Tela de consulta de preço e estoque. Pensada para o leitor de
  *              código de barras USB/Bluetooth (que "digita" o código e manda
@@ -10,12 +10,9 @@
  *              Compatível com o Chromium 108 (versão para Windows 7/8).
  * @changelog
  *   (Histórico completo das versões: CHANGELOG.md no repositório.)
- *   1.6.0 — Modos Instantâneo (padrão) / Cópia do banco / Leitura direta; sem totais de
- *           estoque e de valor; "Abaixo do mínimo" só com mínimo preenchido no banco;
- *           cartão como etiqueta ("R$" pequeno + preço enorme), fecha ao voltar a
- *           digitar, caixas e campos vazios escondidos;
- *           botão de voltar ao topo; bipe mais alto com volume ajustável; dica do
- *           "-palavra"; apagar a versão portátil; textos neutros.
+ *   1.6.1 — Atualizar/F5 no modo Instantâneo pergunta "Ler o estoque do servidor
+ *           agora?" (não fala em cópia, que esse modo não faz); barra de status com os
+ *           nomes da tela de modos (instantâneo, cópia do banco, leitura direta).
  */
 (function () {
     "use strict";
@@ -342,7 +339,7 @@
     }
 
     // ── Situação (topo) e tela vazia ─────────────────────────────────────────
-    var NOMES_METODO = { gbak: "cópia gbak", instantaneo: "cópia instantânea", direto: "leitura direta" };
+    var NOMES_METODO = { gbak: "cópia do banco", instantaneo: "instantâneo", direto: "leitura direta" };
     function desenharStatus(s) {
         if (!s) return;
         estado.status = s;
@@ -848,7 +845,7 @@
             r = await perguntar({
                 titulo: "Trocar o Firebird deste computador?",
                 texto: "O servidor do banco de dados usa o Firebird " + v.servidor + ", mas este computador tem o Firebird " + v.local + ", mais antigo. " +
-                    "Com versões assim a cópia completa (gbak) não funciona — enquanto isso o aplicativo usa a cópia instantânea. " +
+                    "Com versões assim a cópia completa (gbak) não funciona — enquanto isso o aplicativo usa a leitura instantânea. " +
                     "Se você confirmar, o aplicativo DESINSTALA o Firebird " + v.local + " deste computador, baixa o instalador oficial do Firebird " + (v.pacote || v.servidor) + " (precisa de internet) e instala; o Windows vai pedir permissão. " +
                     "O Firebird do servidor e o banco de dados não são tocados. Não confirme se outro programa deste computador usa o Firebird " + v.local + ".",
                 ok: "Sim, trocar pelo " + (v.pacote || v.servidor), extra: manual ? null : "Não perguntar mais", cancelar: "Agora não"
@@ -1001,8 +998,9 @@
     $("bFecharCartao").addEventListener("click", function () { fecharCartao(false); focarBusca(true); });
 
     /**
-     * Atualizar/F5. No modo cópia, uma nova cópia do banco só sai depois de
-     * confirmada (cópia gbak pesa no servidor do caixa e leva minutos).
+     * Atualizar/F5. No Instantâneo e na Cópia do banco, a atualização só sai depois
+     * de confirmada (a cópia gbak pesa no servidor do caixa e leva minutos); a
+     * Leitura direta atualiza na hora.
      */
     async function atualizarAgora() {
         var s = estado.status || {};
@@ -1018,8 +1016,10 @@
                   (est ? "A última cópia levou cerca de " + fmtDuracao(est) + ". " : "Pode levar alguns minutos. ") +
                   "Enquanto copia, o servidor do caixa fica um pouco mais lento; a consulta continua funcionando com o estoque atual."
                 : "Isto lê agora a tabela de produtos no servidor (leitura instantânea). Leva alguns segundos e a consulta continua funcionando.";
-            if (hora) texto += " A próxima cópia automática já está marcada para as " + hora + ".";
-            var ok = await perguntar({ titulo: "Fazer uma nova cópia do banco agora?", texto: texto, ok: "Sim, copiar agora", cancelar: "Não" });
+            if (hora) texto += (gbak ? " A próxima cópia automática já está marcada para as " : " A próxima leitura automática já está marcada para as ") + hora + ".";
+            var ok = await perguntar(gbak
+                ? { titulo: "Fazer uma nova cópia do banco agora?", texto: texto, ok: "Sim, copiar agora", cancelar: "Não" }
+                : { titulo: "Ler o estoque do servidor agora?", texto: texto, ok: "Sim, ler agora", cancelar: "Não" });
             if (!ok) return;
         }
         api.atualizar();
