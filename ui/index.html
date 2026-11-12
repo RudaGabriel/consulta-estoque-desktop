@@ -1,12 +1,12 @@
 <!doctype html>
 <!--
   index.html — Consulta Estoque (tela)
-  @version 1.5.0
+  @version 1.5.1
   @author Ruda Gabriel
   @changelog
     (Histórico completo das versões: CHANGELOG.md no repositório.)
-    1.5.0 — "Localização do banco de dados" com a opção "Seleção manual" (e dica de
-            cada opção); filtro de peso na busca (>9kg); textos em linguagem formal.
+    1.5.1 — Versão do aplicativo ao lado do nome, em tom discreto; texto de cada caixa
+            de marcar num bloco só (os negritos não viram colunas).
 -->
 <html lang="pt-BR">
 <head>
@@ -21,7 +21,7 @@
   <div class="marca">
     <svg class="logo" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7l9-4 9 4v10l-9 4-9-4z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M3 7l9 4 9-4M12 11v10" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>
     <div>
-      <div class="titulo">Consulta Estoque</div>
+      <div class="titulo">Consulta Estoque<span class="versao-app" id="versaoApp"></span></div>
       <div class="loja" id="loja"></div>
     </div>
   </div>
@@ -72,8 +72,8 @@
         <option value="qtdAsc">Menor estoque</option>
       </select>
     </label>
-    <label class="chk" title="Desmarcado: o texto precisa estar no começo de algum campo"><input type="checkbox" id="fCon" checked> Contém</label>
-    <label class="chk"><input type="checkbox" id="fAtv"> Só ativos</label>
+    <label class="chk" title="Desmarcado: o texto precisa estar no começo de algum campo"><input type="checkbox" id="fCon" checked><span>Contém</span></label>
+    <label class="chk"><input type="checkbox" id="fAtv"><span>Só ativos</span></label>
     <span class="dica-busca" id="dicaBusca">* = qualquer trecho · &gt;50 = preço de R$ 50 ou mais · &lt;50 = até R$ 50 · &gt;9kg = 9 kg ou mais</span>
   </div>
 </section>
@@ -162,15 +162,15 @@
           <input type="range" id="cfgZoom" min="0.6" max="2.5" step="0.05">
         </label>
       </div>
-      <label class="chk"><input type="checkbox" id="cfgSom"> Som ao ler um código (outro som quando não encontra)</label>
+      <label class="chk"><input type="checkbox" id="cfgSom"><span>Som ao ler um código (outro som quando não encontra)</span></label>
       <div class="linha-volume">
         <label>Volume do bipe <output id="oVolume"></output>
           <input type="range" id="cfgVolume" min="10" max="100" step="5">
         </label>
         <button class="btn fino" id="bTestarSom" type="button">Testar o som</button>
       </div>
-      <label class="chk"><input type="checkbox" id="cfgTab"> Leitor que envia TAB no fim: tratar como Enter</label>
-      <label class="chk"><input type="checkbox" id="cfgLeve"> Modo leve (sem animações — PCs antigos)</label>
+      <label class="chk"><input type="checkbox" id="cfgTab"><span>Leitor que envia TAB no fim: tratar como Enter</span></label>
+      <label class="chk"><input type="checkbox" id="cfgLeve"><span>Modo leve (sem animações — PCs antigos)</span></label>
     </section>
 
     <section data-pagina="consulta" hidden>
@@ -197,15 +197,15 @@
         <label>Recarregar a lista a cada (segundos)
           <input type="number" id="cfgDiretoSeg" min="15" max="3600" step="5">
         </label>
-        <label class="chk"><input type="checkbox" id="cfgAoVivo"> Ao abrir um produto, reler estoque e preço ao vivo</label>
+        <label class="chk"><input type="checkbox" id="cfgAoVivo"><span>Ao abrir um produto, reler estoque e preço ao vivo</span></label>
       </div>
       <label>Nome da loja (aparece no topo)<input type="text" id="cfgLoja" maxlength="60"></label>
       <label>Limpar a busca e o cartão após (segundos sem mexer; 0 = nunca)
         <input type="number" id="cfgLimpar" min="0" max="3600">
       </label>
-      <label class="chk"><input type="checkbox" id="cfgCusto"> Mostrar o custo (na lista e no cartão)</label>
-      <label class="chk"><input type="checkbox" id="cfgCoringa"> Busca com coringa: <strong>*</strong> representa qualquer trecho (ex.: RAÇÃO*10KG)</label>
-      <label class="chk"><input type="checkbox" id="cfgPreco"> Filtro de preço e de peso na busca: <strong>RAÇÃO &gt;50</strong> = R$ 50 ou mais; <strong>RAÇÃO &lt;50</strong> = até R$ 50; <strong>RAÇÃO &gt;9KG</strong> = 9 kg ou mais (peso informado na descrição)</label>
+      <label class="chk"><input type="checkbox" id="cfgCusto"><span>Mostrar o custo (na lista e no cartão)</span></label>
+      <label class="chk"><input type="checkbox" id="cfgCoringa"><span>Busca com coringa: <strong>*</strong> representa qualquer trecho (ex.: RAÇÃO*10KG)</span></label>
+      <label class="chk"><input type="checkbox" id="cfgPreco"><span>Filtro de preço e de peso na busca: <strong>RAÇÃO &gt;50</strong> = R$ 50 ou mais; <strong>RAÇÃO &lt;50</strong> = até R$ 50; <strong>RAÇÃO &gt;9KG</strong> = 9 kg ou mais (peso informado na descrição)</span></label>
       <p class="dica">Em todos os modos o aplicativo <strong>nunca grava</strong> no banco de dados (só leitura).</p>
     </section>
 
@@ -220,8 +220,8 @@
         <label>Usuário<input type="text" id="cfgUser" autocomplete="off"></label>
         <label>Senha<span class="senha"><input type="password" id="cfgPass" autocomplete="off"><button type="button" id="bVerSenha" class="btn fino">Ver</button></span></label>
       </div>
-      <label class="chk"><input type="checkbox" id="cfgFixo"> Não trocar o servidor automaticamente (desativa a correção automática)</label>
-      <label class="chk"><input type="checkbox" id="cfgVarrer"> Procurar servidores na rede local</label>
+      <label class="chk"><input type="checkbox" id="cfgFixo"><span>Não trocar o servidor automaticamente (desativa a correção automática)</span></label>
+      <label class="chk"><input type="checkbox" id="cfgVarrer"><span>Procurar servidores na rede local</span></label>
       <label>Localização do banco de dados
         <select id="cfgMeta">
           <option value="">Não escolhida (busca automática pela rede)</option>
@@ -248,18 +248,18 @@
 
     <section data-pagina="windows" hidden>
       <p class="dica">A tela fica <strong>sempre em tela cheia</strong> (modo quiosque). Para sair do aplicativo: <strong>Ctrl+Shift+Q</strong> ou <em>Administrador → Sair do aplicativo</em>, com a senha.</p>
-      <label class="chk"><input type="checkbox" id="cfgIniciar"> Abrir junto com o Windows</label>
-      <label class="chk"><input type="checkbox" id="cfgPersistente"> Persistência: se o aplicativo for fechado sem a senha (ou travar), ele é reaberto automaticamente</label>
-      <label class="chk"><input type="checkbox" id="cfgTopo"> Sempre acima das outras janelas</label>
-      <label class="chk"><input type="checkbox" id="cfgFoco"> Manter em primeiro plano (volta para a frente se outra janela pegar o foco)</label>
-      <label class="chk"><input type="checkbox" id="cfgDescanso"> Impedir que a tela apague ou o PC entre em descanso</label>
-      <label class="chk"><input type="checkbox" id="cfgBarra"> Ocultar da barra de tarefas</label>
-      <label class="chk"><input type="checkbox" id="cfgCursor"> Esconder o cursor do mouse quando parado</label>
+      <label class="chk"><input type="checkbox" id="cfgIniciar"><span>Abrir junto com o Windows</span></label>
+      <label class="chk"><input type="checkbox" id="cfgPersistente"><span>Persistência: se o aplicativo for fechado sem a senha (ou travar), ele é reaberto automaticamente</span></label>
+      <label class="chk"><input type="checkbox" id="cfgTopo"><span>Sempre acima das outras janelas</span></label>
+      <label class="chk"><input type="checkbox" id="cfgFoco"><span>Manter em primeiro plano (volta para a frente se outra janela pegar o foco)</span></label>
+      <label class="chk"><input type="checkbox" id="cfgDescanso"><span>Impedir que a tela apague ou o PC entre em descanso</span></label>
+      <label class="chk"><input type="checkbox" id="cfgBarra"><span>Ocultar da barra de tarefas</span></label>
+      <label class="chk"><input type="checkbox" id="cfgCursor"><span>Esconder o cursor do mouse quando parado</span></label>
       <div class="linha2">
         <label>Reiniciar o aplicativo todo dia às (vazio = nunca)<input type="time" id="cfgReiniciar"></label>
         <label>Abrir no monitor<select id="cfgMonitor"></select></label>
       </div>
-      <label class="chk"><input type="checkbox" id="cfgGpu"> Aceleração gráfica (desmarque se a tela ficar preta ou piscando; reinicia o aplicativo)</label>
+      <label class="chk"><input type="checkbox" id="cfgGpu"><span>Aceleração gráfica (desmarque se a tela ficar preta ou piscando; reinicia o aplicativo)</span></label>
       <p class="dica" id="dicaPersistir"></p>
     </section>
 

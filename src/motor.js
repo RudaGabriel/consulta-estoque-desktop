@@ -1,7 +1,7 @@
 "use strict";
 /**
  * motor.js
- * @version 1.7.0
+ * @version 1.7.1
  * @author Ruda Gabriel
  * @description O coração do aplicativo: mantém o estoque em memória e atualizado
  *              conforme o modo escolhido, acha o banco sozinho e responde às
@@ -27,10 +27,7 @@
  *
  * @changelog
  *   (Histórico completo das versões: CHANGELOG.md no repositório.)
- *   1.7.0 — Seleção manual do banco (metaBusca "manual"): a busca automática não
- *           procura nem troca o banco sozinha (como "Não trocar o servidor
- *           sozinho"); o caminho ainda é procurado no servidor informado, e o botão
- *           "Procurar o banco" continua disponível a pedido do usuário.
+ *   1.7.1 — O log "Estoque carregado" informa os itens sem descrição ignorados.
  */
 
 const fs = require("fs");
@@ -44,7 +41,7 @@ const Localizar = require("./localizar-banco.js");
 const Copia = require("./copia-gbak.js");
 const InstalarFb = require("./instalar-firebird.js");
 
-const VERSAO = "1.7.0";
+const VERSAO = "1.7.1";
 const ARQ_CACHE = "estoque-cache.json.gz";
 const CHAVES_CONEXAO = ["modo", "metodoCopia", "fbHost", "fbPorta", "fdbPath", "fbUser", "fbPass", "gbakPath", "pastaCopias", "copiaTimeoutMin"];
 
@@ -208,7 +205,8 @@ function criarMotor(dep) {
         retrato = novo;
         reg.info("Estoque carregado (" + origemTxt + "): " + novo.linhas.length + " itens da tabela " + novo.tabela +
             " (código: " + (novo.papeis.codigo || "—") + ", descrição: " + (novo.papeis.descricao || "—") + ", barras: " + (novo.papeis.barras || "—") +
-            ", estoque: " + (novo.papeis.qtd || "—") + ", preço: " + (novo.papeis.preco || "—") + ").");
+            ", estoque: " + (novo.papeis.qtd || "—") + ", preço: " + (novo.papeis.preco || "—") + ")" +
+            (novo.ignorados ? "; " + novo.ignorados + " item(ns) sem descrição ignorado(s)." : "."));
         if (novo.papeis.ativo && (!anterior || anterior.doDisco)) {
             reg.info("Coluna de situação " + novo.papeis.ativo + ": " + Object.keys(novo.contagemAtivo || {}).map(k => k + "=" + novo.contagemAtivo[k]).join(", ") +
                 (novo.inverterAtivo ? " → lida ao contrário (a maioria daria \"inativo\")." : " → lida direto."));

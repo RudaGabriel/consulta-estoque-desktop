@@ -6,13 +6,13 @@
 
 ### Consulta de preço e estoque sobre banco de dados Firebird, feita para o leitor de código de barras
 
-<img alt="aplicativo: v1.7.0" src="https://img.shields.io/badge/aplicativo-v1.7.0-2563EB?style=flat">
+<img alt="aplicativo: v1.7.1" src="https://img.shields.io/badge/aplicativo-v1.7.1-2563EB?style=flat">
 <img alt="plataforma: Windows 7 a 11" src="https://img.shields.io/badge/plataforma-Windows%207%20%7C%208%20%7C%2010%20%7C%2011-0078D4?style=flat&logo=data%3Aimage%2Fsvg%2Bxml%3Bbase64%2CPHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHZpZXdCb3g9JzAgMCAyNCAyNCcgZmlsbD0nd2hpdGUnPjxyZWN0IHg9JzMnIHk9JzMnIHdpZHRoPSc4JyBoZWlnaHQ9JzgnLz48cmVjdCB4PScxMycgeT0nMycgd2lkdGg9JzgnIGhlaWdodD0nOCcvPjxyZWN0IHg9JzMnIHk9JzEzJyB3aWR0aD0nOCcgaGVpZ2h0PSc4Jy8%2BPHJlY3QgeD0nMTMnIHk9JzEzJyB3aWR0aD0nOCcgaGVpZ2h0PSc4Jy8%2BPC9zdmc%2B&logoColor=white">
 <img alt="arquitetura: 64 e 32 bits" src="https://img.shields.io/badge/arquitetura-64%20e%2032%20bits-0E7490?style=flat">
 <img alt="idioma: pt-BR" src="https://img.shields.io/badge/idioma-pt--BR-16A34A?style=flat">
 <img alt="banco: somente leitura" src="https://img.shields.io/badge/banco-somente%20leitura-DC2626?style=flat&logo=data%3Aimage%2Fsvg%2Bxml%3Bbase64%2CPHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHZpZXdCb3g9JzAgMCAyNCAyNCcgZmlsbD0nbm9uZScgc3Ryb2tlPSd3aGl0ZScgc3Ryb2tlLXdpZHRoPScyLjInIHN0cm9rZS1saW5lY2FwPSdyb3VuZCcgc3Ryb2tlLWxpbmVqb2luPSdyb3VuZCc%2BPHBhdGggZD0nTTEyIDIyczgtNCA4LTEwVjVsLTgtMy04IDN2N2MwIDYgOCAxMCA4IDEweicvPjxwYXRoIGQ9J205IDEyIDIgMiA0LTQnLz48L3N2Zz4%3D&logoColor=white">
 <img alt="funciona: sem internet" src="https://img.shields.io/badge/funciona-sem%20internet-0891B2?style=flat">
-<img alt="testes: 79 passando" src="https://img.shields.io/badge/testes-79%20passando-22C55E?style=flat&logo=data%3Aimage%2Fsvg%2Bxml%3Bbase64%2CPHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHZpZXdCb3g9JzAgMCAyNCAyNCcgZmlsbD0nbm9uZScgc3Ryb2tlPSd3aGl0ZScgc3Ryb2tlLXdpZHRoPScyLjInIHN0cm9rZS1saW5lY2FwPSdyb3VuZCcgc3Ryb2tlLWxpbmVqb2luPSdyb3VuZCc%2BPHBhdGggZD0nTTkgMnY2TDQgMTlhMiAyIDAgMCAwIDEuOCAzaDEyLjRhMiAyIDAgMCAwIDEuOC0zTDE1IDhWMicvPjxwYXRoIGQ9J004IDJoOCcvPjxwYXRoIGQ9J003IDE1aDEwJy8%2BPC9zdmc%2B&logoColor=white">
+<img alt="testes: 80 passando" src="https://img.shields.io/badge/testes-80%20passando-22C55E?style=flat&logo=data%3Aimage%2Fsvg%2Bxml%3Bbase64%2CPHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHZpZXdCb3g9JzAgMCAyNCAyNCcgZmlsbD0nbm9uZScgc3Ryb2tlPSd3aGl0ZScgc3Ryb2tlLXdpZHRoPScyLjInIHN0cm9rZS1saW5lY2FwPSdyb3VuZCcgc3Ryb2tlLWxpbmVqb2luPSdyb3VuZCc%2BPHBhdGggZD0nTTkgMnY2TDQgMTlhMiAyIDAgMCAwIDEuOCAzaDEyLjRhMiAyIDAgMCAwIDEuOC0zTDE1IDhWMicvPjxwYXRoIGQ9J004IDJoOCcvPjxwYXRoIGQ9J003IDE1aDEwJy8%2BPC9zdmc%2B&logoColor=white">
 <img alt="licença: proprietária" src="https://img.shields.io/badge/licen%C3%A7a-propriet%C3%A1ria-6B7280?style=flat">
 
 <img alt="Electron: 44.9.3" src="https://img.shields.io/badge/Electron-44.9.3-47848F?style=flat&logo=electron&logoColor=white">
@@ -127,6 +127,7 @@ Abra com o parâmetro `--demo` (ex.: um atalho para `"Consulta Estoque.exe" --de
 | Limpar a tela | Automaticamente, **1 minuto** depois da última tecla ou leitura (busca e cartão somem). |
 | Sair do aplicativo | **Ctrl+Shift+Q** e a senha do administrador. |
 | Aumentar/diminuir o texto | **Ctrl + +** / **Ctrl + −** / **Ctrl + 0**, ou *Configurações → Tela*. |
+| Ver a versão do aplicativo | Ao lado do nome, no topo da tela (ex.: `v1.7.1`, em tom discreto). Também em *Configurações → Diagnóstico*. |
 | Ver a situação do banco | Clique no indicador do topo (bolinha verde = atualizado, amarela = mostrando dados salvos porque o banco falhou, vermelha = sem conexão). Ao lado aparecem a hora da última atualização, o número de itens e o modo (instantâneo, cópia do banco ou leitura direta). |
 
 <details>
@@ -441,7 +442,7 @@ Uma única biblioteca em uso pelo aplicativo (`node-firebird`); o resto é o pr�
 | Instalador | [electron-builder](https://www.electron.build) | 26.18.0 | Instalador NSIS e versão portátil, x64 e ia32 |
 | Tela | HTML5, CSS e JavaScript sem framework | — | Leve para PCs fracos; temas claro e escuro |
 | Som | Web Audio API | — | Bipe da leitura, sem arquivos de áudio |
-| Testes | `node:test` + `node:assert` | Node 20+ | 79 testes com Firebird, gbak e aplicativo simulados |
+| Testes | `node:test` + `node:assert` | Node 20+ | 80 testes com Firebird, gbak e aplicativo simulados |
 | Senha | `crypto.pbkdf2` (Node) | — | *Hash* da senha do administrador com sal, comparação em tempo constante |
 | Teste da tela | Playwright + Electron | — | Fluxo do leitor, cartão, configurações, tema e Electron 22 |
 | Build | GitHub Actions | — | Testes + instaladores a cada push |
@@ -454,11 +455,11 @@ Uma única biblioteca em uso pelo aplicativo (`node-firebird`); o resto é o pr�
 npm test
 ```
 
-- **79 testes**, sem Firebird real:
+- **80 testes**, sem Firebird real:
   - **Firebird simulado** (`src/demo.js`): registra toda SQL e transação, para provar que nada de escrita sai;
   - **gbak simulado** (`test/mock-gbak.js`): backup, restauração, falhas e atraso.
 - **Trava de somente leitura:** comandos recusados, transação somente leitura, `node-firebird` 0.x e 1.x+.
-- **Leitura do banco:** acentos, papéis das colunas (EAN em `REFERENCIA`), `OCTETS` recusado, banco sem tabela.
+- **Leitura do banco:** acentos, papéis das colunas (EAN em `REFERENCIA`), `OCTETS` recusado, banco sem tabela, itens sem descrição ignorados (também no estoque salvo).
 - **Busca:** acentos, EAN, zeros à esquerda, exclusão, filtros, coringa `*`, preço `>`/`<` e peso `>9kg`/`<500g` lido da descrição (com as opções desligadas também).
 - **Cache em disco:** ida e volta; CSV protegido.
 - **Descoberta (sem nenhum nome de fabricante):** rede antes do local, só `SMALL.FDB`, caminho no servidor pela estrutura de pastas deste computador e pelas pistas em outras unidades, `.ini` nas pastas de programa, gbak embutido em qualquer programa, unidade mapeada, `.ini` do compartilhamento, `SMALL.FDB` achado na pasta compartilhada (aberto só pelo Firebird do servidor), servidor de compartilhamento fora do ar e pasta travada, lista de pastas do `net view`, meta rede × este computador, outros `.FDB` quando não há `SMALL.FDB`, atalho `.lnk`, servidor fora do ar, senha errada.
@@ -528,6 +529,7 @@ npm test
 | Quero tirar o aplicativo do computador sem deixar nada | **Instalado:** *Configurações do Windows → Aplicativos → Consulta Estoque → Desinstalar* — o desinstalador apaga também a pasta de dados, as cópias do banco, os instaladores baixados e o início com o Windows. **Portátil:** *Administrador → Apagar esta versão portátil* (com confirmação): o aplicativo fecha e, em alguns segundos (até 2 minutos se o antivírus estiver examinando o arquivo), apaga o `.exe`, a pasta `ConsultaEstoque-dados`, as cópias e o início com o Windows. O Firebird instalado à parte (se houver) continua, pois outros programas podem usá-lo |
 | Preciso usar outro programa nesse computador | *Administrador → Modo manutenção* (sai da tela cheia até você voltar) |
 | Fechei pelo Gerenciador de Tarefas e ele voltou | É a persistência. Para desligar: *Windows → Persistência* (com a senha) |
+| Produtos sem descrição não aparecem | Proposital: cadastros sem descrição (vazios ou incompletos, geralmente sem estoque e com preço simbólico) são ignorados, pois não identificam o produto. O log registra quantos foram ignorados. Para que apareçam, preencha a descrição no sistema de gestão |
 | Acentos estranhos | Informe o log ao desenvolvedor; o aplicativo tenta UTF-8, Windows-1252 e latin1 automaticamente |
 
 ---
