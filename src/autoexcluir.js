@@ -12,8 +12,6 @@
  * Só usa módulos do próprio Node: o arquivo é copiado para a pasta temporária e roda de lá.
  */
 "use strict";
-// No Electron como Node, o fs abre arquivos .asar como pastas: aqui eles são só arquivos a apagar.
-try { process.noAsar = true; } catch (_) {}
 const fs = require("fs");
 const path = require("path");
 const os = require("os");
@@ -105,6 +103,9 @@ async function executar(op) {
 module.exports = { executar, pastaDoLancador, sobrasDoLancador, apagar };
 
 if (require.main === module) {
+    // Só no ajudante (nunca no main.js, que lê o próprio app.asar): no Electron como Node,
+    // o fs abre arquivos .asar como pastas — aqui eles são só arquivos a apagar.
+    try { process.noAsar = true; } catch (_) {}
     let op = {};
     try { op = JSON.parse(Buffer.from(String(process.argv[2] || ""), "base64").toString("utf8")) || {}; } catch (_) { op = {}; }
     executar(op).then(() => process.exit(0), () => process.exit(1));

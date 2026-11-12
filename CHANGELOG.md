@@ -44,7 +44,7 @@ Versão do Consulta Estoque (a que aparece no instalador e em *Configurações �
 - **"Apagar esta versão portátil" funciona de verdade:** a remoção era feita por um comando PowerShell oculto, que o antivírus do Windows costuma barrar quando vem de um programa sem assinatura — o aplicativo fechava e nada era apagado. Agora um ajudante próprio (o mesmo mecanismo do vigia) espera o aplicativo, o vigia e o lançador do portátil fecharem, apaga o `.exe` e os dados (tentando por até 2 minutos se algo estiver preso) e limpa a pasta temporária onde o portátil abriu. O aplicativo só fecha depois de ver o ajudante de pé; se ele não iniciar, avisa e não fecha.
 - Com o `.exe` guardado na raiz de uma unidade (ex.: `D:\`, pendrive), a pasta `ConsultaEstoque-dados` também é apagada (antes ficava para trás).
 - **Release com `SHA256SUMS.txt`:** as "impressões digitais" dos arquivos, para conferir se o download chegou inteiro (o erro "Installer integrity check has failed" é arquivo estragado no download).
-- 75 testes.
+- 76 testes.
 
 ### 1.6.0 — 2026-11-11
 

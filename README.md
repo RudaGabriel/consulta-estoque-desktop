@@ -12,7 +12,7 @@
 <img alt="idioma: pt-BR" src="https://img.shields.io/badge/idioma-pt--BR-16A34A?style=flat">
 <img alt="banco: somente leitura" src="https://img.shields.io/badge/banco-somente%20leitura-DC2626?style=flat&logo=data%3Aimage%2Fsvg%2Bxml%3Bbase64%2CPHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHZpZXdCb3g9JzAgMCAyNCAyNCcgZmlsbD0nbm9uZScgc3Ryb2tlPSd3aGl0ZScgc3Ryb2tlLXdpZHRoPScyLjInIHN0cm9rZS1saW5lY2FwPSdyb3VuZCcgc3Ryb2tlLWxpbmVqb2luPSdyb3VuZCc%2BPHBhdGggZD0nTTEyIDIyczgtNCA4LTEwVjVsLTgtMy04IDN2N2MwIDYgOCAxMCA4IDEweicvPjxwYXRoIGQ9J205IDEyIDIgMiA0LTQnLz48L3N2Zz4%3D&logoColor=white">
 <img alt="funciona: sem internet" src="https://img.shields.io/badge/funciona-sem%20internet-0891B2?style=flat">
-<img alt="testes: 75 passando" src="https://img.shields.io/badge/testes-75%20passando-22C55E?style=flat&logo=data%3Aimage%2Fsvg%2Bxml%3Bbase64%2CPHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHZpZXdCb3g9JzAgMCAyNCAyNCcgZmlsbD0nbm9uZScgc3Ryb2tlPSd3aGl0ZScgc3Ryb2tlLXdpZHRoPScyLjInIHN0cm9rZS1saW5lY2FwPSdyb3VuZCcgc3Ryb2tlLWxpbmVqb2luPSdyb3VuZCc%2BPHBhdGggZD0nTTkgMnY2TDQgMTlhMiAyIDAgMCAwIDEuOCAzaDEyLjRhMiAyIDAgMCAwIDEuOC0zTDE1IDhWMicvPjxwYXRoIGQ9J004IDJoOCcvPjxwYXRoIGQ9J003IDE1aDEwJy8%2BPC9zdmc%2B&logoColor=white">
+<img alt="testes: 76 passando" src="https://img.shields.io/badge/testes-76%20passando-22C55E?style=flat&logo=data%3Aimage%2Fsvg%2Bxml%3Bbase64%2CPHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHZpZXdCb3g9JzAgMCAyNCAyNCcgZmlsbD0nbm9uZScgc3Ryb2tlPSd3aGl0ZScgc3Ryb2tlLXdpZHRoPScyLjInIHN0cm9rZS1saW5lY2FwPSdyb3VuZCcgc3Ryb2tlLWxpbmVqb2luPSdyb3VuZCc%2BPHBhdGggZD0nTTkgMnY2TDQgMTlhMiAyIDAgMCAwIDEuOCAzaDEyLjRhMiAyIDAgMCAwIDEuOC0zTDE1IDhWMicvPjxwYXRoIGQ9J004IDJoOCcvPjxwYXRoIGQ9J003IDE1aDEwJy8%2BPC9zdmc%2B&logoColor=white">
 <img alt="licença: proprietária" src="https://img.shields.io/badge/licen%C3%A7a-propriet%C3%A1ria-6B7280?style=flat">
 
 <img alt="Electron: 44.9.3" src="https://img.shields.io/badge/Electron-44.9.3-47848F?style=flat&logo=electron&logoColor=white">
@@ -438,7 +438,7 @@ Uma única biblioteca em uso pelo aplicativo (`node-firebird`); o resto é o pr�
 | Instalador | [electron-builder](https://www.electron.build) | 26.18.0 | Instalador NSIS e versão portátil, x64 e ia32 |
 | Tela | HTML5, CSS e JavaScript sem framework | — | Leve para PCs fracos; temas claro e escuro |
 | Som | Web Audio API | — | Bipe da leitura, sem arquivos de áudio |
-| Testes | `node:test` + `node:assert` | Node 20+ | 75 testes com Firebird, gbak e aplicativo simulados |
+| Testes | `node:test` + `node:assert` | Node 20+ | 76 testes com Firebird, gbak e aplicativo simulados |
 | Senha | `crypto.pbkdf2` (Node) | — | *Hash* da senha do administrador com sal, comparação em tempo constante |
 | Teste da tela | Playwright + Electron | — | Fluxo do leitor, cartão, configurações, tema e Electron 22 |
 | Build | GitHub Actions | — | Testes + instaladores a cada push |
@@ -451,7 +451,7 @@ Uma única biblioteca em uso pelo aplicativo (`node-firebird`); o resto é o pr�
 npm test
 ```
 
-- **75 testes**, sem Firebird real:
+- **76 testes**, sem Firebird real:
   - **Firebird simulado** (`src/demo.js`): registra toda SQL e transação, para provar que nada de escrita sai;
   - **gbak simulado** (`test/mock-gbak.js`): backup, restauração, falhas e atraso.
 - **Trava de somente leitura:** comandos recusados, transação somente leitura, `node-firebird` 0.x e 1.x+.

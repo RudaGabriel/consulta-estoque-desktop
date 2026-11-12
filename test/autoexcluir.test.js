@@ -9,7 +9,15 @@ const fs = require("fs");
 const os = require("os");
 const path = require("path");
 const cp = require("child_process");
-const A = require("../src/autoexcluir.js"); // também desliga o .asar como pasta no Electron (process.noAsar)
+const A = require("../src/autoexcluir.js");
+// Rodando no Electron como Node: os app.asar de teste são arquivos comuns (o ajudante faz o mesmo ao rodar sozinho).
+if (process.versions.electron) process.noAsar = true;
+
+test("carregar o módulo não desliga a leitura do app.asar (o main.js depende dela)", () => {
+    assert.notStrictEqual(require("child_process").execFileSync(process.execPath,
+        ["-e", "require(" + JSON.stringify(path.join(__dirname, "..", "src", "autoexcluir.js")) + "); process.stdout.write(String(!!process.noAsar))"],
+        { env: Object.assign({}, process.env, { NODE_OPTIONS: "" }) }).toString(), "true");
+});
 
 const pastaTeste = () => fs.mkdtempSync(path.join(os.tmpdir(), "ce-autoexcluir-"));
 
