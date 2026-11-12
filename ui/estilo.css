@@ -1,15 +1,13 @@
 /*
   estilo.css — Consulta Estoque (tela)
-  @version 1.4.0
+  @version 1.5.0
   @author Ruda Gabriel
   Compatível com o Chromium 108 (versão para Windows 7/8): sem CSS aninhado,
   sem color-mix, sem :has().
   @changelog
     (Histórico completo das versões: CHANGELOG.md no repositório.)
-    1.4.0 — Cartão ampliado centralizado como etiqueta: preço com ~1/4 da altura da tela e
-            "R$" pequeno no alto (dá para ler de longe);
-            X dos botões de fechar desenhado e centralizado; botão de voltar ao topo;
-            três cartões de modo; linha do volume do bipe.
+    1.5.0 — Versão do aplicativo ao lado do nome (tom discreto); dicas da busca à
+            esquerda; texto das caixas de marcar num bloco só, com a caixa no topo.
 */
 :root {
   --fundo: #f4f6f8; --superficie: #ffffff; --superficie2: #eef1f4; --borda: #d9dee4;
@@ -54,6 +52,7 @@ svg { width: 18px; height: 18px; flex: 0 0 auto; }
 .marca { display: flex; align-items: center; gap: 10px; min-width: 0; }
 .logo { width: 30px; height: 30px; color: var(--destaque); }
 .titulo { font-weight: 700; font-size: 17px; white-space: nowrap; }
+.versao-app { font-weight: 400; font-size: 12px; color: var(--texto2); opacity: .75; margin-left: 8px; }
 .loja { color: var(--texto2); font-size: 12.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 260px; }
 .estado {
   display: flex; align-items: center; gap: 8px; margin-left: auto; min-width: 0; max-width: 46vw;
@@ -194,7 +193,10 @@ body:not(.custo) .cust { display: none; }
 .painel-corpo { flex: 1; overflow: auto; padding: 16px 18px; }
 .painel-corpo section { display: flex; flex-direction: column; gap: 12px; }
 .painel-corpo label { display: flex; flex-direction: column; gap: 4px; font-size: 13.5px; color: var(--texto2); }
-.painel-corpo label.chk { flex-direction: row; align-items: center; gap: 8px; color: var(--texto); }
+.painel-corpo label.chk { flex-direction: row; align-items: flex-start; gap: 8px; color: var(--texto); }
+/* O texto do rótulo é um bloco só (com negritos dentro), nunca várias colunas. */
+.painel-corpo label.chk > span { flex: 1; min-width: 0; line-height: 1.4; }
+.painel-corpo label.chk > input { flex: none; margin-top: 2px; }
 .painel-corpo input[type=text], .painel-corpo input[type=number], .painel-corpo input[type=password], .painel-corpo select {
   padding: 8px 10px; border-radius: 8px; border: 1px solid var(--borda); background: var(--superficie); color: var(--texto); width: 100%;
 }
@@ -275,7 +277,7 @@ h3.sub { margin: 8px 0 0; font-size: 15px; }
 .topo-lista svg { width: 26px; height: 26px; }
 .linha-volume { display: flex; align-items: flex-end; gap: 12px; }
 .linha-volume label { flex: 1; }
-.dica-busca { font-size: 12.5px; color: var(--texto2); margin-left: auto; }
+.dica-busca { font-size: 12.5px; color: var(--texto2); }
 body.sem-cursor, body.sem-cursor * { cursor: none !important; }
 
 /* ── Telas estreitas ──────────────────────────────────────────────────── */

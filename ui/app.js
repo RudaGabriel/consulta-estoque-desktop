@@ -1,6 +1,6 @@
 /**
  * app.js — Consulta Estoque (tela)
- * @version 1.7.0
+ * @version 1.7.1
  * @author Ruda Gabriel
  * @description Tela de consulta de preço e estoque. Pensada para o leitor de
  *              código de barras USB/Bluetooth (que "digita" o código e manda
@@ -10,10 +10,8 @@
  *              Compatível com o Chromium 108 (versão para Windows 7/8).
  * @changelog
  *   (Histórico completo das versões: CHANGELOG.md no repositório.)
- *   1.7.0 — Pergunta "Onde está o banco de dados?" com três opções em lista (Na rede,
- *           Neste computador, Seleção manual) e "Decidir mais tarde"; a seleção
- *           manual abre a aba Banco de dados. Dica do filtro de peso (>9kg). Textos
- *           em linguagem formal.
+ *   1.7.1 — Versão do aplicativo ao lado do nome (tom discreto); dicas da busca
+ *           alinhadas à esquerda.
  */
 (function () {
     "use strict";
@@ -1166,6 +1164,7 @@
         $("fCon").checked = ler("fCon", true) !== false;
         $("fAtv").checked = !!ler("fAtv", false);
         try { estado.info = await api.info(); } catch (_) {}
+        try { if (estado.info && estado.info.versao) $("versaoApp").textContent = "v" + estado.info.versao; } catch (_) {}
         try { estado.cfg = await api.lerConfig(); aplicarAparencia(estado.cfg); } catch (_) {}
         api.aoStatus(desenharStatus);
         api.aoPedirSaida(function () { pedirSaida(); });

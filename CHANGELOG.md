@@ -7,13 +7,13 @@ Versões em uso hoje:
 
 | Arquivo | Versão |
 |---|---|
-| Aplicativo (`package.json`) | [1.7.0](#aplicativo) |
+| Aplicativo (`package.json`) | [1.7.1](#aplicativo) |
 | [`main.js`](#mainjs) | 1.5.3 |
 | [`preload.js`](#preloadjs) | 1.5.0 |
-| [`ui/index.html`, `ui/estilo.css`, `ui/app.js`](#ui) | 1.7.0 (`app.js`); 1.5.0 (`index.html`); 1.4.0 (`estilo.css`) |
-| [`src/motor.js`](#srcmotorjs) | 1.7.0 |
+| [`ui/index.html`, `ui/estilo.css`, `ui/app.js`](#ui) | 1.7.1 (`app.js`); 1.5.1 (`index.html`); 1.5.0 (`estilo.css`) |
+| [`src/motor.js`](#srcmotorjs) | 1.7.1 |
 | [`src/firebird.js`](#srcfirebirdjs) | 1.1.1 |
-| [`src/estoque-dados.js`](#srcestoque-dadosjs) | 1.1.1 |
+| [`src/estoque-dados.js`](#srcestoque-dadosjs) | 1.2.0 |
 | [`src/estoque-busca.js`](#srcestoque-buscajs) | 1.3.0 |
 | [`src/localizar-banco.js`](#srclocalizar-bancojs) | 1.5.0 |
 | [`src/caminhos.js`](#srccaminhosjs) | 1.0.0 |
@@ -36,6 +36,16 @@ Versões em uso hoje:
 ## Aplicativo
 
 Versão do Consulta Estoque (a que aparece no instalador e em *Configurações → Diagnóstico*).
+
+### 1.7.1 — 2026-11-12
+
+**Ajustes de tela e itens sem descrição.**
+
+- **Itens sem descrição são ignorados** (cadastros vazios ou incompletos, como os que aparecem só com código, estoque 0 e preço simbólico): não entram na lista, na busca nem no estoque salvo. O log informa quantos foram ignorados.
+- **Versão do aplicativo** ao lado do nome, no topo, em tom discreto.
+- **Dicas da busca** alinhadas à esquerda.
+- **Configurações → Consulta:** o texto da opção "Filtro de preço e de peso na busca" ficava quebrado em colunas; agora cada opção é um bloco de texto só, com a caixa de marcar alinhada ao topo.
+- 80 testes; tela validada no Electron 44 e 22.
 
 ### 1.7.0 — 2026-11-12
 
@@ -237,6 +247,10 @@ Ponte segura entre a tela e o processo principal.
 
 A tela.
 
+### 1.7.1 (`app.js`), 1.5.1 (`index.html`) e 1.5.0 (`estilo.css`) — 2026-11-12
+
+Versão do aplicativo ao lado do nome (`#versaoApp`, tom discreto); dicas da busca sem `margin-left: auto` (à esquerda); texto de cada caixa de marcar dentro de um `<span>` (antes, cada negrito virava um item do layout flexível e o texto se partia em colunas), com a caixa alinhada ao topo.
+
 ### 1.7.0 (`app.js`) e 1.5.0 (`index.html`) — 2026-11-12
 
 Pergunta "Onde está o banco de dados?" com lista de três opções (`OPCOES_META`: rede, local, manual), "Confirmar" e "Decidir mais tarde"; a seleção manual abre a aba *Banco de dados* no campo do servidor e mantém a tela liberada até as configurações serem fechadas. Campo "Localização do banco de dados" com a opção "Seleção manual" e a dica de cada opção (`#dicaMeta`). Dica e opção do filtro de peso. Textos em linguagem formal.
@@ -278,6 +292,10 @@ Atualizar/F5 no modo Instantâneo pergunta "Ler o estoque do servidor agora?" (b
 ## `src/motor.js`
 
 Modos, atualização, cache em disco e auto-correção do banco.
+
+### 1.7.1 — 2026-11-12
+
+O log "Estoque carregado" informa quantos itens sem descrição foram ignorados.
 
 ### 1.7.0 — 2026-11-12
 
@@ -338,6 +356,10 @@ Comentários sem o nome de nenhum sistema (projeto autônomo e neutro).
 ## `src/estoque-dados.js`
 
 Leitura da tabela de produtos.
+
+### 1.2.0 — 2026-11-12
+
+`montarRetrato` ignora os itens com a descrição vazia (também ao ler o estoque salvo em disco) e guarda a quantidade em `r.ignorados`.
 
 ### 1.1.1 — 2026-11-12
 

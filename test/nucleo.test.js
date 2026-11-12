@@ -292,3 +292,21 @@ test("gbak embutido: acha a pasta Firebird dentro de qualquer programa (um ou do
     assert.deepStrictEqual(await G._gbakEmbutido([path.join(raiz, "nao-existe")], "gbak.exe"), []);
     fs.rmSync(raiz, { recursive: true, force: true });
 });
+
+test("dados: itens sem descrição (cadastros vazios) são ignorados ao montar o estoque", async () => {
+    const { linhasExemplo } = require("../src/demo.js");
+    const linhas = linhasExemplo().concat([
+        { CODIGO: "14441", DESCRICAO: "", REFERENCIA: "", QTD_ATUAL: 0, PRECO: 0.01, MEDIDA: "UND", ATIVO: "0", FORNECEDOR: "" },
+        { CODIGO: "14417", DESCRICAO: "   ", REFERENCIA: "", QTD_ATUAL: 0, PRECO: 0.01, MEDIDA: "UND", ATIVO: "0", FORNECEDOR: "" },
+        { CODIGO: "14418", DESCRICAO: null, REFERENCIA: "", QTD_ATUAL: 3, PRECO: 2, MEDIDA: "UND", ATIVO: "0", FORNECEDOR: "" }
+    ]);
+    const falso = criarFbFalso({ "h|X.FDB": bancoExemplo({ linhas }) });
+    const db = await FB.conectar(FB.blindar(falso, 2), { host: "h", caminho: "X.FDB" }, 2000);
+    const r = await Dados.carregarTabela(db, { origem: "h:X.FDB" });
+    assert.strictEqual(r.linhas.length, 15, "só os 15 itens com descrição");
+    assert.strictEqual(r.ignorados, 3);
+    const f = Dados.fonteDe(r);
+    assert.strictEqual(Busca.pesquisar(f, { q: "14441" }, i => i).total, 0, "item vazio não aparece nem pelo código");
+    const volta = Dados.doDisco(JSON.parse(JSON.stringify(Dados.paraDisco(r))));
+    assert.strictEqual(volta.linhas.length, 15, "estoque salvo em disco também sem os vazios");
+});

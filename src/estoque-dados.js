@@ -1,7 +1,7 @@
 "use strict";
 /**
  * estoque-dados.js
- * @version 1.1.1
+ * @version 1.2.0
  * @author Ruda Gabriel
  * @description Lê a tabela de produtos (ESTOQUE) e monta o
  *              "retrato" do estoque em memória, pronto para a busca.
@@ -18,13 +18,14 @@
  *
  * @changelog
  *   (Histórico completo das versões: CHANGELOG.md no repositório.)
- *   1.1.1 — Comentários sem o nome de nenhum sistema (projeto autônomo e neutro).
+ *   1.2.0 — Itens sem descrição (cadastros vazios ou incompletos) são ignorados ao
+ *           montar o estoque; a quantidade ignorada fica em r.ignorados.
  */
 
 const Busca = require("./estoque-busca.js");
 const { consultar, decodificarTexto } = require("./firebird.js");
 
-const VERSAO = "1.1.1";
+const VERSAO = "1.2.0";
 const FORMATO_DISCO = 1;
 const TABELAS = ["ESTOQUE", "PRODUTOS", "PRODUTO", "CADPRO", "MERCADORIAS"];
 
@@ -213,6 +214,14 @@ function montarRetrato(base) {
     Object.keys(PAPEIS).forEach(p => {
         r.idxPapel[p] = r.papeis && r.papeis[p] ? r.colunas.findIndex(c => c.nome === r.papeis[p]) : -1;
     });
+    // Cadastro sem descrição (vazio ou incompleto) não serve para a consulta: fica de fora.
+    r.ignorados = 0;
+    const kd = r.idxPapel.descricao;
+    if (kd >= 0 && Array.isArray(r.linhas)) {
+        const uteis = r.linhas.filter(l => Array.isArray(l) && String(l[kd] == null ? "" : l[kd]).trim() !== "");
+        r.ignorados = r.linhas.length - uteis.length;
+        r.linhas = uteis;
+    }
     Object.assign(r, decidirAtivo(r.papeis && r.papeis.ativo, r.idxPapel.ativo, r.linhas));
     r.versao = String(r.origem || "") + "|" + r.carregadoEm;
     return indexar(r);
