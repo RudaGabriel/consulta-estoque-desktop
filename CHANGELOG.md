@@ -27,7 +27,7 @@ Versões em uso hoje:
 | [`electron-builder.config.js`](#electron-builderconfigjs) | 1.1.0 |
 | [`build/instalador.nsh`](#buildinstaladornsh) | 1.0.0 |
 | [`gerar-instalador.bat`](#gerar-instaladorbat) | 1.0.0 |
-| [`.github/workflows/build.yml`](#githubworkflowsbuildyml) | 1.4.1 |
+| [`.github/workflows/build.yml`](#githubworkflowsbuildyml) | 1.4.2 |
 
 ---
 
@@ -574,6 +574,10 @@ Gera os instaladores com dois cliques.
 ## `.github/workflows/build.yml`
 
 CI.
+
+### 1.4.2 — 2026-11-12
+
+Texto da página da Release em linguagem formal, com a pergunta da localização do banco de dados (rede, este computador ou seleção manual).
 
 ### 1.4.1 — 2026-11-12
 

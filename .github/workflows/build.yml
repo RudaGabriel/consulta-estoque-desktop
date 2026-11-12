@@ -1,5 +1,5 @@
 # build.yml — testes e instaladores do Consulta Estoque (Windows)
-# v1.4.1 — Autor: Ruda Gabriel
+# v1.4.2 — Autor: Ruda Gabriel
 # Gera, a cada push e PR:
 #   - moderno: Windows 10/11, 64 bits (Electron 44)
 #   - legado:  Windows 7 a 11, 64 e 32 bits (Electron 22)
@@ -154,14 +154,14 @@ jobs:
           name: Consulta Estoque ${{ steps.versao.outputs.tag }}
           overwrite_files: true
           body: |
-            **Qual baixar?**
-            - Windows 10/11 64 bits: `...-win10-11-x64-instalador.exe` (instala) ou `...-win10-11-x64-portatil.exe` (sem instalar).
-            - Windows 7, 8 ou 32 bits: os arquivos `...-legado-win7-a-11-...` (`x64` = 64 bits, `ia32` = 32 bits).
+            **Qual arquivo baixar?**
+            - Windows 10/11 de 64 bits: `...-win10-11-x64-instalador.exe` (com instalação) ou `...-win10-11-x64-portatil.exe` (sem instalação).
+            - Windows 7, 8 ou de 32 bits: os arquivos `...-legado-win7-a-11-...` (`x64` = 64 bits, `ia32` = 32 bits).
 
-            Na primeira abertura o aplicativo pede o nome da loja e a senha do administrador — os dois opcionais (sem senha, tudo fica livre).
+            Na primeira abertura, o aplicativo solicita o nome da loja e a senha do administrador; ambos são opcionais (sem senha, todas as funções ficam liberadas). Em seguida, pergunta onde está o banco de dados: na rede, neste computador ou por seleção manual.
             Para sair: Ctrl+Shift+Q (e a senha, se houver).
-            O Windows pode avisar "O Windows protegeu o computador" (aplicativo sem assinatura paga): Mais informações → Executar assim mesmo.
-            Para conferir se o download chegou inteiro (erro "Installer integrity check has failed" = arquivo estragado no download): no PowerShell, `Get-FileHash .\NOME-DO-ARQUIVO.exe -Algorithm SHA256` e compare com o arquivo `SHA256SUMS.txt` desta página. Diferente? Baixe de novo.
+            O Windows pode exibir o aviso "O Windows protegeu o computador" (aplicativo sem assinatura digital paga): clique em Mais informações → Executar assim mesmo.
+            Para verificar se o download foi concluído corretamente (o erro "Installer integrity check has failed" indica arquivo danificado no download): no PowerShell, execute `Get-FileHash .\NOME-DO-ARQUIVO.exe -Algorithm SHA256` e compare o resultado com o arquivo `SHA256SUMS.txt` desta página. Se forem diferentes, baixe o arquivo novamente.
             Histórico completo: CHANGELOG.md.
           files: |
             arquivos/**/*.exe
