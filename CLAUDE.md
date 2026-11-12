@@ -1,4 +1,4 @@
-# Regras do projeto (para o Claude)
+# Regras do projeto
 
 - **Idioma:** sempre pt-BR — respostas, código, comentários, mensagens de commit e PR, textos da tela.
 - **Somente leitura no banco:** o aplicativo nunca escreve no banco Firebird do sistema da loja. Só `SELECT`/`WITH`, sempre pela conexão blindada de `src/firebird.js` (trava de comando + transação `readOnly`, READ COMMITTED + REC_VERSION, sem espera). Nada de `UPDATE`/`INSERT`/`DELETE`, índices, DDL ou colocar o banco em modo somente leitura — a trava vale só para as conexões deste aplicativo, nunca para o PDV.
@@ -11,7 +11,7 @@
 - **Código à prova de erros:** antes de entregar, procurar bugs e cenários de erro no próprio diff (rede caindo, servidor desligado, pasta de rede lenta, banco sem a tabela, senha errada, config estragado, Windows 7, 32 bits, sem Firebird local) e corrigir. Toda leitura de rede tem prazo; nada pode congelar a janela.
 - **Changelog:** o cabeçalho de cada arquivo traz só a entrada da versão atual (mais a linha "Histórico completo das versões: CHANGELOG.md no repositório."). O histórico completo fica no `CHANGELOG.md`: nova entrada no topo da seção do arquivo e tabela de versões atualizada. Toda mudança de código sobe a versão do arquivo; mudança percebida pelo usuário sobe também a `version` do `package.json` (versão do aplicativo).
 - **README sempre atualizado:** toda mudança que o usuário perceba (recurso, tela, opção, chave do config, arquivo, dependência, versão, quantidade de testes) atualiza o `README.md` no mesmo PR — badges, "Tecnologias e bibliotecas", "Uso no dia a dia", configuração e solução de problemas. Escrito para quem não é técnico.
-- **Projeto neutro e autônomo:** telas, mensagens, comentários, testes e documentação sem nomes de sistemas, marcas, lojas, pessoas ou outros projetos (ex.: "RAÇÃO GATO 1KG", "FORNECEDOR A", "SERVIDOR", "sistema de gestão"). Exceção: os caminhos de pasta típicos usados só internamente pela busca do banco (`src/localizar-banco.js`, `src/copia-gbak.js`).
+- **Projeto neutro e autônomo:** telas, mensagens, comentários, testes e documentação sem nomes de sistemas, marcas, lojas, pessoas ou outros projetos (ex.: "RAÇÃO GATO 1KG", "FORNECEDOR A", "SERVIDOR", "sistema de gestão") — nem no código: a busca do banco é genérica, sem nome de pasta de instalação de fabricante (só o nome do arquivo `SMALL.FDB`). Créditos só do autor (veja "Créditos").
 - **Arquivos do Windows:** `.bat` em ASCII com CRLF.
 - **Antes de entregar:** `npm test` verde; validar a tela com Playwright + Electron em modo `--demo` (Electron 44 e 22) quando `ui/`, `main.js` ou `preload.js` mudarem; gerar os instaladores (`electron-builder`) quando a configuração do build mudar.
 - **Pull requests:** depois de abrir o PR e com os testes verdes, **fazer o merge automaticamente** (pedido do dono do repositório) — não esperar aprovação manual.

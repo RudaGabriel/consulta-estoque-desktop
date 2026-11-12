@@ -1,7 +1,7 @@
 "use strict";
 /**
  * firebird.js
- * @version 1.1.0
+ * @version 1.1.1
  * @author Ruda Gabriel
  * @description Acesso ao banco Firebird do sistema da loja, SEMPRE em somente leitura.
  *
@@ -20,15 +20,13 @@
  *
  * @changelog
  *   (Histórico completo das versões: CHANGELOG.md no repositório.)
- *   1.1.0 — mensagemDe(): erro de conexão agrupado do Node 18+ (AggregateError: tentou
- *           IPv4 e IPv6 e os dois falharam, mensagem vazia) vira texto legível com os
- *           motivos de cada tentativa; tipoErro/explicarErro usam esse texto.
+ *   1.1.1 — Comentários sem o nome de nenhum sistema (projeto autônomo e neutro).
  */
 
 const net = require("net");
 const { TextDecoder } = require("util");
 
-const VERSAO = "1.1.0";
+const VERSAO = "1.1.1";
 const SQL_LEITURA = /^\s*(?:(?:--[^\n]*\n|\/\*[\s\S]*?\*\/)\s*)*(select|with)\b/i;
 const ISO_REC_VERSION = [15, 17]; // isc_tpb_read_committed + isc_tpb_rec_version
 
@@ -240,7 +238,7 @@ function mensagemDe(e) {
 /**
  * Classifica um erro do Firebird/gbak: "auth" (usuário/senha), "inacessivel"
  * (servidor não responde), "arquivo" (caminho do banco errado), "tempo",
- * "bloqueado" (shutdown/uso exclusivo), "tabela" (não é banco do Small), "outro".
+ * "bloqueado" (shutdown/uso exclusivo), "tabela" (o banco não tem a tabela de produtos), "outro".
  */
 function tipoErro(e) {
     const s = mensagemDe(e);

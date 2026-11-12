@@ -1,5 +1,5 @@
 # build.yml — testes e instaladores do Consulta Estoque (Windows)
-# v1.4.0 — Autor: Ruda Gabriel
+# v1.4.1 — Autor: Ruda Gabriel
 # Gera, a cada push e PR:
 #   - moderno: Windows 10/11, 64 bits (Electron 44)
 #   - legado:  Windows 7 a 11, 64 e 32 bits (Electron 22)
@@ -11,7 +11,7 @@ name: build
 
 on:
   push:
-    branches: [main, "claude/**"]
+    branches: ["**"]
     tags: ["v*"]
   pull_request:
   workflow_dispatch:

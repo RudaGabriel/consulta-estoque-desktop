@@ -12,7 +12,7 @@
 <img alt="idioma: pt-BR" src="https://img.shields.io/badge/idioma-pt--BR-16A34A?style=flat">
 <img alt="banco: somente leitura" src="https://img.shields.io/badge/banco-somente%20leitura-DC2626?style=flat&logo=data%3Aimage%2Fsvg%2Bxml%3Bbase64%2CPHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHZpZXdCb3g9JzAgMCAyNCAyNCcgZmlsbD0nbm9uZScgc3Ryb2tlPSd3aGl0ZScgc3Ryb2tlLXdpZHRoPScyLjInIHN0cm9rZS1saW5lY2FwPSdyb3VuZCcgc3Ryb2tlLWxpbmVqb2luPSdyb3VuZCc%2BPHBhdGggZD0nTTEyIDIyczgtNCA4LTEwVjVsLTgtMy04IDN2N2MwIDYgOCAxMCA4IDEweicvPjxwYXRoIGQ9J205IDEyIDIgMiA0LTQnLz48L3N2Zz4%3D&logoColor=white">
 <img alt="funciona: sem internet" src="https://img.shields.io/badge/funciona-sem%20internet-0891B2?style=flat">
-<img alt="testes: 76 passando" src="https://img.shields.io/badge/testes-76%20passando-22C55E?style=flat&logo=data%3Aimage%2Fsvg%2Bxml%3Bbase64%2CPHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHZpZXdCb3g9JzAgMCAyNCAyNCcgZmlsbD0nbm9uZScgc3Ryb2tlPSd3aGl0ZScgc3Ryb2tlLXdpZHRoPScyLjInIHN0cm9rZS1saW5lY2FwPSdyb3VuZCcgc3Ryb2tlLWxpbmVqb2luPSdyb3VuZCc%2BPHBhdGggZD0nTTkgMnY2TDQgMTlhMiAyIDAgMCAwIDEuOCAzaDEyLjRhMiAyIDAgMCAwIDEuOC0zTDE1IDhWMicvPjxwYXRoIGQ9J004IDJoOCcvPjxwYXRoIGQ9J003IDE1aDEwJy8%2BPC9zdmc%2B&logoColor=white">
+<img alt="testes: 77 passando" src="https://img.shields.io/badge/testes-77%20passando-22C55E?style=flat&logo=data%3Aimage%2Fsvg%2Bxml%3Bbase64%2CPHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHZpZXdCb3g9JzAgMCAyNCAyNCcgZmlsbD0nbm9uZScgc3Ryb2tlPSd3aGl0ZScgc3Ryb2tlLXdpZHRoPScyLjInIHN0cm9rZS1saW5lY2FwPSdyb3VuZCcgc3Ryb2tlLWxpbmVqb2luPSdyb3VuZCc%2BPHBhdGggZD0nTTkgMnY2TDQgMTlhMiAyIDAgMCAwIDEuOCAzaDEyLjRhMiAyIDAgMCAwIDEuOC0zTDE1IDhWMicvPjxwYXRoIGQ9J004IDJoOCcvPjxwYXRoIGQ9J003IDE1aDEwJy8%2BPC9zdmc%2B&logoColor=white">
 <img alt="licença: proprietária" src="https://img.shields.io/badge/licen%C3%A7a-propriet%C3%A1ria-6B7280?style=flat">
 
 <img alt="Electron: 44.9.3" src="https://img.shields.io/badge/Electron-44.9.3-47848F?style=flat&logo=electron&logoColor=white">
@@ -265,10 +265,10 @@ Na primeira vez, e sempre que o banco configurado falhar (servidor desligado, IP
 
 Nos dois casos a busca **varre tudo**: o disco deste computador (todas as unidades, a fundo), as pastas compartilhadas de todos os servidores encontrados e a rede inteira. As etapas:
 
-1. **A configuração do sistema de gestão.** Lê os `.ini`/`.cfg` deste computador, das **unidades de rede** (ex.: `H:` → `\\SERVIDOR\Sistema`), das pastas compartilhadas do servidor e dos **atalhos do sistema** na Área de Trabalho e no Menu Iniciar. Ali está o endereço que o próprio sistema usa, como `SERVIDOR:C:\Sistema\Dados\SMALL.FDB`.
-2. **Os servidores da rede.** Os citados nessas pistas, **pelo nome** (que não muda quando o IP muda), o configurado, o nome `SERVIDOR` e os que a varredura da rede encontrar com a porta 3050 aberta. A varredura cobre a rede local, a Tailscale e o cabo direto `169.254`.
-3. **O `SMALL.FDB` nas pastas compartilhadas** de todos esses servidores: as dos atalhos do sistema, as **unidades de rede** e **todas as pastas que o próprio servidor compartilha** (a mesma lista do "Rede" do Windows). Achou `\\SERVIDOR\Sistema\Dados\SMALL.FDB`? Então o banco está no `SERVIDOR`, e o aplicativo o abre **pelo Firebird do servidor** (ex.: `SERVIDOR:C:\Sistema\Dados\SMALL.FDB`), testando as pastas de instalação típicas. Servidor desligado é pulado na hora.
-4. **Os caminhos típicos** de instalação em cada servidor (`C:` a `H:`).
+1. **A configuração do sistema de gestão.** Lê os `.ini`/`.cfg` das pastas de programa deste computador (achadas na varredura do disco), das **unidades de rede** (ex.: `H:` → `\\SERVIDOR\Sistema`), das pastas que os servidores compartilham e dos **atalhos** da Área de Trabalho e do Menu Iniciar que apontam para a rede. Ali está o endereço que o próprio sistema usa, como `SERVIDOR:C:\Sistema\Dados\SMALL.FDB`.
+2. **Os servidores da rede.** Os citados nessas pistas, **pelo nome** (que não muda quando o IP muda), o configurado, o nome `SERVIDOR` e os que a varredura da rede encontrar com a porta 3050 aberta. A varredura cobre a rede local, VPN (faixa `100.64`) e o cabo direto `169.254`.
+3. **O `SMALL.FDB` nas pastas compartilhadas** de todos esses servidores: as dos atalhos, as **unidades de rede** e **todas as pastas que o próprio servidor compartilha** (a mesma lista do "Rede" do Windows). Achou `\\SERVIDOR\Sistema\Dados\SMALL.FDB`? Então o banco está no `SERVIDOR`, e o aplicativo o abre **pelo Firebird do servidor** (ex.: `SERVIDOR:C:\Sistema\Dados\SMALL.FDB`). Para saber em que pasta do servidor fica o compartilhamento, usa a **mesma estrutura de pastas deste computador** (servidores costumam repetir a instalação dos caixas) e depois a raiz e `Program Files` de `C:` a `H:`. Servidor desligado é pulado na hora.
+4. **Os caminhos das pistas em cada servidor** — os mesmos em outras unidades (`C:` a `H:`) — e os genéricos (`\SMALL.FDB`, `\Dados\SMALL.FDB`, `\Banco\SMALL.FDB`). A busca não usa nenhum nome de pasta de fabricante: só o que encontra neste computador e na rede. Se não achar num servidor sem pastas compartilhadas, informe o caminho uma vez em *Configurações → Banco de dados*.
 5. **Este computador** (`127.0.0.1`), se ele tiver o Firebird e um `SMALL.FDB` — por último, ou primeiro quando a meta é **Neste computador**.
 
 **Não achou o `SMALL.FDB` em lugar nenhum?** O aplicativo avisa que varreu tudo (disco local, pastas compartilhadas e rede) e pergunta se você quer ver **os outros arquivos terminados em `.FDB`** que encontrou. Com a senha do administrador, cada um é aberto (só leitura) pelo Firebird do computador onde está, e aparece numa lista:
@@ -405,7 +405,7 @@ A trava vale **só para as conexões deste aplicativo**: o banco não é colocad
 - **Senha do Firebird:** nunca aparece no log; vai ao gbak por variável de ambiente.
 - **Exportação CSV** protegida contra fórmulas do Excel (`=`, `+`, `-`, `@`).
 - **Gravações atômicas:** `config.json`, cache do estoque e manifesto da cópia são gravados num arquivo temporário e depois renomeados.
-- **Acentos corretos:** texto lido como bytes (`OCTETS`) e decodificado como UTF-8, Windows-1252 ou latin1, como o banco do Small exige.
+- **Acentos corretos:** texto lido como bytes (`OCTETS`) e decodificado como UTF-8, Windows-1252 ou latin1, como os bancos sem conjunto de caracteres declarado exigem.
 </details>
 
 ---
@@ -438,7 +438,7 @@ Uma única biblioteca em uso pelo aplicativo (`node-firebird`); o resto é o pr�
 | Instalador | [electron-builder](https://www.electron.build) | 26.18.0 | Instalador NSIS e versão portátil, x64 e ia32 |
 | Tela | HTML5, CSS e JavaScript sem framework | — | Leve para PCs fracos; temas claro e escuro |
 | Som | Web Audio API | — | Bipe da leitura, sem arquivos de áudio |
-| Testes | `node:test` + `node:assert` | Node 20+ | 76 testes com Firebird, gbak e aplicativo simulados |
+| Testes | `node:test` + `node:assert` | Node 20+ | 77 testes com Firebird, gbak e aplicativo simulados |
 | Senha | `crypto.pbkdf2` (Node) | — | *Hash* da senha do administrador com sal, comparação em tempo constante |
 | Teste da tela | Playwright + Electron | — | Fluxo do leitor, cartão, configurações, tema e Electron 22 |
 | Build | GitHub Actions | — | Testes + instaladores a cada push |
@@ -451,14 +451,14 @@ Uma única biblioteca em uso pelo aplicativo (`node-firebird`); o resto é o pr�
 npm test
 ```
 
-- **76 testes**, sem Firebird real:
+- **77 testes**, sem Firebird real:
   - **Firebird simulado** (`src/demo.js`): registra toda SQL e transação, para provar que nada de escrita sai;
   - **gbak simulado** (`test/mock-gbak.js`): backup, restauração, falhas e atraso.
 - **Trava de somente leitura:** comandos recusados, transação somente leitura, `node-firebird` 0.x e 1.x+.
 - **Leitura do banco:** acentos, papéis das colunas (EAN em `REFERENCIA`), `OCTETS` recusado, banco sem tabela.
 - **Busca:** acentos, EAN, zeros à esquerda, exclusão, filtros, coringa `*` e preço `>`/`<` (com as opções desligadas também).
 - **Cache em disco:** ida e volta; CSV protegido.
-- **Descoberta:** rede antes do local, só `SMALL.FDB`, unidade mapeada, `.ini` do compartilhamento, `SMALL.FDB` achado na pasta compartilhada (aberto só pelo Firebird do servidor), servidor de compartilhamento fora do ar e pasta travada, lista de pastas do `net view`, meta rede × este computador, outros `.FDB` quando não há `SMALL.FDB`, atalho `.lnk`, servidor fora do ar, senha errada.
+- **Descoberta (sem nenhum nome de fabricante):** rede antes do local, só `SMALL.FDB`, caminho no servidor pela estrutura de pastas deste computador e pelas pistas em outras unidades, `.ini` nas pastas de programa, gbak embutido em qualquer programa, unidade mapeada, `.ini` do compartilhamento, `SMALL.FDB` achado na pasta compartilhada (aberto só pelo Firebird do servidor), servidor de compartilhamento fora do ar e pasta travada, lista de pastas do `net view`, meta rede × este computador, outros `.FDB` quando não há `SMALL.FDB`, atalho `.lnk`, servidor fora do ar, senha errada.
 - **Instalação do Firebird:** 32 × 64 bits, versão do servidor escolhe o pacote (2.5 a 5.0), troca desinstala o antigo na mesma permissão, versão do gbak local, gbak incluído (ferramentas de administração), arquivo que não confere recusado, permissão do Windows negada, download com redirecionamento e erro.
 - **Versões:** Firebird daqui mais antigo que o do servidor → cópia instantânea e aviso para trocar.
 - **Motor:** auto-correção do endereço, `fbHostFixo`, dados salvos sem rede, item ao vivo na leitura direta, troca de modo, gbak ausente.
@@ -494,7 +494,7 @@ npm test
 | `electron-builder.config.js` | Variantes moderna e legado do instalador |
 | `gerar-instalador.bat` | Gera os instaladores com dois cliques |
 | `.github/workflows/build.yml` | CI: testes e instaladores; a cada versão nova na `main`, publica a Release sozinho |
-| `CHANGELOG.md`, `CLAUDE.md` | Histórico de versões e regras do projeto |
+| `CHANGELOG.md`, `CLAUDE.md` | Histórico de versões e regras do projeto (seguidas por quem mantém o código) |
 
 ---
 
@@ -535,9 +535,9 @@ O histórico completo de cada arquivo está em [`CHANGELOG.md`](CHANGELOG.md).
 
 ## 👤 Autor e créditos
 
-**Consulta Estoque** foi criado e é mantido por **Ruda Gabriel** — concepção, regras de negócio, desenvolvimento e manutenção.
+**Consulta Estoque** foi criado e é mantido por **Ruda Gabriel** — concepção, regras de negócio, desenvolvimento e manutenção. Todo o código, as telas e a documentação são de autoria de **Ruda Gabriel**.
 
-Projeto independente e neutro: não pertence nem é ligado a nenhum fabricante de sistema, loja ou marca.
+Projeto **autônomo e neutro**: não pertence, não depende e não é ligado a nenhum fabricante de sistema, loja, marca ou outro projeto, e não cita nenhum deles. Funciona com qualquer sistema de gestão que guarde o estoque num banco Firebird.
 
 © 2026 Ruda Gabriel. Todos os direitos reservados.
 

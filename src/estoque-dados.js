@@ -1,7 +1,7 @@
 "use strict";
 /**
  * estoque-dados.js
- * @version 1.1.0
+ * @version 1.1.1
  * @author Ruda Gabriel
  * @description Lê a tabela de produtos (ESTOQUE) e monta o
  *              "retrato" do estoque em memória, pronto para a busca.
@@ -10,7 +10,7 @@
  * classificadas pelo nome (CODIGO, DESCRICAO, REFERENCIA/EAN/GTIN, QTD_ATUAL,
  * PRECO...). Coluna desconhecida aparece no detalhe e entra na busca do mesmo
  * jeito. Texto é lido como bytes (OCTETS) e decodificado aqui, porque o banco
- * do Small não declara charset e tem acentos.
+ * do sistema de gestão não declara charset e tem acentos.
  *
  * Funções puras (sem banco): indexar, fonteDe, resumo, detalhe, acharIndice,
  * paraDisco/doDisco, csv. Com banco: lerCatalogo, carregarTabela, lerItem,
@@ -18,13 +18,13 @@
  *
  * @changelog
  *   (Histórico completo das versões: CHANGELOG.md no repositório.)
- *   1.1.0 — Textos neutros (sem nomes de outros sistemas).
+ *   1.1.1 — Comentários sem o nome de nenhum sistema (projeto autônomo e neutro).
  */
 
 const Busca = require("./estoque-busca.js");
 const { consultar, decodificarTexto } = require("./firebird.js");
 
-const VERSAO = "1.1.0";
+const VERSAO = "1.1.1";
 const FORMATO_DISCO = 1;
 const TABELAS = ["ESTOQUE", "PRODUTOS", "PRODUTO", "CADPRO", "MERCADORIAS"];
 
@@ -78,7 +78,7 @@ function lerAtivo(papel, v) {
 }
 
 /**
- * Cada sistema usa uma convenção (no Small, "0" pode ser ATIVO). Decide pelos
+ * Cada sistema usa uma convenção (em alguns, "0" pode ser ATIVO). Decide pelos
  * dados: numa loja a grande maioria está ativa — se quase todos dariam
  * "inativo" pela leitura direta, inverte.
  */
@@ -137,7 +137,7 @@ async function lerCatalogo(db) {
     return interpretarCatalogo(await consultar(db, SQL_CATALOGO, [], 20000));
 }
 
-/** O banco tem a tabela de produtos do Small? (validação da descoberta) */
+/** O banco tem a tabela de produtos? (validação da descoberta) */
 async function temTabelaProduto(db) {
     const r = await consultar(db,
         "SELECT TRIM(RDB$RELATION_NAME) AS T FROM RDB$RELATIONS WHERE TRIM(RDB$RELATION_NAME) IN ('" + TABELAS.join("','") + "')", [], 15000);
