@@ -7,11 +7,11 @@ Versões em uso hoje:
 
 | Arquivo | Versão |
 |---|---|
-| Aplicativo (`package.json`) | [1.6.1](#aplicativo) |
+| Aplicativo (`package.json`) | [1.6.2](#aplicativo) |
 | [`main.js`](#mainjs) | 1.5.2 |
 | [`preload.js`](#preloadjs) | 1.5.0 |
-| [`ui/index.html`, `ui/estilo.css`, `ui/app.js`](#ui) | 1.6.0 (`app.js`); 1.4.0 (`index.html`, `estilo.css`) |
-| [`src/motor.js`](#srcmotorjs) | 1.6.0 |
+| [`ui/index.html`, `ui/estilo.css`, `ui/app.js`](#ui) | 1.6.1 (`app.js`); 1.4.0 (`index.html`, `estilo.css`) |
+| [`src/motor.js`](#srcmotorjs) | 1.6.1 |
 | [`src/firebird.js`](#srcfirebirdjs) | 1.1.1 |
 | [`src/estoque-dados.js`](#srcestoque-dadosjs) | 1.1.1 |
 | [`src/estoque-busca.js`](#srcestoque-buscajs) | 1.2.0 |
@@ -36,6 +36,15 @@ Versões em uso hoje:
 ## Aplicativo
 
 Versão do Consulta Estoque (a que aparece no instalador e em *Configurações → Diagnóstico*).
+
+### 1.6.2 — 2026-11-12
+
+**Textos em dia com o modo padrão (Instantâneo).**
+
+- **Atualizar/F5 no Instantâneo** pergunta "Ler o estoque do servidor agora?" (antes falava em "nova cópia do banco", que esse modo não faz).
+- Barra de status e log com os nomes da tela de modos: *instantâneo*, *cópia do banco*, *leitura direta* (antes "cópia instantânea" / "cópia gbak").
+- **README revisado inteiro:** resumo do topo (Instantâneo é o padrão, não o modo cópia), primeira abertura (o Firebird daqui só é oferecido no modo Cópia do banco), Atualizar/F5 e barra de andamento por modo, chaves `modo`/`metodoCopia`/`perguntarFirebird`/`copiaACadaMin` explicadas pelos nomes da tela, `versaoConfig` 3, Firebird neste computador e solução de problemas.
+- 77 testes; tela validada no Electron 44 e 22.
 
 ### 1.6.1 — 2026-11-12
 
@@ -215,6 +224,10 @@ Ponte segura entre a tela e o processo principal.
 
 A tela.
 
+### 1.6.1 (`app.js`) — 2026-11-12
+
+Atualizar/F5 no modo Instantâneo pergunta "Ler o estoque do servidor agora?" (botão "Sim, ler agora"), sem falar em cópia; a Cópia do banco continua com "Fazer uma nova cópia do banco agora?". Barra de status com os nomes da tela de modos (instantâneo, cópia do banco, leitura direta).
+
 ### 1.6.0 (`app.js`) e 1.4.0 (`index.html`, `estilo.css`) — 2026-11-11
 
 **Modos, cartão, bipe e neutralidade.** Três cartões de modo (Instantâneo padrão, Cópia do banco, Leitura direta); contador sem totais; "Abaixo do mínimo" só com mínimo preenchido; cartão centralizado como etiqueta (preço com ~1/4 da altura da tela e "R$" pequeno no alto), caixas e campos vazios escondidos, fecha ao digitar; X desenhado em SVG (centralizado); botão de voltar ao topo; bipe em onda quadrada com volume e teste; dica do `-palavra`; explicação do tempo máximo de uma cópia; botão de apagar a versão portátil; pergunta do Firebird só no modo cópia; textos neutros.
@@ -248,6 +261,10 @@ A tela.
 ## `src/motor.js`
 
 Modos, atualização, cache em disco e auto-correção do banco.
+
+### 1.6.1 — 2026-11-12
+
+Log e avisos chamam o modo padrão de "leitura instantânea" (o nome da tela é "Instantâneo"; não é uma cópia).
 
 ### 1.6.0 — 2026-11-11
 

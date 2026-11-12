@@ -304,7 +304,7 @@ test("motor: estimativa da última cópia gbak no status, mesmo antes de copiar 
     motor.encerrar(); sem.motor.encerrar();
 });
 
-test("motor: Firebird daqui mais antigo que o do servidor → cópia instantânea e aviso para trocar", async () => {
+test("motor: Firebird daqui mais antigo que o do servidor → leitura instantânea e aviso para trocar", async () => {
     const banco = Object.assign(bancoExemplo(), { versao: "4.0.4" });
     const { motor } = montar({ "10.0.0.5|C:\\SMALL.FDB": banco }, { fbHost: "10.0.0.5", fdbPath: "C:\\SMALL.FDB", metodoCopia: "auto", versaoConfig: 3 }, {
         localizarGbak: async () => "C:\\Firebird_3_0\\gbak.exe",

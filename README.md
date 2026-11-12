@@ -6,7 +6,7 @@
 
 ### Consulta de preço e estoque sobre banco de dados Firebird, feita para o leitor de código de barras
 
-<img alt="aplicativo: v1.6.1" src="https://img.shields.io/badge/aplicativo-v1.6.1-2563EB?style=flat">
+<img alt="aplicativo: v1.6.2" src="https://img.shields.io/badge/aplicativo-v1.6.2-2563EB?style=flat">
 <img alt="plataforma: Windows 7 a 11" src="https://img.shields.io/badge/plataforma-Windows%207%20%7C%208%20%7C%2010%20%7C%2011-0078D4?style=flat&logo=data%3Aimage%2Fsvg%2Bxml%3Bbase64%2CPHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHZpZXdCb3g9JzAgMCAyNCAyNCcgZmlsbD0nd2hpdGUnPjxyZWN0IHg9JzMnIHk9JzMnIHdpZHRoPSc4JyBoZWlnaHQ9JzgnLz48cmVjdCB4PScxMycgeT0nMycgd2lkdGg9JzgnIGhlaWdodD0nOCcvPjxyZWN0IHg9JzMnIHk9JzEzJyB3aWR0aD0nOCcgaGVpZ2h0PSc4Jy8%2BPHJlY3QgeD0nMTMnIHk9JzEzJyB3aWR0aD0nOCcgaGVpZ2h0PSc4Jy8%2BPC9zdmc%2B&logoColor=white">
 <img alt="arquitetura: 64 e 32 bits" src="https://img.shields.io/badge/arquitetura-64%20e%2032%20bits-0E7490?style=flat">
 <img alt="idioma: pt-BR" src="https://img.shields.io/badge/idioma-pt--BR-16A34A?style=flat">
@@ -31,7 +31,7 @@
 <img alt="Playwright: teste da tela" src="https://img.shields.io/badge/Playwright-teste%20da%20tela-2EAD33?style=flat&logo=playwright&logoColor=white">
 <img alt="GitHub Actions: build" src="https://img.shields.io/badge/GitHub%20Actions-build%20autom%C3%A1tico-2088FF?style=flat&logo=githubactions&logoColor=white">
 
-**Passe o leitor e veja o preço na hora · Tela cheia permanente (quiosque) com senha do administrador · Acha o banco sozinho na rede · Modo cópia (padrão) ou leitura direta · Nunca escreve no banco · Funciona sem internet e até com o servidor fora do ar · Do PC antigo (Windows 7, 32 bits) ao mais novo**
+**Passe o leitor e veja o preço na hora · Tela cheia permanente (quiosque) com senha do administrador · Acha o banco sozinho na rede · Três modos: Instantâneo (padrão), Cópia do banco ou Leitura direta · Nunca escreve no banco · Funciona sem internet e até com o servidor fora do ar · Do PC antigo (Windows 7, 32 bits) ao mais novo**
 
 [Instalar](#instalacao) · [Usar](#uso) · [Leitor](#leitor) · [Quiosque e senha](#quiosque) · [Modos](#modos) · [Banco automático](#banco) · [Configurar](#configuracao) · [PCs antigos](#antigos) · [Segurança](#seguranca) · [Problemas](#problemas)
 
@@ -50,7 +50,7 @@ Um aplicativo de Windows, de **janela própria** (não abre no navegador), para 
 | 🔎 **Busca esperta** | Coringa `*` (`RAÇÃO*10KG`) e filtro de preço na própria busca: `RAÇÃO >50` (R$ 50 ou mais) e `RAÇÃO <50` (R$ 50 ou menos). |
 | 🔁 **Três modos** | **Instantâneo** (padrão): uma leitura rápida e leve a cada intervalo, sem instalar nada. **Cópia do banco** (gbak): copia o banco inteiro para este computador. **Leitura direta**: preço e estoque do instante. Os três funcionam com o servidor fora do ar (estoque salvo). |
 | 💾 **Abre na hora** | O último estoque carregado fica salvo no computador e aparece assim que o aplicativo abre, mesmo sem rede. Cópia ainda em dia não é refeita só porque o aplicativo abriu. |
-| 📊 **Andamento da cópia** | Barra com a porcentagem e o tempo que falta (estimado pela última cópia). |
+| 📊 **Andamento** | Barra abaixo do topo enquanto o estoque atualiza: na **Cópia do banco**, a porcentagem e o tempo que falta (estimado pela última cópia); no **Instantâneo**, o tempo da leitura. |
 | 🔒 **Somente leitura** | Nunca grava nada no banco de dados. |
 | 🔐 **Quiosque** | Abre em tela cheia e não sai dela; com a senha do administrador (opcional), não fecha sem ela. Se for fechado à força ou travar, **abre de novo sozinho em 1 a 2 segundos**. Abre junto com o Windows, uma instância só. |
 | 🖥️ **PCs antigos e novos** | Versão moderna (Windows 10/11, 64 bits) e versão **legado** (Windows 7 a 11, 64 e 32 bits). Modo leve sem animações. |
@@ -75,8 +75,9 @@ Um aplicativo de Windows, de **janela própria** (não abre no navegador), para 
 2. **Execute o instalador** e abra o **Consulta Estoque** pelo atalho da Área de Trabalho. Na primeira vez ele:
    - pede o **nome da loja** e a **senha do administrador** — os dois **opcionais** (sem senha, tudo fica livre);
    - pergunta **onde está o banco de dados**: **na rede** (em outro computador, o servidor) ou **neste computador**;
-   - se este computador não tiver o **Firebird**, pergunta se você quer instalá-lo (veja [Firebird neste computador](#firebird));
-   - procura o banco sozinho; em alguns segundos o estoque aparece.
+   - procura o banco sozinho e lê o estoque no modo **Instantâneo** (o padrão, que não precisa instalar nada neste computador); em alguns segundos ele aparece.
+
+   O **Firebird neste computador** só é usado pelo modo opcional **Cópia do banco**: escolhendo esse modo, o aplicativo oferece instalá-lo (veja [Firebird neste computador](#firebird)).
 
    Daí em diante ele abre junto com o Windows, em tela cheia.
 
@@ -120,12 +121,12 @@ Abra com o parâmetro `--demo` (ex.: um atalho para `"Consulta Estoque.exe" --de
 | Voltar ao topo da lista | Depois de rolar bastante, aparece um botão redondo com uma seta no canto: ele volta ao começo da lista. |
 | Filtrar | **Estoque** (com, sem, negativo), **Só ativos**, **Contém** e **Ordem**. Os filtros ficam guardados. A opção **Abaixo do mínimo** só aparece quando o banco tem o estoque mínimo preenchido nos produtos (sem mínimo cadastrado ela não teria sentido — não é o mesmo que negativo). |
 | Exportar a lista | *Configurações → Administrador → Exportar a lista* (com a senha) → planilha CSV. |
-| Atualizar agora | **Atualizar** ou **F5**. No modo cópia o aplicativo **pergunta antes** ("Fazer uma nova cópia do banco agora?"), explicando o que vai acontecer, quanto a última cópia levou e quando seria a próxima automática. Com uma cópia já em andamento, só avisa. |
-| Acompanhar a cópia do banco | Uma barra aparece abaixo do topo: etapa (copiando do servidor / restaurando aqui), porcentagem e **quanto falta**. A estimativa vem da duração da última cópia; na primeira, a barra corre sem porcentagem e mostra o tempo decorrido. |
+| Atualizar agora | **Atualizar** ou **F5**. O aplicativo **pergunta antes**, explicando o que vai acontecer e quando seria a próxima atualização automática: no **Instantâneo** (padrão), "Ler o estoque do servidor agora?" (leva alguns segundos); na **Cópia do banco**, "Fazer uma nova cópia do banco agora?" (com quanto a última cópia levou). Na **Leitura direta** atualiza na hora. Com uma atualização já em andamento, só avisa. |
+| Acompanhar a atualização | Uma barra aparece abaixo do topo. Na **Cópia do banco**: etapa (copiando do servidor / restaurando aqui), porcentagem e **quanto falta** — a estimativa vem da duração da última cópia; na primeira, a barra corre sem porcentagem e mostra o tempo decorrido. No **Instantâneo**: o tempo da leitura. |
 | Limpar a tela | Sozinha, **1 minuto** depois da última tecla ou leitura (busca e cartão somem). |
 | Sair do aplicativo | **Ctrl+Shift+Q** e a senha do administrador. |
 | Aumentar/diminuir o texto | **Ctrl + +** / **Ctrl + −** / **Ctrl + 0**, ou *Configurações → Tela*. |
-| Ver a situação do banco | Clique no indicador do topo (bolinha verde = atualizado, amarela = mostrando dados salvos porque o banco falhou, vermelha = sem conexão). |
+| Ver a situação do banco | Clique no indicador do topo (bolinha verde = atualizado, amarela = mostrando dados salvos porque o banco falhou, vermelha = sem conexão). Ao lado aparecem a hora da última atualização, o número de itens e o modo (instantâneo, cópia do banco ou leitura direta). |
 
 <details>
 <summary><b>Todos os atalhos de teclado</b></summary>
@@ -232,7 +233,7 @@ Escolha em *Configurações → Consulta*. Em todos os modos o aplicativo **só 
 <details>
 <summary><b>Como a cópia por gbak é feita por dentro</b></summary>
 
-1. Confere se o Firebird deste computador responde (porta 3050). Sem ele, o método automático usa o instantâneo.
+1. Confere se o Firebird deste computador responde (porta 3050). Sem ele, a Cópia do banco lê no modo instantâneo.
 2. `gbak -b -g SERVIDOR:C:\...\SMALL.FDB` gera o backup em `%ProgramData%\ConsultaEstoqueDesktop\copias`. O `-g` é uma leitura da "foto" atual do banco, sem coleta de lixo.
 3. `gbak -c -mode read_only` restaura a cópia somente leitura no Firebird local (`SMALL_OFFLINE_AAAAMMDD_HHMMSS.FDB`).
 4. A cópia nova só entra **pronta**: temporário → nome final → manifesto `copia.json`. Se algo falhar, a cópia anterior continua valendo.
@@ -305,9 +306,9 @@ Tudo pode ser feito na tela (*Configurações*, **F10**). As chaves marcadas com
 
 | Chave | Padrão | Para que serve |
 |---|---|---|
-| `modo` 🔒 | `copia` | `copia` ou `direto` |
-| `metodoCopia` 🔒 | `instantaneo` | `instantaneo` (padrão), `auto` (gbak quando houver Firebird aqui) ou `gbak` |
-| `copiaACadaMin` 🔒 | `180` (3 horas) | Intervalo da cópia (1 a 1440 min) |
+| `modo` 🔒 | `copia` | `copia` (modos **Instantâneo** e **Cópia do banco**) ou `direto` (**Leitura direta**) |
+| `metodoCopia` 🔒 | `instantaneo` | Com `modo` = `copia`: `instantaneo` = **Instantâneo** (padrão); `auto` = **Cópia do banco** (gbak quando houver Firebird aqui, senão instantâneo); `gbak` = só gbak |
+| `copiaACadaMin` 🔒 | `180` (3 horas) | Intervalo entre as atualizações do Instantâneo e da Cópia do banco (1 a 1440 min) |
 | `copiaTimeoutMin` 🔒 | `30` | Tempo máximo de UMA cópia gbak (1 a 360 min) — limite de segurança, não o intervalo |
 | `diretoRecarregarSeg` 🔒 | `60` | Recarga da lista na leitura direta (15 a 3600 s) |
 | `diretoItemAoVivo` 🔒 | `true` | Reler estoque e preço ao abrir o produto (leitura direta) |
@@ -318,7 +319,7 @@ Tudo pode ser feito na tela (*Configurações*, **F10**). As chaves marcadas com
 | `fbHostAuto` | — | Marcado pelo aplicativo quando o endereço foi encontrado sozinho |
 | `varrerRede` 🔒 | `true` | Procurar servidores Firebird na rede |
 | `metaBusca` 🔒 | vazio (= rede) | Onde a busca automática começa: `rede` ou `local` (perguntado na primeira abertura) |
-| `perguntarFirebird` 🔒 | `true` | Perguntar ao abrir se quer instalar o Firebird quando este computador não tem |
+| `perguntarFirebird` 🔒 | `true` | No modo Cópia do banco, perguntar se quer instalar (ou trocar) o Firebird deste computador |
 | `gbakPath` / `pastaCopias` 🔒 | automático | Caminho do `gbak.exe` / pasta das cópias (sempre disco local) |
 | `iniciarComWindows` 🔒 | `true` | Abrir junto com o Windows |
 | `persistente` 🔒 | `true` | Vigia que reabre o aplicativo fechado sem a senha |
@@ -343,7 +344,7 @@ Tudo pode ser feito na tela (*Configurações*, **F10**). As chaves marcadas com
 | `modoLeve` | `false` | Sem animações (PCs antigos) |
 | `senhaAdmin` | — | *Hash* da senha do administrador (criado pela tela; nunca a senha). Vazio = sem senha, tudo livre |
 | `configInicial` | `false` | Marcado depois da configuração inicial (nome da loja e senha) |
-| `versaoConfig` | `2` | Versão do arquivo (interna; migrações feitas uma vez só) |
+| `versaoConfig` | `3` | Versão do arquivo (interna; migrações feitas uma vez só) |
 
 > Valor inválido ou fora da faixa volta ao padrão. `config.json` estragado é guardado como `config.json.corrompido-AAAAMMDD-HHMMSS` e o aplicativo abre com os padrões.
 
@@ -357,18 +358,18 @@ Tudo pode ser feito na tela (*Configurações*, **F10**). As chaves marcadas com
 - **Pouca memória:** a lista mostra 100 itens por vez (rolagem infinita). A busca roda numa lista já preparada na memória, rápida mesmo com dezenas de milhares de produtos.
 - **Modo leve** (*Configurações → Tela*): sem animações nem sombras.
 - **Tela preta ou piscando** (placa de vídeo antiga): desmarque **Aceleração gráfica** ou abra com `--sem-gpu`.
-- **Sem Firebird no computador:** o modo cópia usa o método instantâneo; não precisa instalar nada (mas dá para instalar sozinho, veja abaixo).
+- **Sem Firebird no computador:** o modo padrão (**Instantâneo**) não precisa dele; só a **Cópia do banco** usa (e sem ele também lê no instantâneo). Dá para instalar sozinho, veja abaixo.
 
 <a id="firebird"></a>
 
 ### Firebird neste computador (na versão do servidor)
 
-O Firebird **deste** computador é opcional: ele é usado na cópia completa do banco (**gbak**) e para abrir um `SMALL.FDB` que esteja neste computador. O aplicativo descobre sozinho **qual Firebird o servidor usa** (uma consulta de leitura de uma linha) e qual está neste computador — as duas versões aparecem em *Configurações → Banco de dados*.
+O Firebird **deste** computador é opcional e o modo padrão (**Instantâneo**) não precisa dele: ele só é usado pelo modo **Cópia do banco** (gbak) e para abrir um `SMALL.FDB` que esteja neste computador. As perguntas abaixo só aparecem no modo **Cópia do banco**; os botões em *Configurações → Banco de dados* funcionam sempre. O aplicativo descobre sozinho **qual Firebird o servidor usa** (uma consulta de leitura de uma linha) e qual está neste computador — as duas versões aparecem em *Configurações → Banco de dados*.
 
 | Situação | O que o aplicativo faz |
 |---|---|
 | Este computador **não tem** Firebird | Pergunta se você quer **instalar a mesma versão do servidor** (**Instalar**, **Agora não** ou **Não perguntar mais**) |
-| Tem, mas **mais antigo** que o do servidor (ex.: 3.0 aqui, 4.0 no servidor) | A cópia gbak não funciona com ele: o método automático passa a usar a **cópia instantânea** e o aplicativo pergunta se você quer **trocar** o Firebird daqui pela versão do servidor |
+| Tem, mas **mais antigo** que o do servidor (ex.: 3.0 aqui, 4.0 no servidor) | A cópia gbak não funciona com ele: a **Cópia do banco** passa a usar a **leitura instantânea** e o aplicativo pergunta se você quer **trocar** o Firebird daqui pela versão do servidor |
 | Tem, igual ou mais novo | Nada a fazer: a cópia gbak funciona |
 
 **Tudo sempre com confirmação.** A pergunta da troca diz as duas versões e o que vai acontecer; nada é instalado nem desinstalado sem o **"Sim"**. Os botões também ficam em *Configurações → Banco de dados* (**Instalar o Firebird…** / **Trocar o Firebird deste computador (3.0 → 4.0)**).
@@ -380,7 +381,7 @@ Passo a passo:
 3. Confere o tamanho e a "impressão digital" (SHA-256) do arquivo; se não bater, nada é instalado nem desinstalado.
 4. **Troca:** desinstala o Firebird antigo deste computador e, em seguida, instala o novo — tudo numa única pergunta do Windows. **Instalação:** só instala.
 5. Instala sozinho, sem janelas, como serviço do Windows, com as ferramentas de administração (o gbak) e o usuário `SYSDBA`/senha `masterkey`. O **Windows pergunta "Deseja permitir que este aplicativo faça alterações?"**: clique em **Sim**.
-6. Confere que o serviço ficou de pé e passa a usá-lo (o método automático da cópia volta a ser gbak).
+6. Confere que o serviço ficou de pé e passa a usá-lo (a **Cópia do banco** volta a usar o gbak).
 
 O Firebird do **servidor** e o banco de dados nunca são tocados. A troca é **recusada** quando o banco em uso está neste computador (o Firebird daqui seria o do próprio sistema). Não confirme a troca se outro programa deste computador usar o Firebird antigo.
 
@@ -419,7 +420,7 @@ A trava vale **só para as conexões deste aplicativo**: o banco não é colocad
 ```text
 [09-11-2026] [18:03:09] [BUSCA] Testando o banco nos servidores da rede: SERVIDOR, 192.168.0.10...
 [09-11-2026] [18:03:10] [BUSCA] Banco encontrado em SERVIDOR:C:\Sistema\Dados\SMALL.FDB — configuração atualizada automaticamente.
-[09-11-2026] [18:03:12] [INFO] Estoque carregado (cópia instantânea de SERVIDOR:C:\...\SMALL.FDB): 15320 itens da tabela ESTOQUE (código: CODIGO, descrição: DESCRICAO, barras: REFERENCIA, estoque: QTD_ATUAL, preço: PRECO).
+[09-11-2026] [18:03:12] [INFO] Estoque carregado (leitura instantânea de SERVIDOR:C:\...\SMALL.FDB): 15320 itens da tabela ESTOQUE (código: CODIGO, descrição: DESCRICAO, barras: REFERENCIA, estoque: QTD_ATUAL, preço: PRECO).
 ```
 
 ---
@@ -460,7 +461,7 @@ npm test
 - **Cache em disco:** ida e volta; CSV protegido.
 - **Descoberta (sem nenhum nome de fabricante):** rede antes do local, só `SMALL.FDB`, caminho no servidor pela estrutura de pastas deste computador e pelas pistas em outras unidades, `.ini` nas pastas de programa, gbak embutido em qualquer programa, unidade mapeada, `.ini` do compartilhamento, `SMALL.FDB` achado na pasta compartilhada (aberto só pelo Firebird do servidor), servidor de compartilhamento fora do ar e pasta travada, lista de pastas do `net view`, meta rede × este computador, outros `.FDB` quando não há `SMALL.FDB`, atalho `.lnk`, servidor fora do ar, senha errada.
 - **Instalação do Firebird:** 32 × 64 bits, versão do servidor escolhe o pacote (2.5 a 5.0), troca desinstala o antigo na mesma permissão, versão do gbak local, gbak incluído (ferramentas de administração), arquivo que não confere recusado, permissão do Windows negada, download com redirecionamento e erro.
-- **Versões:** Firebird daqui mais antigo que o do servidor → cópia instantânea e aviso para trocar.
+- **Versões:** Firebird daqui mais antigo que o do servidor → leitura instantânea e aviso para trocar.
 - **Motor:** auto-correção do endereço, `fbHostFixo`, dados salvos sem rede, item ao vivo na leitura direta, troca de modo, gbak ausente.
 - **Cópia gbak:** senha por variável de ambiente, cópia nova atômica, limpeza segura, falha mantém a anterior, cancelamento.
 - **Administrador:** senha só como *hash*, chaves sensíveis, padrões do quiosque (barra de tarefas oculta, também em config antigo), cópia a cada 3 horas.
@@ -486,7 +487,7 @@ npm test
 | `src/localizar-banco.js` | Descoberta automática do banco (meta, disco, pastas compartilhadas, rede) e os outros `.FDB` |
 | `src/caminhos.js` | Comparação de pastas do Windows (usada para apagar a versão portátil com segurança) |
 | `src/autoexcluir.js` | Ajudante que apaga a versão portátil depois que ela fecha |
-| `src/instalar-firebird.js` | Instalação automática do Firebird 3.0 neste computador |
+| `src/instalar-firebird.js` | Instalação ou troca do Firebird deste computador, na versão do servidor (2.5 a 5.0) |
 | `src/copia-gbak.js` | Cópia por gbak (backup + restauração somente leitura) |
 | `src/config.js`, `src/registro.js` | Configuração validada e log |
 | `src/vigia.js` | Persistência: reabre o aplicativo fechado sem a senha |
@@ -509,13 +510,13 @@ npm test
 | "Usuário ou senha do Firebird recusados" | Ajuste usuário e senha em *Configurações → Banco de dados* |
 | Indicador amarelo "Dados salvos de…" | O servidor não respondeu; a consulta segue com o último estoque. Atualiza sozinho quando o servidor voltar |
 | Leitor não abre o produto | Confira se o leitor envia **Enter** (ou TAB, com a opção ligada). Teste num Bloco de Notas: o código deve aparecer e pular de linha |
-| Método gbak: "gbak não encontrado" / "Firebird desta máquina não está rodando" | Use **Automático** ou **Instantâneo**, ou *Banco de dados → Instalar o Firebird neste computador* |
+| Cópia do banco: "gbak não encontrado" / "Firebird desta máquina não está rodando" | Volte ao modo **Instantâneo** (o padrão, sem Firebird aqui) em *Configurações → Consulta*, ou use *Banco de dados → Instalar o Firebird neste computador* |
 | "SMALL.FDB não encontrado em lugar nenhum" | Clique em **Ver outros arquivos .FDB** e escolha o banco certo (os que abrem com a tabela de produtos). Se a lista estiver vazia, confira se o servidor está ligado e na mesma rede |
 | A instalação do Firebird falhou | Sem internet, permissão do Windows negada ou antivírus bloqueando. Tente de novo ou instale à mão (firebirdsql.org) a mesma versão do servidor (aparece em *Banco de dados*) |
 | A busca não aceita `*` ou `>` | *Configurações → Consulta*: ligue **Busca com coringa** e **Filtro de preço na busca** |
-| "Versão do Firebird local incompatível" / Firebird daqui mais antigo | O aplicativo mostra as duas versões em *Banco de dados* e oferece **Trocar o Firebird deste computador** pela versão do servidor (com confirmação). Enquanto isso, usa a cópia instantânea |
+| "Versão do Firebird local incompatível" / Firebird daqui mais antigo | O aplicativo mostra as duas versões em *Banco de dados* e oferece **Trocar o Firebird deste computador** pela versão do servidor (com confirmação). Enquanto isso, usa a leitura instantânea |
 | Tela preta ou piscando | Desmarque **Aceleração gráfica** ou abra com `--sem-gpu` |
-| Demora para abrir | Use o **instalador** (a versão portátil descompacta o aplicativo inteiro a cada abertura). A cópia do banco não roda mais a cada abertura; antivírus examinando o aplicativo também atrasa — adicione a pasta do aplicativo às exceções |
+| Demora para abrir | Use o **instalador** (a versão portátil descompacta o aplicativo inteiro a cada abertura). O estoque salvo aparece na hora e a atualização não é refeita a cada abertura; antivírus examinando o aplicativo também atrasa — adicione a pasta do aplicativo às exceções |
 | Fechou sozinho logo ao abrir (PC antigo) | Abra de novo (com a persistência ele reabre sozinho): a abertura seguinte vem sem aceleração gráfica automaticamente. Se acontecer sempre, desmarque **Aceleração gráfica** |
 | Windows 7/8 ou 32 bits não abre | Use a versão **legado** |
 | Como fechar o aplicativo? | **Ctrl+Shift+Q** e a senha do administrador |
