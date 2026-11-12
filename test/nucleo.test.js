@@ -210,6 +210,35 @@ test("busca: coringa * no mesmo campo e filtro de preço >valor / <valor (o pró
     assert.strictEqual(Busca.lerValor("abc"), null);
 });
 
+test("busca: filtro de peso >9kg / <500g pelo peso escrito na descrição (o próprio peso entra)", async () => {
+    const { r } = await retratoExemplo();
+    const f = Dados.fonteDe(r);
+    const desc = (q, o) => Busca.pesquisar(f, Object.assign({ q }, o || {}), i => Dados.resumo(r, i)).itens.map(i => i.descricao).sort();
+    assert.deepStrictEqual(desc("racao >9kg"), ["RAÇÃO CÃO 15KG"]);
+    assert.deepStrictEqual(desc("racao >15kg"), ["RAÇÃO CÃO 15KG"], "peso igual entra");
+    assert.deepStrictEqual(desc("racao >15,1kg"), []);
+    assert.deepStrictEqual(desc("racao <1000g"), ["RAÇÃO GATO 1KG"], "gramas viram kg");
+    assert.deepStrictEqual(desc("racao > 1 kg < 15 kg"), ["RAÇÃO CÃO 15KG", "RAÇÃO GATO 1KG"], "com espaços, os dois limites");
+    assert.deepStrictEqual(desc("racao >9kg >100"), ["RAÇÃO CÃO 15KG"], "peso e preço juntos");
+    assert.deepStrictEqual(desc("racao >9kg <100"), [], "15 kg, mas custa R$ 149,90");
+    assert.strictEqual(Busca.pesquisar(f, { q: "item >1kg" }, i => i).total, 0, "produto sem peso na descrição fica de fora");
+    assert.strictEqual(Busca.pesquisar(f, { q: "racao >9kg", preco: false }, i => i).total, 0, "opção desligada: \">9kg\" é texto");
+    assert.deepStrictEqual(Busca.separarPeso("racao > 9 kg <=500g x"), { texto: "racao x", min: 9, max: 0.5 });
+    assert.deepStrictEqual(Busca.separarPeso("racao >9"), { texto: "racao >9", min: null, max: null }, "sem unidade é preço, não peso");
+    assert.deepStrictEqual(Busca.separarPeso("cabo >9kgx"), { texto: "cabo >9kgx", min: null, max: null });
+    const p = Busca.pesoDaDescricao;
+    assert.strictEqual(p("RAÇÃO GATO 10KG"), 10);
+    assert.strictEqual(p("RACAO 10,1 KG"), 10.1);
+    assert.strictEqual(p("RACAO 1.5KG"), 1.5);
+    assert.strictEqual(p("SACHÊ 85G CX C/12"), 0.085);
+    assert.strictEqual(p("KIT 2X500G"), 0.5);
+    assert.strictEqual(p("PETISCO 80GR"), 0.08);
+    assert.strictEqual(p("RACAO 15KG + 1KG BRINDE"), 15, "o primeiro peso da descrição");
+    assert.strictEqual(p("ÁGUA 500ML"), null);
+    assert.strictEqual(p("PRODUTO G10"), null);
+    assert.strictEqual(p(null), null);
+});
+
 test("config: barra de tarefas oculta por padrão (também em config antigo, uma vez só), opções novas e chaves internas", () => {
     assert.strictEqual(Config.padrao().ocultarBarraTarefas, true);
     assert.strictEqual(Config.normalizar({ ocultarBarraTarefas: false }).ocultarBarraTarefas, true, "config.json antigo: passa a ocultar");
@@ -221,6 +250,7 @@ test("config: barra de tarefas oculta por padrão (também em config antigo, uma
     assert.strictEqual(c.buscaPreco, true);
     assert.strictEqual(c.metaBusca, "");
     assert.strictEqual(Config.validarValor("metaBusca", "nuvem"), "");
+    assert.strictEqual(Config.validarValor("metaBusca", "manual"), "manual", "seleção manual do banco");
     assert.strictEqual(c.perguntarFirebird, true);
     assert.ok(Config.SENSIVEIS.includes("metaBusca") && Config.SENSIVEIS.includes("buscaCoringa"));
     assert.ok(!Config.SENSIVEIS.includes("versaoConfig") && !Config.SENSIVEIS.includes("senhaAdmin"));

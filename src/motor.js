@@ -1,7 +1,7 @@
 "use strict";
 /**
  * motor.js
- * @version 1.6.1
+ * @version 1.7.0
  * @author Ruda Gabriel
  * @description O coração do aplicativo: mantém o estoque em memória e atualizado
  *              conforme o modo escolhido, acha o banco sozinho e responde às
@@ -27,8 +27,10 @@
  *
  * @changelog
  *   (Histórico completo das versões: CHANGELOG.md no repositório.)
- *   1.6.1 — Log e avisos chamam o modo padrão de "leitura instantânea" (o nome da
- *           tela é "Instantâneo"; não é uma cópia).
+ *   1.7.0 — Seleção manual do banco (metaBusca "manual"): a busca automática não
+ *           procura nem troca o banco sozinha (como "Não trocar o servidor
+ *           sozinho"); o caminho ainda é procurado no servidor informado, e o botão
+ *           "Procurar o banco" continua disponível a pedido do usuário.
  */
 
 const fs = require("fs");
@@ -42,7 +44,7 @@ const Localizar = require("./localizar-banco.js");
 const Copia = require("./copia-gbak.js");
 const InstalarFb = require("./instalar-firebird.js");
 
-const VERSAO = "1.6.1";
+const VERSAO = "1.7.0";
 const ARQ_CACHE = "estoque-cache.json.gz";
 const CHAVES_CONEXAO = ["modo", "metodoCopia", "fbHost", "fbPorta", "fdbPath", "fbUser", "fbPass", "gbakPath", "pastaCopias", "copiaTimeoutMin"];
 
@@ -298,7 +300,9 @@ function criarMotor(dep) {
     };
 
     // ── Descoberta automática ─────────────────────────────────────────────────
-    const buscaLiberada = () => !cfg.fbHostFixo;
+    // Busca automática (procura e troca o banco sozinha): desligada com "Não trocar o servidor
+    // sozinho" e com a seleção manual do banco.
+    const buscaLiberada = () => !cfg.fbHostFixo && cfg.metaBusca !== "manual";
     /**
      * Servidor conhecido, caminho não: procura o SMALL.FDB só NESSE servidor
      * (caminhos típicos de C: a H: e o anterior). Rápido: servidor que responde
@@ -460,7 +464,7 @@ function criarMotor(dep) {
             if (buscaLiberada() && !procurando && Date.now() - ultimaBuscaAutomatica > 30 * 60000 &&
                 Localizar.bancoAutoSuspeito(cfg, h => !String(h || "").trim() || Localizar.ehLocal(h) || ident.has(String(h).trim().toLowerCase()))) {
                 reg.busca("O banco em uso (" + (cfg.fbHost || "127.0.0.1") + ":" + cfg.fdbPath + ") foi escolhido automaticamente e está fora da meta (" +
-                    (cfg.metaBusca === "local" ? "este computador" : "a rede") + ") — procurando de novo em segundo plano...");
+                    (cfg.metaBusca === "local" ? "este computador" : "a rede") + ") — procurando novamente em segundo plano...");
                 const antes = cfg.fbHost + "|" + cfg.fdbPath;
                 setImmediate(() => procurarBanco("banco adotado fora da meta").then(ok => {
                     if (ok && antes !== cfg.fbHost + "|" + cfg.fdbPath && !encerrado) { invalidar(); agendar(0); }
@@ -598,9 +602,10 @@ function criarMotor(dep) {
             agendar(200);
         } else if (antes.metaBusca !== cfg.metaBusca) {
             // Meta trocada: sem banco, procura já; com banco adotado sozinho, confere a meta logo após o próximo ciclo.
-            reg.busca("Meta da busca automática: " + (cfg.metaBusca === "local" ? "este computador primeiro." : "a rede primeiro."));
+            reg.busca(cfg.metaBusca === "manual" ? "Seleção manual do banco: a busca automática não troca mais o banco."
+                : "Meta da busca automática: " + (cfg.metaBusca === "local" ? "este computador primeiro." : "a rede primeiro."));
             ultimaBuscaAutomatica = 0;
-            if (!cfg.fdbPath || cfg.fbHostAuto) agendar(200);
+            if (cfg.metaBusca !== "manual" && (!cfg.fdbPath || cfg.fbHostAuto)) agendar(200);
         } else if (antes.copiaACadaMin !== cfg.copiaACadaMin || antes.diretoRecarregarSeg !== cfg.diretoRecarregarSeg) {
             if (!ocupado && estado === "pronto") agendar(intervaloNormal());
         }

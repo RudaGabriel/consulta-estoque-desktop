@@ -1,7 +1,7 @@
 "use strict";
 /**
  * config.js
- * @version 1.4.0
+ * @version 1.5.0
  * @author Ruda Gabriel
  * @description Configuração do aplicativo (config.json na pasta de dados):
  *              valores padrão, validação de cada chave e gravação atômica.
@@ -12,16 +12,14 @@
  *
  * @changelog
  *   (Histórico completo das versões: CHANGELOG.md no repositório.)
- *   1.4.0 — Padrões novos: leitura instantânea (metodoCopia "instantaneo"), aceleração
- *           gráfica desligada e volumeSom (volume do bipe, 10 a 100%, público).
- *           config.json antigo (versaoConfig < 3) migra uma vez: "auto" vira
- *           "instantaneo" e a aceleração gráfica é desligada.
+ *   1.5.0 — metaBusca "manual": o administrador informa o servidor e o caminho do
+ *           banco; a busca automática não troca o banco sozinha.
  */
 
 const fs = require("fs");
 const path = require("path");
 
-const VERSAO = "1.4.0";
+const VERSAO = "1.5.0";
 // Versão do formato do config.json (migrações feitas uma vez só).
 const VERSAO_CONFIG = 3;
 
@@ -43,7 +41,7 @@ const ESQUEMA = {
     fbHostFixo:          [false, "bool"],
     fbHostAuto:          [false, "bool"],
     varrerRede:          [true, "bool"],
-    metaBusca:           ["", ["", "rede", "local"]],   // "" = ainda não perguntado (vale "rede")
+    metaBusca:           ["", ["", "rede", "local", "manual"]],   // "" = ainda não perguntado (vale "rede"); "manual" = sem busca automática
     perguntarFirebird:   [true, "bool"],
     gbakPath:            ["", "texto"],
     pastaCopias:         ["", "texto"],

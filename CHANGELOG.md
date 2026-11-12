@@ -7,20 +7,20 @@ Versões em uso hoje:
 
 | Arquivo | Versão |
 |---|---|
-| Aplicativo (`package.json`) | [1.6.2](#aplicativo) |
-| [`main.js`](#mainjs) | 1.5.2 |
+| Aplicativo (`package.json`) | [1.7.0](#aplicativo) |
+| [`main.js`](#mainjs) | 1.5.3 |
 | [`preload.js`](#preloadjs) | 1.5.0 |
-| [`ui/index.html`, `ui/estilo.css`, `ui/app.js`](#ui) | 1.6.1 (`app.js`); 1.4.0 (`index.html`, `estilo.css`) |
-| [`src/motor.js`](#srcmotorjs) | 1.6.1 |
+| [`ui/index.html`, `ui/estilo.css`, `ui/app.js`](#ui) | 1.7.0 (`app.js`); 1.5.0 (`index.html`); 1.4.0 (`estilo.css`) |
+| [`src/motor.js`](#srcmotorjs) | 1.7.0 |
 | [`src/firebird.js`](#srcfirebirdjs) | 1.1.1 |
 | [`src/estoque-dados.js`](#srcestoque-dadosjs) | 1.1.1 |
-| [`src/estoque-busca.js`](#srcestoque-buscajs) | 1.2.0 |
+| [`src/estoque-busca.js`](#srcestoque-buscajs) | 1.3.0 |
 | [`src/localizar-banco.js`](#srclocalizar-bancojs) | 1.5.0 |
 | [`src/caminhos.js`](#srccaminhosjs) | 1.0.0 |
 | [`src/autoexcluir.js`](#srcautoexcluirjs) | 1.0.0 |
 | [`src/instalar-firebird.js`](#srcinstalar-firebirdjs) | 1.2.0 |
 | [`src/copia-gbak.js`](#srccopia-gbakjs) | 1.3.0 |
-| [`src/config.js`](#srcconfigjs) | 1.4.0 |
+| [`src/config.js`](#srcconfigjs) | 1.5.0 |
 | [`src/vigia.js`](#srcvigiajs) | 1.1.0 |
 | [`src/registro.js`](#srcregistrojs) | 1.0.0 |
 | [`src/demo.js`](#srcdemojs) | 1.2.0 |
@@ -36,6 +36,15 @@ Versões em uso hoje:
 ## Aplicativo
 
 Versão do Consulta Estoque (a que aparece no instalador e em *Configurações → Diagnóstico*).
+
+### 1.7.0 — 2026-11-12
+
+**Seleção manual do banco, filtro de peso e textos formais.**
+
+- **"Onde está o banco de dados?"** passa a ter três opções em lista — **Na rede (servidor)**, **Neste computador** e **Seleção manual** — com os botões **Confirmar** e **Decidir mais tarde**. A seleção manual desliga a busca automática (o banco escolhido nunca é trocado) e abre a aba *Banco de dados* no campo do servidor. As mesmas opções aparecem em *Configurações → Banco de dados → Localização do banco de dados*, com a explicação de cada uma.
+- **Filtro de peso na busca:** `racao >9kg` (9 kg ou mais), `racao <500g` (até 500 g), com espaço, vírgula, gramas e junto com o preço. O peso é o escrito na descrição do produto. Faz parte da opção **Filtro de preço e de peso na busca**.
+- **Linguagem formal** nos textos da tela, nas mensagens e no README ("Tentar novamente", "qualquer trecho", "exclui da busca", "Não trocar o servidor automaticamente"...).
+- 79 testes; tela validada no Electron 44 e 22.
 
 ### 1.6.2 — 2026-11-12
 
@@ -154,6 +163,10 @@ Versão do Consulta Estoque (a que aparece no instalador e em *Configurações �
 
 Processo principal (janela, instância única, pasta de dados, IPC).
 
+### 1.5.3 — 2026-11-12
+
+Mensagens em linguagem formal ("Aguarde N s para tentar novamente", "o vigia é encerrado automaticamente").
+
 ### 1.5.2 — 2026-11-12
 
 **Autoexclusão do portátil refeita:** um ajudante próprio (`src/autoexcluir.js`, roda como Node, como o vigia) no lugar do comando PowerShell oculto e codificado (barrado por antivírus). Espera também o lançador do portátil (`process.ppid`), que segura o `.exe` enquanto limpa a pasta temporária; só fecha o aplicativo depois do evento `spawn` do ajudante (falhou → mensagem e o aplicativo continua aberto); o vigia só é avisado depois disso.
@@ -224,6 +237,10 @@ Ponte segura entre a tela e o processo principal.
 
 A tela.
 
+### 1.7.0 (`app.js`) e 1.5.0 (`index.html`) — 2026-11-12
+
+Pergunta "Onde está o banco de dados?" com lista de três opções (`OPCOES_META`: rede, local, manual), "Confirmar" e "Decidir mais tarde"; a seleção manual abre a aba *Banco de dados* no campo do servidor e mantém a tela liberada até as configurações serem fechadas. Campo "Localização do banco de dados" com a opção "Seleção manual" e a dica de cada opção (`#dicaMeta`). Dica e opção do filtro de peso. Textos em linguagem formal.
+
 ### 1.6.1 (`app.js`) — 2026-11-12
 
 Atualizar/F5 no modo Instantâneo pergunta "Ler o estoque do servidor agora?" (botão "Sim, ler agora"), sem falar em cópia; a Cópia do banco continua com "Fazer uma nova cópia do banco agora?". Barra de status com os nomes da tela de modos (instantâneo, cópia do banco, leitura direta).
@@ -261,6 +278,10 @@ Atualizar/F5 no modo Instantâneo pergunta "Ler o estoque do servidor agora?" (b
 ## `src/motor.js`
 
 Modos, atualização, cache em disco e auto-correção do banco.
+
+### 1.7.0 — 2026-11-12
+
+Seleção manual do banco (`metaBusca` "manual"): `buscaLiberada()` falso — sem busca automática na primeira execução, quando o banco falha ou fora da meta; o caminho ainda é procurado no servidor informado e "Procurar o banco" continua a pedido do usuário. Log em linguagem formal.
 
 ### 1.6.1 — 2026-11-12
 
@@ -335,6 +356,10 @@ Comentários sem o nome de nenhum sistema (projeto autônomo e neutro).
 ## `src/estoque-busca.js`
 
 Regras da busca.
+
+### 1.3.0 — 2026-11-12
+
+Filtro de peso: `separarPeso` (">9kg", "> 9 kg", "<=500g", ">1,5KG"; separado antes do preço) e `pesoDaDescricao` (primeiro peso escrito na descrição: "10KG", "10,1 KG", "500G", "80GR", "2X500G"; "500ML" não é peso). Produto sem peso na descrição fica fora do filtro. Ligado com a opção do filtro de preço.
 
 ### 1.2.0 — 2026-11-11
 
@@ -443,6 +468,10 @@ Cópia por gbak.
 ## `src/config.js`
 
 Configuração validada.
+
+### 1.5.0 — 2026-11-12
+
+`metaBusca` aceita "manual" (Seleção manual do banco).
 
 ### 1.4.0 — 2026-11-11
 

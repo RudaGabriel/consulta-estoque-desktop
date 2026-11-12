@@ -1,10 +1,10 @@
 /**
  * estoque-busca.js
- * @version 1.2.0
+ * @version 1.3.0
  * @author Ruda Gabriel
  * @description Regras da busca do estoque, num só lugar (as mesmas da página
- *              de busca do estoque, com o coringa "*" e o filtro de
- *              preço ">valor" / "<valor").
+ *              de busca do estoque, com o coringa "*", o filtro de
+ *              preço ">valor" / "<valor" e o de peso ">9kg" / "<500g").
  *
  * "fonte" é qualquer conjunto de itens que responda:
  *   n                 quantidade de itens
@@ -16,15 +16,15 @@
  *
  * @changelog
  *   (Histórico completo das versões: CHANGELOG.md no repositório.)
- *   1.2.0 — Sem totais de estoque e de valor em estoque na pesquisa (removidos do
- *           aplicativo); textos neutros.
+ *   1.3.0 — Filtro de peso: ">9kg" (9 kg ou mais), "<500g" (500 g ou menos), ">=1,5kg";
+ *           o peso de cada produto é o escrito na descrição ("RAÇÃO 10KG", "SACHÊ 85G").
  */
 (function (raiz, fabrica) {
     if (typeof module === "object" && module.exports) module.exports = fabrica();
     else raiz.EstoqueBusca = fabrica();
 })(typeof self !== "undefined" ? self : this, function () {
     "use strict";
-    var VERSAO = "1.2.0";
+    var VERSAO = "1.3.0";
 
     var semAcento = function (s) { return String(s == null ? "" : s).normalize("NFD").replace(/[̀-ͯ]/g, ""); };
     var normalizar = function (s) { return semAcento(s).toUpperCase().replace(/\s+/g, " ").trim(); };
@@ -66,6 +66,34 @@
         });
         return { texto: resto.replace(/\s+/g, " ").trim(), min: min, max: max };
     }
+    // ">9kg", "> 9 kg", "<=500g", "<1,5 KG"... (unidade grudada ou separada por espaço).
+    var RE_PESO = /(^|\s)([<>]=?)\s*(\d{1,3}(?:\.\d{3})+(?:,\d+)?|\d+(?:[.,]\d+)?)\s*(kgs?|quilos?|kilos?|gramas?|grs?|g)(?=\s|$)/gi;
+    var emKg = function (n, unidade) { return /^(g|grs?|gramas?)$/i.test(unidade) ? n / 1000 : n; };
+    /**
+     * Puro: tira do texto os filtros de peso (em kg). ">" = o peso ou mais, "<" =
+     * o peso ou menos (o próprio peso entra). Devolve { texto, min, max }.
+     */
+    function separarPeso(texto) {
+        var min = null, max = null;
+        var resto = String(texto == null ? "" : texto).replace(RE_PESO, function (_, antes, op, valor, unidade) {
+            var n = lerValor(valor);
+            if (n == null) return _;
+            n = emKg(n, unidade);
+            if (op[0] === ">") min = min == null ? n : Math.max(min, n);
+            else max = max == null ? n : Math.min(max, n);
+            return antes + " ";
+        });
+        return { texto: resto.replace(/\s+/g, " ").trim(), min: min, max: max };
+    }
+    // Peso escrito na descrição: "10KG", "10,1 KG", "1.5KG", "500G", "500GR", "2X500G" (o primeiro que aparecer).
+    var RE_PESO_DESC = /(?:^|[^\d.,])(\d+(?:[.,]\d+)?)\s*(KGS?|QUILOS?|KILOS?|GRAMAS?|GRS?|G)(?![A-Z])/;
+    /** Puro: peso do produto em kg pela descrição, ou null quando ela não traz o peso. */
+    function pesoDaDescricao(desc) {
+        var m = RE_PESO_DESC.exec(normalizar(desc));
+        if (!m) return null;
+        var n = lerValor(m[1]);
+        return n == null ? null : emKg(n, m[2]);
+    }
     /** Puro: termo com "*" vira um teste ("*" = qualquer coisa dentro do mesmo campo). */
     function testeCoringa(termo, soInicioCampo) {
         var partes = String(termo).split("*");
@@ -85,9 +113,11 @@
         var f = filtros || {};
         var coringa = f.coringa !== false;
         var bruto = String(consulta || "").slice(0, 300);
-        var faixa = { min: null, max: null };
-        if (f.preco !== false) { faixa = separarPreco(bruto); bruto = faixa.texto; }
+        var faixa = { min: null, max: null }, peso = { min: null, max: null };
+        // O peso sai antes do preço: em "> 9 kg" o "> 9" não pode virar filtro de preço.
+        if (f.preco !== false) { peso = separarPeso(bruto); bruto = peso.texto; faixa = separarPreco(bruto); bruto = faixa.texto; }
         var comPreco = (faixa.min != null || faixa.max != null) && fonte.temPreco !== false;
+        var comPeso = peso.min != null || peso.max != null;
         var frases = [], excl = [], termos = [];
         var resto = bruto.replace(/"([^"]+)"/g, function (_, x) { var n = normalizar(x); if (n) frases.push(n); return " "; });
         resto.split(/\s+/).forEach(function (t) {
@@ -133,6 +163,11 @@
             if (comPreco) {
                 var pr = num(fonte.val(i, "preco"));
                 if (pr == null || (faixa.min != null && pr < faixa.min) || (faixa.max != null && pr > faixa.max)) continue;
+            }
+            if (comPeso) {
+                // Pequena folga para arredondamentos (0,5 kg digitado × "500G" na descrição).
+                var kg = pesoDaDescricao(fonte.val(i, "descricao"));
+                if (kg == null || (peso.min != null && kg < peso.min - 1e-9) || (peso.max != null && kg > peso.max + 1e-9)) continue;
             }
             if (f.estoque && f.estoque !== "todos" && fonte.temQtd) {
                 var q = num(fonte.val(i, "qtd"));
@@ -200,5 +235,5 @@
         };
     }
 
-    return { VERSAO: VERSAO, normalizar: normalizar, soDigitos: soDigitos, num: num, lerValor: lerValor, separarPreco: separarPreco, filtrar: filtrar, ordenar: ordenar, pesquisar: pesquisar };
+    return { VERSAO: VERSAO, normalizar: normalizar, soDigitos: soDigitos, num: num, lerValor: lerValor, separarPreco: separarPreco, separarPeso: separarPeso, pesoDaDescricao: pesoDaDescricao, filtrar: filtrar, ordenar: ordenar, pesquisar: pesquisar };
 });

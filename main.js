@@ -1,7 +1,7 @@
 "use strict";
 /**
  * main.js
- * @version 1.5.2
+ * @version 1.5.3
  * @author Ruda Gabriel
  * @description Processo principal do Consulta Estoque (Electron): janela em
  *              modo quiosque, senha do administrador, módulo de persistência
@@ -17,10 +17,7 @@
  *
  * @changelog
  *   (Histórico completo das versões: CHANGELOG.md no repositório.)
- *   1.5.2 — Autoexclusão do portátil refeita: um ajudante próprio (Node, como o vigia) no
- *           lugar do comando PowerShell oculto (barrado por antivírus); espera também o
- *           lançador do portátil soltar o .exe, só fecha depois de ver o ajudante de pé
- *           e limpa a pasta temporária onde o portátil abriu.
+ *   1.5.3 — Mensagens em linguagem formal ("tentar novamente").
  */
 
 const { app, BrowserWindow, ipcMain, dialog, shell, screen, powerSaveBlocker } = require("electron");
@@ -388,13 +385,13 @@ if (!INSTANCIA_PRINCIPAL) {
             aplicarJanela(cfg);
             if (antes.iniciarComWindows !== cfg.iniciarComWindows) aplicarInicioComWindows(cfg);
             if (!antes.persistente && cfg.persistente) garantirVigia(cfg);
-            if (antes.persistente && !cfg.persistente) reg.info("Persistência desligada pelo administrador (o vigia encerra sozinho).");
+            if (antes.persistente && !cfg.persistente) reg.info("Persistência desligada pelo administrador (o vigia é encerrado automaticamente).");
             return { ok: true, cfg: configParaTela(), reiniciar: antes.aceleracaoGrafica !== cfg.aceleracaoGrafica };
         });
         tratar("admin:estado", () => estadoAdmin());
         tratar("admin:desbloquear", async senha => {
             const r = await conferirSenha(senha);
-            if (r && r.espera) return { ok: false, mensagem: "Aguarde " + r.espera + " s para tentar de novo." };
+            if (r && r.espera) return { ok: false, mensagem: "Aguarde " + r.espera + " s para tentar novamente." };
             if (!r) return { ok: false, mensagem: "Senha incorreta." };
             desbloqueadoAte = Date.now() + DESBLOQUEIO_MS;
             return { ok: true, estado: estadoAdmin() };
@@ -437,7 +434,7 @@ if (!INSTANCIA_PRINCIPAL) {
         tratar("app:sair", async senha => {
             if (!desbloqueado()) {
                 const r = await conferirSenha(senha);
-                if (r && r.espera) return { ok: false, mensagem: "Aguarde " + r.espera + " s para tentar de novo." };
+                if (r && r.espera) return { ok: false, mensagem: "Aguarde " + r.espera + " s para tentar novamente." };
                 if (!r) return { ok: false, mensagem: "Senha incorreta." };
             }
             sairAutorizado("Sair do aplicativo");
