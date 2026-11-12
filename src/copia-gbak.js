@@ -1,7 +1,7 @@
 "use strict";
 /**
  * copia-gbak.js
- * @version 1.2.0
+ * @version 1.3.0
  * @author Ruda Gabriel
  * @description Cópia do banco pelo gbak: backup
  *              do banco principal SEM coleta de lixo (-g, leitura numa "foto" da
@@ -19,11 +19,9 @@
  *
  * @changelog
  *   (Histórico completo das versões: CHANGELOG.md no repositório.)
- *   1.2.0 — Textos neutros (sem nomes de outros sistemas).
- *   1.1.0 — Andamento com estimativa: o manifesto guarda a duração do backup e da
- *           restauração, e status() devolve inicioEm, etapaDesde e as estimativas
- *           (da última cópia). gbak procurado pelo registro do Windows em vez da
- *           consulta WMI do PowerShell (que levava segundos em PCs antigos).
+ *   1.3.0 — Sem nenhum nome de pasta de terceiros: o Firebird embutido na pasta de
+ *           algum programa é procurado de forma genérica (Program Files\*\Firebird
+ *           e Program Files\*\*\Firebird, com limite e prazo).
  */
 
 const fs = require("fs");
@@ -32,7 +30,7 @@ const os = require("os");
 const cp = require("child_process");
 const { decodificarTexto } = require("./firebird.js");
 
-const VERSAO = "1.2.0";
+const VERSAO = "1.3.0";
 const RE_COPIA = /^SMALL_OFFLINE_\d{8}_\d{6}(?:_\d+)?\.FDB$/i;
 const RE_TEMP = /^SMALL_OFFLINE_\d{8}_\d{6}(?:_\d+)?\.(?:FBK|FDB)\.tmp$/i;
 const MANIFESTO = "copia.json";
@@ -54,6 +52,39 @@ const _execTexto = (exe, args, ms) => new Promise(resolve => {
     } catch (_) { resolve(""); }
 });
 const _existe = async p => { try { return !!p && (await fs.promises.stat(p)).isFile(); } catch (_) { return false; } };
+
+const _pastas = async (dir, prazo) => {
+    if (Date.now() > prazo) return [];
+    try { return (await fs.promises.readdir(dir, { withFileTypes: true })).filter(e => e.isDirectory()).map(e => e.name); }
+    catch (_) { return []; }
+};
+/** Pastas "Firebird" dentro das pastas de programas (dois níveis, com limite e prazo de 5 s). */
+async function _gbakEmbutido(raizes, nome) {
+    const prazo = Date.now() + 5000;
+    const out = [];
+    const vistas = new Set();
+    for (const r of raizes) {
+        const k = String(r).toLowerCase();
+        if (vistas.has(k)) continue;
+        vistas.add(k);
+        const comFirebird = (dir, subs) => {
+            const fb = subs.find(n => /^firebird$/i.test(n));
+            if (fb) out.push(path.join(dir, fb, "bin", nome), path.join(dir, fb, nome));
+        };
+        for (const a of (await _pastas(r, prazo)).slice(0, 300)) {
+            if (/^firebird$/i.test(a)) continue; // instalação comum: já procurada
+            const pa = path.join(r, a);
+            const subs = await _pastas(pa, prazo);
+            comFirebird(pa, subs);
+            for (const b of subs.slice(0, 40)) {
+                if (/^firebird$/i.test(b)) continue;
+                comFirebird(path.join(pa, b), await _pastas(path.join(pa, b), prazo));
+            }
+            if (Date.now() > prazo) break;
+        }
+    }
+    return out;
+}
 
 /**
  * Procura o gbak: configurado → pasta dos serviços do Firebird (registro do
@@ -79,9 +110,9 @@ async function localizarGbak(preferido) {
         for (const r of raizes) {
             ["Firebird_5_0", "Firebird_4_0", "Firebird_3_0", "Firebird_2_5", "Firebird_2_1"].forEach(v => cands.push(path.join(r, "Firebird", v, "bin", nome), path.join(r, "Firebird", v, nome)));
             try { (await fs.promises.readdir(path.join(r, "Firebird"))).forEach(d => cands.push(path.join(r, "Firebird", d, "bin", nome), path.join(r, "Firebird", d, nome))); } catch (_) {}
-            // Firebird embutido na pasta do sistema de gestão (caminho típico; só procura, não mostra).
-            cands.push(path.join(r, "SmallSoft", "Small Commerce", "Firebird", "bin", nome));
         }
+        // Firebird embutido na pasta de algum programa (ex.: Program Files\Sistema\Firebird\bin).
+        for (const c of await _gbakEmbutido(raizes, nome)) cands.push(c);
     } else {
         cands.push("/opt/firebird/bin/gbak", "/usr/bin/gbak", "/usr/local/bin/gbak");
     }
@@ -278,4 +309,4 @@ function criarCopiaGbak(opcoes) {
     };
 }
 
-module.exports = { VERSAO, criarCopiaGbak, localizarGbak, pastaPadrao, alvoGbak, RE_COPIA, RE_TEMP };
+module.exports = { VERSAO, criarCopiaGbak, localizarGbak, _gbakEmbutido, pastaPadrao, alvoGbak, RE_COPIA, RE_TEMP };

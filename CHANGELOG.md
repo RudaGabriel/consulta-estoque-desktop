@@ -7,17 +7,19 @@ Versões em uso hoje:
 
 | Arquivo | Versão |
 |---|---|
-| Aplicativo (`package.json`) | [1.6.0](#aplicativo) |
-| [`main.js`](#mainjs) | 1.5.0 |
+| Aplicativo (`package.json`) | [1.6.1](#aplicativo) |
+| [`main.js`](#mainjs) | 1.5.2 |
 | [`preload.js`](#preloadjs) | 1.5.0 |
 | [`ui/index.html`, `ui/estilo.css`, `ui/app.js`](#ui) | 1.6.0 (`app.js`); 1.4.0 (`index.html`, `estilo.css`) |
 | [`src/motor.js`](#srcmotorjs) | 1.6.0 |
-| [`src/firebird.js`](#srcfirebirdjs) | 1.1.0 |
-| [`src/estoque-dados.js`](#srcestoque-dadosjs) | 1.1.0 |
+| [`src/firebird.js`](#srcfirebirdjs) | 1.1.1 |
+| [`src/estoque-dados.js`](#srcestoque-dadosjs) | 1.1.1 |
 | [`src/estoque-busca.js`](#srcestoque-buscajs) | 1.2.0 |
-| [`src/localizar-banco.js`](#srclocalizar-bancojs) | 1.4.0 |
+| [`src/localizar-banco.js`](#srclocalizar-bancojs) | 1.5.0 |
+| [`src/caminhos.js`](#srccaminhosjs) | 1.0.0 |
+| [`src/autoexcluir.js`](#srcautoexcluirjs) | 1.0.0 |
 | [`src/instalar-firebird.js`](#srcinstalar-firebirdjs) | 1.2.0 |
-| [`src/copia-gbak.js`](#srccopia-gbakjs) | 1.2.0 |
+| [`src/copia-gbak.js`](#srccopia-gbakjs) | 1.3.0 |
 | [`src/config.js`](#srcconfigjs) | 1.4.0 |
 | [`src/vigia.js`](#srcvigiajs) | 1.1.0 |
 | [`src/registro.js`](#srcregistrojs) | 1.0.0 |
@@ -25,7 +27,7 @@ Versões em uso hoje:
 | [`electron-builder.config.js`](#electron-builderconfigjs) | 1.1.0 |
 | [`build/instalador.nsh`](#buildinstaladornsh) | 1.0.0 |
 | [`gerar-instalador.bat`](#gerar-instaladorbat) | 1.0.0 |
-| [`.github/workflows/build.yml`](#githubworkflowsbuildyml) | 1.3.0 |
+| [`.github/workflows/build.yml`](#githubworkflowsbuildyml) | 1.4.1 |
 
 ---
 
@@ -34,6 +36,16 @@ Versões em uso hoje:
 ## Aplicativo
 
 Versão do Consulta Estoque (a que aparece no instalador e em *Configurações → Diagnóstico*).
+
+### 1.6.1 — 2026-11-12
+
+**Correções da remoção da versão portátil e do download.**
+
+- **"Apagar esta versão portátil" funciona de verdade:** a remoção era feita por um comando PowerShell oculto, que o antivírus do Windows costuma barrar quando vem de um programa sem assinatura — o aplicativo fechava e nada era apagado. Agora um ajudante próprio (o mesmo mecanismo do vigia) espera o aplicativo, o vigia e o lançador do portátil fecharem, apaga o `.exe` e os dados (tentando por até 2 minutos se algo estiver preso) e limpa a pasta temporária onde o portátil abriu. O aplicativo só fecha depois de ver o ajudante de pé; se ele não iniciar, avisa e não fecha.
+- Com o `.exe` guardado na raiz de uma unidade (ex.: `D:\`, pendrive), a pasta `ConsultaEstoque-dados` também é apagada (antes ficava para trás).
+- **Release com `SHA256SUMS.txt`:** as "impressões digitais" dos arquivos, para conferir se o download chegou inteiro (o erro "Installer integrity check has failed" é arquivo estragado no download).
+- **Projeto totalmente autônomo e neutro:** nenhum nome de sistema, fabricante, marca ou outro projeto, nem no código. A busca automática do banco ficou genérica: as pastas compartilhadas vêm da lista que o próprio servidor mostra, o caminho no servidor sai da estrutura de pastas deste computador (e das pistas em outras unidades), e o `.ini` do sistema é lido nas pastas de programa achadas na varredura do disco. O Firebird embutido na pasta de algum programa também é achado sem nome fixo. Créditos do autor explícitos no README.
+- 77 testes.
 
 ### 1.6.0 — 2026-11-11
 
@@ -132,6 +144,14 @@ Versão do Consulta Estoque (a que aparece no instalador e em *Configurações �
 ## `main.js`
 
 Processo principal (janela, instância única, pasta de dados, IPC).
+
+### 1.5.2 — 2026-11-12
+
+**Autoexclusão do portátil refeita:** um ajudante próprio (`src/autoexcluir.js`, roda como Node, como o vigia) no lugar do comando PowerShell oculto e codificado (barrado por antivírus). Espera também o lançador do portátil (`process.ppid`), que segura o `.exe` enquanto limpa a pasta temporária; só fecha o aplicativo depois do evento `spawn` do ajudante (falhou → mensagem e o aplicativo continua aberto); o vigia só é avisado depois disso.
+
+### 1.5.1 — 2026-11-11
+
+**Autoexclusão do portátil na raiz de uma unidade:** a pasta de dados passa a ser reconhecida por `dentroDaPasta` (somar a barra a `D:\` dava `D:\\` e nada casava).
 
 ### 1.5.0 — 2026-11-11
 
@@ -263,6 +283,10 @@ Modos, atualização, cache em disco e auto-correção do banco.
 
 Conexão Firebird somente leitura.
 
+### 1.1.1 — 2026-11-12
+
+Comentários sem o nome de nenhum sistema (projeto autônomo e neutro).
+
 ### 1.1.0 — 2026-11-11
 
 **`mensagemDe()`:** o `AggregateError` do Node 18+ (IPv4 e IPv6 falharam, mensagem vazia) vira os motivos de cada tentativa; `tipoErro`/`explicarErro` usam esse texto. Textos neutros.
@@ -277,13 +301,17 @@ Conexão Firebird somente leitura.
 
 Leitura da tabela de produtos.
 
+### 1.1.1 — 2026-11-12
+
+Comentários sem o nome de nenhum sistema (projeto autônomo e neutro).
+
 ### 1.1.0 — 2026-11-11
 
 **Textos neutros** (sem nomes de outros sistemas).
 
 ### 1.0.0 — 2026-11-09
 
-**Primeira versão.** Papéis das colunas pelo catálogo (EAN do Small em `REFERENCIA`), texto como `OCTETS` com repetição sem ele, BLOB binário fora, situação ativo/inativo decidida pelos dados, releitura de um item, cache em disco validado, CSV protegido contra fórmula.
+**Primeira versão.** Papéis das colunas pelo catálogo (EAN em `REFERENCIA`), texto como `OCTETS` com repetição sem ele, BLOB binário fora, situação ativo/inativo decidida pelos dados, releitura de um item, cache em disco validado, CSV protegido contra fórmula.
 
 ---
 
@@ -309,6 +337,10 @@ Regras da busca.
 
 Descoberta automática do banco.
 
+### 1.5.0 — 2026-11-12
+
+**Busca genérica, sem nenhum nome de pasta de fabricante.** Saem as pastas de instalação típicas (locais, de compartilhamento e no servidor) e a pasta de outro projeto da lista de ignoradas. No lugar: pastas compartilhadas listadas pelo servidor (`net view`, também na leitura do `.ini` e em `caminhoNoServidor`, só com a porta 445 aberta); `paisDoNome` + `caminhosDoCompartilhamento(unc, qualquerFdb, estrutura)` — a pasta com o nome do compartilhamento na estrutura deste computador dá o caminho no servidor; `caminhosConhecidos` testa o configurado e as pistas também nas outras unidades (C: a H:) mais `\SMALL.FDB`, `\Dados` e `\Banco`; `.ini` lido nas pastas de programa achadas no disco (com `.ini`/`.cfg` e um `.exe`/`.fdb`); atalhos `.lnk` aceitos por apontarem para a rede (sem filtro de nome); preferência entre `SMALL.FDB` locais só pela data. `lerConfiguracoesSmall` → `lerConfiguracoesSistema`. Nome de produto de VPN trocado por "VPN".
+
 ### 1.4.0 — 2026-11-11
 
 **Textos e mensagens neutros**; os caminhos de pasta típicos continuam só na lista interna da busca.
@@ -327,7 +359,27 @@ Descoberta automática do banco.
 
 ### 1.0.0 — 2026-11-09
 
-**Primeira versão.** Rede primeiro e `127.0.0.1` por último; só `SMALL.FDB`; pistas: `.ini`/`.cfg` locais, das unidades de rede e do compartilhamento do servidor, atalhos `.lnk` do sistema de gestão, nome `SERVIDOR`, varredura (LAN, Tailscale, 169.254); IPs e nome desta máquina nunca contam como servidor; leituras de rede com prazo; unidades de rede/CD fora da busca de `.FDB`.
+**Primeira versão.** Rede primeiro e `127.0.0.1` por último; só `SMALL.FDB`; pistas: `.ini`/`.cfg` locais, das unidades de rede e do compartilhamento do servidor, atalhos `.lnk` do sistema de gestão, nome `SERVIDOR`, varredura (LAN, VPN, 169.254); IPs e nome desta máquina nunca contam como servidor; leituras de rede com prazo; unidades de rede/CD fora da busca de `.FDB`.
+
+---
+
+## `src/caminhos.js`
+
+Comparação de pastas do Windows.
+
+### 1.0.0 — 2026-11-11
+
+**Primeira versão.** `dentroDaPasta(pai, filho)`: sem diferenciar maiúsculas, funciona com a raiz de uma unidade e nunca casa uma pasta de outra unidade ou de nome parecido.
+
+---
+
+## `src/autoexcluir.js`
+
+Ajudante que apaga a versão portátil depois que ela fecha.
+
+### 1.0.0 — 2026-11-12
+
+**Primeira versão.** Copiado para a pasta temporária e iniciado pelo `main.js` (Electron como Node): espera os processos (aplicativo, lançador do portátil, vigia; até 1 min), apaga o `.exe`, a pasta de dados, as cópias e os instaladores baixados (tentando por até 2 min), as sobras de aberturas antigas do portátil (`nsXXXX.tmp` com o pacote deste aplicativo) e a própria cópia; a pasta temporária atual é apagada pelo `cmd` uns segundos depois que ele fecha. Só módulos do Node.
 
 ---
 
@@ -352,6 +404,10 @@ Instalação automática do Firebird neste computador.
 ## `src/copia-gbak.js`
 
 Cópia por gbak.
+
+### 1.3.0 — 2026-11-12
+
+**gbak embutido achado sem nome fixo:** `_gbakEmbutido` procura uma pasta `Firebird` dentro das pastas de programas (`Program Files\*` e `Program Files\*\*`, até 300 × 40 pastas e 5 s), no lugar do caminho típico de um fabricante.
 
 ### 1.2.0 — 2026-11-11
 
@@ -472,6 +528,14 @@ Gera os instaladores com dois cliques.
 ## `.github/workflows/build.yml`
 
 CI.
+
+### 1.4.1 — 2026-11-12
+
+Roda em qualquer branch (`branches: ["**"]`), sem nome de ferramenta no filtro.
+
+### 1.4.0 — 2026-11-12
+
+**`SHA256SUMS.txt` na Release** com a impressão digital de cada `.exe`, e no texto da Release como conferir no PowerShell (`Get-FileHash`) — para quem receber "Installer integrity check has failed" (download estragado).
 
 ### 1.3.0 — 2026-11-10
 

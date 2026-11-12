@@ -57,7 +57,7 @@ test("texto: UTF-8 válido, senão Windows-1252", () => {
     assert.strictEqual(FB.decodificarTexto(Buffer.from([0x80])), "€");
 });
 
-test("dados: lê a tabela com acentos, papéis do Small (EAN em REFERENCIA) e ignora BLOB binário", async () => {
+test("dados: lê a tabela com acentos, papéis das colunas (EAN em REFERENCIA) e ignora BLOB binário", async () => {
     const falso = criarFbFalso({ "h|X.FDB": bancoExemplo() });
     const db = await FB.conectar(FB.blindar(falso, 2), { host: "h", caminho: "X.FDB" }, 2000);
     const r = await Dados.carregarTabela(db, { origem: "h:X.FDB" });
@@ -68,7 +68,7 @@ test("dados: lê a tabela com acentos, papéis do Small (EAN em REFERENCIA) e ig
     assert.strictEqual(r.linhas.length, 15);
     assert.ok(!r.colunas.some(c => c.nome === "FOTO"), "BLOB binário fica fora");
     assert.strictEqual(Dados.resumo(r, 0).descricao, "RAÇÃO GATO 1KG");
-    assert.strictEqual(r.inverterAtivo, true, "no Small, '0' = ativo na maioria");
+    assert.strictEqual(r.inverterAtivo, true, "'0' = ativo na maioria");
     assert.strictEqual(Dados.resumo(r, 0).ativo, true);
     assert.strictEqual(Dados.resumo(r, 2).ativo, false);
     assert.ok(r.octets);
@@ -244,4 +244,21 @@ test("config 3: instantâneo e aceleração gráfica desligada por padrão (migr
     assert.match(FB.mensagemDe(ag), /ECONNREFUSED ::1:3050 \| connect ECONNREFUSED 127\.0\.0\.1:3050/);
     assert.strictEqual(FB.tipoErro(ag), "inacessivel");
     assert.doesNotMatch(FB.explicarErro(new AggregateError([], "")), /AggregateError/);
+});
+
+test("gbak embutido: acha a pasta Firebird dentro de qualquer programa (um ou dois níveis), sem nomes fixos", async () => {
+    const G = require("../src/copia-gbak.js");
+    const raiz = fs.mkdtempSync(path.join(os.tmpdir(), "ced-pf-"));
+    fs.mkdirSync(path.join(raiz, "Sistema", "Loja", "Firebird", "bin"), { recursive: true });
+    fs.mkdirSync(path.join(raiz, "Outro", "firebird"), { recursive: true });
+    fs.mkdirSync(path.join(raiz, "Firebird", "Firebird_3_0"), { recursive: true }); // instalação comum: procurada à parte
+    fs.mkdirSync(path.join(raiz, "Vazio"));
+    const c = await G._gbakEmbutido([raiz, raiz], "gbak.exe");
+    assert.ok(c.includes(path.join(raiz, "Sistema", "Loja", "Firebird", "bin", "gbak.exe")));
+    assert.ok(c.includes(path.join(raiz, "Outro", "firebird", "bin", "gbak.exe")));
+    assert.ok(!c.some(x => x.startsWith(path.join(raiz, "Firebird") + path.sep)), "a pasta Firebird da raiz fica para a procura comum");
+    assert.ok(!c.some(x => x.includes("Vazio")));
+    assert.strictEqual(new Set(c).size, c.length, "raiz repetida não duplica");
+    assert.deepStrictEqual(await G._gbakEmbutido([path.join(raiz, "nao-existe")], "gbak.exe"), []);
+    fs.rmSync(raiz, { recursive: true, force: true });
 });
