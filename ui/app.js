@@ -3,14 +3,14 @@
  * @version 1.7.2
  * @author Ruda Gabriel
  * @description Tela de consulta de preço e estoque, com suporte a leitores de
- *              código de barras e QR Code USB/Bluetooth (que "digitam" o código
- *              e enviam Enter): o campo de busca fica sempre em foco, o texto é
+ *              código de barras USB/Bluetooth em modo teclado (que "digitam" o
+ *              código e enviam Enter): o campo de busca fica sempre em foco, o texto é
  *              selecionado depois de cada leitura (a próxima substitui a
  *              anterior) e o produto lido abre num cartão de preço grande.
  *              Compatível com o Chromium 108 (versão para Windows 7/8).
  * @changelog
  *   (Histórico completo das versões: CHANGELOG.md no repositório.)
- *   1.7.2 — Descrição do arquivo: suporte a leitores de código de barras e QR Code.
+ *   1.7.2 — Descrição do arquivo: suporte a leitores de código de barras em modo teclado.
  */
 (function () {
     "use strict";

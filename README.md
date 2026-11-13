@@ -4,7 +4,7 @@
 
 # 🔎 Consulta Estoque
 
-### Consulta de preço e estoque sobre banco de dados Firebird, compatível com leitores de código de barras e QR Code
+### Consulta de preço e estoque sobre banco de dados Firebird, compatível com leitores de código de barras
 
 <img alt="aplicativo: v1.7.1" src="https://img.shields.io/badge/aplicativo-v1.7.1-2563EB?style=flat">
 <img alt="plataforma: Windows 7 a 11" src="https://img.shields.io/badge/plataforma-Windows%207%20%7C%208%20%7C%2010%20%7C%2011-0078D4?style=flat&logo=data%3Aimage%2Fsvg%2Bxml%3Bbase64%2CPHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHZpZXdCb3g9JzAgMCAyNCAyNCcgZmlsbD0nd2hpdGUnPjxyZWN0IHg9JzMnIHk9JzMnIHdpZHRoPSc4JyBoZWlnaHQ9JzgnLz48cmVjdCB4PScxMycgeT0nMycgd2lkdGg9JzgnIGhlaWdodD0nOCcvPjxyZWN0IHg9JzMnIHk9JzEzJyB3aWR0aD0nOCcgaGVpZ2h0PSc4Jy8%2BPHJlY3QgeD0nMTMnIHk9JzEzJyB3aWR0aD0nOCcgaGVpZ2h0PSc4Jy8%2BPC9zdmc%2B&logoColor=white">
@@ -41,7 +41,7 @@
 
 ## O que é
 
-Um aplicativo de Windows, de **janela própria** (não abre no navegador), para consultar **preço e estoque** dos produtos guardados num banco de dados **Firebird** (arquivo `SMALL.FDB`). Pode ser usado num computador no balcão ou no corredor da loja e é compatível com **leitores de código de barras e QR Code, USB ou Bluetooth**: ao ler o produto, o preço aparece em destaque na tela.
+Um aplicativo de Windows, de **janela própria** (não abre no navegador), para consultar **preço e estoque** dos produtos guardados num banco de dados **Firebird** (arquivo `SMALL.FDB`). Pode ser usado num computador no balcão ou no corredor da loja e é compatível com **leitores de código de barras USB ou Bluetooth** (modo teclado, inclusive leitores 2D): ao ler o produto, o preço aparece em destaque na tela.
 
 | | |
 |---|---|
@@ -148,7 +148,7 @@ Abra com o parâmetro `--demo` (ex.: um atalho para `"Consulta Estoque.exe" --de
 
 <a id="leitor"></a>
 
-## 🏷️ Leitores de código de barras e QR Code (USB ou Bluetooth)
+## 🏷️ Leitores de código de barras (USB ou Bluetooth)
 
 O leitor funciona como um teclado: "digita" o código e envia **Enter**. O aplicativo oferece suporte a esse funcionamento:
 
@@ -160,6 +160,8 @@ O leitor funciona como um teclado: "digita" o código e envia **Enter**. O aplic
 - **Som** (opcional): bipe agudo e **bem audível** quando acha, dois bipes graves quando não acha. O **volume** se ajusta em *Configurações → Tela → Volume do bipe* (com botão **Testar o som**).
 - **Leitor que termina com TAB** em vez de Enter: tratado como Enter (*Configurações → Tela*).
 - **Limpeza automática:** 1 minuto depois da última tecla, leitura ou toque, a busca e o cartão somem e a lista volta ao início (configurável; 0 = nunca).
+
+> 💡 **QR Code:** leitores 2D funcionam normalmente com o código de barras do produto. Um QR Code só é reconhecido quando contém exatamente o código, o EAN ou a referência cadastrados; QR Codes com link (ex.: `https://...`) ou com várias linhas não são reconhecidos.
 
 > 💡 Leitores Bluetooth no modo "HID/teclado" funcionam igual aos USB. Se o leitor estiver em outro modo (porta serial/SPP), mude-o para teclado conforme o manual dele.
 
