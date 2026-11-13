@@ -1,17 +1,16 @@
 /**
  * app.js — Consulta Estoque (tela)
- * @version 1.7.1
+ * @version 1.7.2
  * @author Ruda Gabriel
- * @description Tela de consulta de preço e estoque. Pensada para o leitor de
- *              código de barras USB/Bluetooth (que "digita" o código e manda
- *              Enter): o campo de busca fica sempre em foco, o texto é
+ * @description Tela de consulta de preço e estoque, com suporte a leitores de
+ *              código de barras e QR Code USB/Bluetooth (que "digitam" o código
+ *              e enviam Enter): o campo de busca fica sempre em foco, o texto é
  *              selecionado depois de cada leitura (a próxima substitui a
  *              anterior) e o produto lido abre num cartão de preço grande.
  *              Compatível com o Chromium 108 (versão para Windows 7/8).
  * @changelog
  *   (Histórico completo das versões: CHANGELOG.md no repositório.)
- *   1.7.1 — Versão do aplicativo ao lado do nome (tom discreto); dicas da busca
- *           alinhadas à esquerda.
+ *   1.7.2 — Descrição do arquivo: suporte a leitores de código de barras e QR Code.
  */
 (function () {
     "use strict";
