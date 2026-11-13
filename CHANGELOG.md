@@ -10,7 +10,7 @@ Versões em uso hoje:
 | Aplicativo (`package.json`) | [1.7.1](#aplicativo) |
 | [`main.js`](#mainjs) | 1.5.3 |
 | [`preload.js`](#preloadjs) | 1.5.0 |
-| [`ui/index.html`, `ui/estilo.css`, `ui/app.js`](#ui) | 1.7.1 (`app.js`); 1.5.1 (`index.html`); 1.5.0 (`estilo.css`) |
+| [`ui/index.html`, `ui/estilo.css`, `ui/app.js`](#ui) | 1.7.2 (`app.js`); 1.5.1 (`index.html`); 1.5.0 (`estilo.css`) |
 | [`src/motor.js`](#srcmotorjs) | 1.7.1 |
 | [`src/firebird.js`](#srcfirebirdjs) | 1.1.1 |
 | [`src/estoque-dados.js`](#srcestoque-dadosjs) | 1.2.0 |
@@ -246,6 +246,10 @@ Ponte segura entre a tela e o processo principal.
 ## `ui/index.html`, `ui/estilo.css`, `ui/app.js`
 
 A tela.
+
+### 1.7.2 (`app.js`) — 2026-11-13
+
+Só o comentário de descrição: o aplicativo tem suporte a leitores de código de barras em modo teclado, inclusive 2D (não foi feito exclusivamente para eles). README, descrição do `package.json` e regras do projeto ajustados no mesmo sentido; o README explica o limite do QR Code (só quando contém exatamente o código, o EAN ou a referência; links e várias linhas não são reconhecidos).
 
 ### 1.7.1 (`app.js`), 1.5.1 (`index.html`) e 1.5.0 (`estilo.css`) — 2026-11-12
 

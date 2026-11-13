@@ -2,7 +2,7 @@
   "name": "consulta-estoque-desktop",
   "productName": "Consulta Estoque",
   "version": "1.7.1",
-  "description": "Consulta de preço e estoque para Windows sobre banco Firebird: acha o banco sozinho na rede, leitor de código de barras USB/Bluetooth, leitura instantânea, cópia do banco ou leitura direta.",
+  "description": "Consulta de preço e estoque para Windows sobre banco Firebird, com localização automática do banco na rede, compatível com leitores de código de barras USB ou Bluetooth e modos Instantâneo, Cópia do banco e Leitura direta.",
   "private": true,
   "main": "main.js",
   "author": "Ruda Gabriel",
