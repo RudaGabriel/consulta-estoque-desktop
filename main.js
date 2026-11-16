@@ -1,7 +1,7 @@
 "use strict";
 /**
  * main.js
- * @version 1.5.3
+ * @version 1.5.4
  * @author Ruda Gabriel
  * @description Processo principal do Consulta Estoque (Electron): janela em
  *              modo quiosque, senha do administrador, módulo de persistência
@@ -17,7 +17,8 @@
  *
  * @changelog
  *   (Histórico completo das versões: CHANGELOG.md no repositório.)
- *   1.5.3 — Mensagens em linguagem formal ("tentar novamente").
+ *   1.5.4 — "copia:adiar-agenda": grava "Decidir mais tarde" da agenda da Cópia do banco
+ *           sem exigir a senha (só desliga a pergunta na abertura).
  */
 
 const { app, BrowserWindow, ipcMain, dialog, shell, screen, powerSaveBlocker } = require("electron");
@@ -511,6 +512,12 @@ if (!INSTANCIA_PRINCIPAL) {
             const versoes = motor.status().firebird || {};
             if (!suportado) return Object.assign(base, { instalado: true, ligado: false, versoes });
             return Object.assign(base, await motor.firebirdLocal(), { versoes: motor.status().firebird || versoes });
+        });
+        tratar("copia:adiar-agenda", () => {
+            // Só registra "Decidir mais tarde" da agenda da Cópia do banco (não muda a cópia): não precisa da senha.
+            motor.salvarConfig({ copiaAgendaAdiada: true });
+            reg.info("Agenda da Cópia do banco: decisão adiada (pode ser definida em Configurações → Consulta).");
+            return { ok: true };
         });
         tratar("firebird:nao-perguntar", () => {
             // Só desliga a pergunta (não abre nada nem muda o banco): não precisa da senha.

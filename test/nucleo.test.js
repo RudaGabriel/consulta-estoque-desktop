@@ -315,6 +315,7 @@ test("config: agenda da Cópia do banco (intervalo ou uma vez ao dia) e cálculo
     const c = Config.padrao();
     assert.strictEqual(c.copiaAgenda, "", "ainda não escolhida");
     assert.strictEqual(c.copiaHorario, "");
+    assert.strictEqual(c.copiaAgendaAdiada, false, "\"Decidir mais tarde\" ainda não usado");
     assert.strictEqual(Config.validarValor("copiaAgenda", "semanal"), "");
     assert.strictEqual(Config.validarValor("copiaHorario", "6:05"), "06:05");
     assert.strictEqual(Config.validarValor("copiaHorario", "25:00"), "");

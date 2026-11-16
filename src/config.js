@@ -14,7 +14,8 @@
  *   (Histórico completo das versões: CHANGELOG.md no repositório.)
  *   1.6.0 — Agenda da Cópia do banco: copiaAgenda ("" = ainda não escolhida,
  *           "intervalo" ou "diaria") e copiaHorario ("HH:MM"); agendaDiaria(cfg),
- *           msAteHorario(hhmm, agora) e ultimaOcorrencia(hhmm, agora).
+ *           msAteHorario(hhmm, agora) e ultimaOcorrencia(hhmm, agora); copiaAgendaAdiada
+ *           ("Decidir mais tarde" fica gravado e a abertura não pergunta de novo).
  */
 
 const fs = require("fs");
@@ -33,6 +34,7 @@ const ESQUEMA = {
     copiaTimeoutMin:     [30, "int", 1, 360],
     copiaAgenda:         ["", ["", "intervalo", "diaria"]],   // Cópia do banco: "" = ainda não escolhida (vale "intervalo")
     copiaHorario:        ["", "hora"],                          // Cópia do banco uma vez ao dia: "HH:MM"
+    copiaAgendaAdiada:   [false, "bool"],                       // "Decidir mais tarde": a abertura não pergunta mais a agenda
     diretoRecarregarSeg: [60, "int", 15, 3600],
     diretoItemAoVivo:    [true, "bool"],
     // Banco de dados

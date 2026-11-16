@@ -31,6 +31,8 @@
  *           copiaHorario) agenda a próxima cópia para o horário escolhido; depois
  *           de uma cópia, a seguinte nunca fica a menos de 1 hora (vai para o dia
  *           seguinte). Ao abrir, a cópia salva depois do último horário é mantida.
+ *           Esperas longas são rearmadas de hora em hora contra o horário-alvo
+ *           (suspensão do computador ou ajuste do relógio não atrasam a cópia).
  */
 
 const fs = require("fs");
@@ -362,12 +364,24 @@ function criarMotor(dep) {
     }
 
     // ── Ciclo de atualização ──────────────────────────────────────────────────
+    // Esperas longas (ex.: cópia diária, até ~25 h) são rearmadas de hora em hora contra o
+    // horário-alvo: suspensão do computador ou ajuste do relógio não atrasam a atualização.
+    const PASSO_TIMER_MS = 60 * 60000;
+    const armar = () => {
+        const falta = proximaEm - Date.now();
+        timer = setTimeout(() => {
+            timer = null;
+            if (encerrado) return;
+            if (proximaEm - Date.now() > 1000) { armar(); return; }
+            ciclo().catch(() => {});
+        }, Math.max(0, Math.min(falta, PASSO_TIMER_MS)));
+        if (timer.unref) timer.unref();
+    };
     const agendar = ms => {
         if (timer) clearTimeout(timer);
         if (encerrado) return;
         proximaEm = Date.now() + ms;
-        timer = setTimeout(() => { timer = null; ciclo().catch(() => {}); }, ms);
-        if (timer.unref) timer.unref();
+        armar();
         emitir();
     };
     /** Próxima atualização. aposCopia: acabou de copiar (a seguinte nunca fica a menos de 1 h). */

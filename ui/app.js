@@ -12,7 +12,10 @@
  *   (Histórico completo das versões: CHANGELOG.md no repositório.)
  *   1.8.0 — Agenda da Cópia do banco: no primeiro uso, pergunta se a cópia é feita em
  *           intervalos de horas (e quantas) ou uma vez ao dia (e o horário); a mesma
- *           opção fica em Configurações → Consulta. Atualizar/F5 informa "amanhã às".
+ *           opção fica em Configurações → Consulta. Na abertura, só com a tela liberada
+ *           (nunca prende a tela pública); "Decidir mais tarde" fica gravado. Com
+ *           senha, o administrador é perguntado uma vez ao abrir a aba Consulta.
+ *           Atualizar/F5 informa a data quando a próxima cópia é em outro dia.
  */
 (function () {
     "use strict";
@@ -498,6 +501,17 @@
     }
     function trocarAba(aba) {
         estado.aba = aba;
+        // Cópia do banco sem agenda (ex.: atualizado de uma versão anterior, com senha): pergunta
+        // uma vez ao administrador, com a tela já liberada; a resposta preenche os campos.
+        if (aba === "consulta" && agendaPendente() && livre() && !estado.agendaDefinida && !estado.agendaPerguntadaAba) {
+            estado.agendaPerguntadaAba = true;
+            setTimeout(async function () {
+                if (estado.aba !== "consulta" || !estado.painel) return;
+                var a = await perguntarAgendaCopia();
+                if (a) { aplicarAgendaNoFormulario(a); toast("Agenda escolhida. Clique em Salvar para confirmar.", 5000); }
+                else await adiarAgenda();
+            }, 150);
+        }
         var botoes = $("abas").querySelectorAll("button");
         for (var i = 0; i < botoes.length; i++) botoes[i].classList.toggle("ativa", botoes[i].getAttribute("data-aba") === aba);
         desenharTrava();
@@ -896,12 +910,26 @@
         estado.agendaDefinida = true;
         marcarModo();
     }
-    /** Abertura com a Cópia do banco ainda sem agenda escolhida: pergunta e salva. */
-    async function talvezPerguntarAgenda() {
+    /** A agenda ainda precisa ser perguntada? (Cópia do banco, sem agenda, não adiada.) */
+    function agendaPendente() {
         var c = estado.cfg || {};
-        if (c.modo !== "copia" || c.metodoCopia === "instantaneo" || c.copiaAgenda) return;
+        return c.modo === "copia" && c.metodoCopia !== "instantaneo" && !c.copiaAgenda && !c.copiaAgendaAdiada;
+    }
+    /** "Decidir mais tarde": fica gravado (a pergunta não volta a cada abertura). */
+    async function adiarAgenda() {
+        try { await api.adiarAgendaCopia(); } catch (_) {}
+        if (estado.cfg) estado.cfg.copiaAgendaAdiada = true;
+        toast("A agenda da cópia pode ser definida em Configurações → Consulta.", 5000);
+    }
+    /**
+     * Abertura com a Cópia do banco ainda sem agenda: pergunta e salva. Só com a tela
+     * liberada (sem senha, ou desbloqueada): com senha, a tela pública nunca fica presa
+     * na pergunta — o administrador responde na aba Consulta.
+     */
+    async function talvezPerguntarAgenda() {
+        if (!agendaPendente() || !livre()) return;
         var a = await perguntarAgendaCopia();
-        if (!a) return;
+        if (!a) { await adiarAgenda(); return; }
         if (!(await garantirAdmin("Digite a senha do administrador para salvar a agenda da cópia."))) return;
         if (await salvarConfig(a, false)) toast(a.copiaAgenda === "diaria" ? "A cópia do banco será feita uma vez ao dia, às " + a.copiaHorario + "." : "A cópia do banco será feita a cada " + (a.copiaACadaMin / 60) + " hora(s).", 5000);
     }
@@ -1154,6 +1182,7 @@
         if (!cartaoCopia.checked || estado.agendaDefinida || !livre()) return;
         var a = await perguntarAgendaCopia();
         if (a) aplicarAgendaNoFormulario(a);
+        else if (!(estado.cfg && estado.cfg.copiaAgendaAdiada)) await adiarAgenda();
     });
     $("bDesbloquear").addEventListener("click", desbloquear);
     $("travaSenha").addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); desbloquear(); } });

@@ -1,14 +1,14 @@
 "use strict";
 /**
  * preload.js
- * @version 1.5.0
+ * @version 1.6.0
  * @author Ruda Gabriel
  * @description Ponte segura entre a tela e o processo principal: expõe só as
  *              funções da consulta (window.consulta), nunca o Node inteiro.
  *
  * @changelog
  *   (Histórico completo das versões: CHANGELOG.md no repositório.)
- *   1.5.0 — autoexcluir (apaga a versão portátil e os dados dela).
+ *   1.6.0 — adiarAgendaCopia ("Decidir mais tarde" da agenda da Cópia do banco).
  */
 const { contextBridge, ipcRenderer } = require("electron");
 
@@ -46,6 +46,7 @@ contextBridge.exposeInMainWorld("consulta", {
     firebirdEstado: () => ipcRenderer.invoke("firebird:estado"),
     instalarFirebird: o => ipcRenderer.invoke("firebird:instalar", o || {}),
     firebirdNaoPerguntar: () => ipcRenderer.invoke("firebird:nao-perguntar"),
+    adiarAgendaCopia: () => ipcRenderer.invoke("copia:adiar-agenda"),
     outrosFdb: () => ipcRenderer.invoke("banco:outros"),
     usarBanco: p => ipcRenderer.invoke("banco:usar", p),
     aoEtapaFirebird: f => ouvir("firebird:etapa", f),
