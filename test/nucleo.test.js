@@ -310,3 +310,27 @@ test("dados: itens sem descrição (cadastros vazios) são ignorados ao montar o
     const volta = Dados.doDisco(JSON.parse(JSON.stringify(Dados.paraDisco(r))));
     assert.strictEqual(volta.linhas.length, 15, "estoque salvo em disco também sem os vazios");
 });
+
+test("config: agenda da Cópia do banco (intervalo ou uma vez ao dia) e cálculo do próximo horário", () => {
+    const c = Config.padrao();
+    assert.strictEqual(c.copiaAgenda, "", "ainda não escolhida");
+    assert.strictEqual(c.copiaHorario, "");
+    assert.strictEqual(Config.validarValor("copiaAgenda", "semanal"), "");
+    assert.strictEqual(Config.validarValor("copiaHorario", "6:05"), "06:05");
+    assert.strictEqual(Config.validarValor("copiaHorario", "25:00"), "");
+    assert.ok(Config.SENSIVEIS.includes("copiaAgenda") && Config.SENSIVEIS.includes("copiaHorario"), "só com a senha do administrador");
+    const gbak = { modo: "copia", metodoCopia: "auto", copiaAgenda: "diaria", copiaHorario: "06:00" };
+    assert.strictEqual(Config.agendaDiaria(gbak), true);
+    assert.strictEqual(Config.agendaDiaria(Object.assign({}, gbak, { metodoCopia: "instantaneo" })), false, "só na Cópia do banco");
+    assert.strictEqual(Config.agendaDiaria(Object.assign({}, gbak, { modo: "direto" })), false);
+    assert.strictEqual(Config.agendaDiaria(Object.assign({}, gbak, { copiaHorario: "" })), false, "sem horário vale o intervalo");
+    const agora = new Date(2026, 10, 16, 2, 30).getTime();
+    const h = n => n * 3600000;
+    assert.strictEqual(Config.msAteHorario("03:00", agora), h(0.5), "ainda hoje");
+    assert.strictEqual(Config.msAteHorario("02:00", agora), h(23.5), "já passou: amanhã");
+    assert.strictEqual(Config.msAteHorario("02:30", agora), h(24), "o próprio minuto conta como passado");
+    assert.strictEqual(Config.msAteHorario("03:00", agora, h(1)), h(24.5), "menos de 1 h depois de uma cópia: dia seguinte");
+    assert.strictEqual(Config.msAteHorario("abc", agora), null);
+    assert.strictEqual(Config.ultimaOcorrencia("03:00", agora), new Date(2026, 10, 15, 3, 0).getTime(), "ontem");
+    assert.strictEqual(Config.ultimaOcorrencia("02:00", agora), new Date(2026, 10, 16, 2, 0).getTime(), "hoje");
+});

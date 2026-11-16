@@ -1,6 +1,6 @@
 /**
  * app.js — Consulta Estoque (tela)
- * @version 1.7.2
+ * @version 1.8.0
  * @author Ruda Gabriel
  * @description Tela de consulta de preço e estoque, com suporte a leitores de
  *              código de barras USB/Bluetooth em modo teclado (que "digitam" o
@@ -10,7 +10,9 @@
  *              Compatível com o Chromium 108 (versão para Windows 7/8).
  * @changelog
  *   (Histórico completo das versões: CHANGELOG.md no repositório.)
- *   1.7.2 — Descrição do arquivo: suporte a leitores de código de barras em modo teclado.
+ *   1.8.0 — Agenda da Cópia do banco: no primeiro uso, pergunta se a cópia é feita em
+ *           intervalos de horas (e quantas) ou uma vez ao dia (e o horário); a mesma
+ *           opção fica em Configurações → Consulta. Atualizar/F5 informa "amanhã às".
  */
 (function () {
     "use strict";
@@ -560,6 +562,15 @@
         for (var i = 0; i < cards.length; i++) cards[i].classList.toggle("marcado", cards[i].querySelector("input").checked);
         $("gCopia").hidden = v === "direto";
         $("gDireto").hidden = v !== "direto";
+        // Agenda: só a Cópia do banco (o Instantâneo é leve e usa o intervalo).
+        var copia = v === "copia", diaria = copia && $("cfgAgenda").value === "diaria";
+        $("gAgenda").hidden = !copia;
+        $("lHorario").hidden = !diaria;
+        $("lCopiaMin").hidden = diaria;
+        $("tCopiaMin").textContent = copia ? "Copiar a cada (minutos — 180 = 3 horas)" : "Atualizar a cada (minutos — 180 = 3 horas)";
+        $("dicaAgenda").textContent = diaria
+            ? "A cópia é feita uma vez por dia, no horário definido. Se o computador estiver desligado nesse horário, a cópia é feita ao abrir o aplicativo."
+            : "A cópia é feita a cada intervalo definido abaixo (no mínimo 3 vezes a duração da última cópia).";
     }
 
     function preencherMonitores(atual) {
@@ -577,8 +588,10 @@
         var r = document.querySelector('input[name="modo"][value="' + escolha + '"]');
         if (r) r.checked = true;
         estado.metodoCopiaAtual = c.metodoCopia;
-        marcarModo();
         $("cfgCopiaMin").value = c.copiaACadaMin;
+        $("cfgAgenda").value = c.copiaAgenda === "diaria" ? "diaria" : "intervalo";
+        $("cfgHorario").value = c.copiaHorario || "";
+        estado.agendaDefinida = !!c.copiaAgenda;
         $("cfgDiretoSeg").value = c.diretoRecarregarSeg; $("cfgAoVivo").checked = c.diretoItemAoVivo;
         $("cfgHost").value = c.fbHost; $("cfgPorta").value = c.fbPorta; $("cfgPath").value = c.fdbPath;
         $("cfgUser").value = c.fbUser; $("cfgPass").value = c.fbPass == null ? "" : c.fbPass; $("cfgPass").type = "password";
@@ -593,6 +606,7 @@
         $("cfgFoco").checked = c.manterFoco; $("cfgDescanso").checked = c.impedirDescanso; $("cfgBarra").checked = c.ocultarBarraTarefas;
         $("cfgCursor").checked = c.ocultarCursor; $("cfgReiniciar").value = c.reiniciarDiario || ""; $("cfgGpu").checked = c.aceleracaoGrafica;
         preencherMonitores(c.monitor);
+        marcarModo();
         estado.fbPassCarregada = c.fbPass != null;
     }
 
@@ -623,6 +637,11 @@
             ocultarCursor: $("cfgCursor").checked, reiniciarDiario: $("cfgReiniciar").value, monitor: Number($("cfgMonitor").value) || 0,
             aceleracaoGrafica: $("cfgGpu").checked
         });
+        // Agenda da Cópia do banco: só quando escolhida (pela pergunta ou pelos campos).
+        if (escolha === "copia" && estado.agendaDefinida) {
+            o.copiaAgenda = $("cfgAgenda").value;
+            o.copiaHorario = $("cfgHorario").value;
+        }
         // Só envia a senha do Firebird se ela foi carregada (nunca apaga por engano).
         if (estado.fbPassCarregada) o.fbPass = $("cfgPass").value;
         return o;
@@ -826,6 +845,67 @@
         return meta;
     }
 
+    // ── Agenda da Cópia do banco (primeiro uso) ──
+    /** Pergunta como a Cópia do banco é agendada. Resolve { copiaAgenda, copiaACadaMin | copiaHorario } ou null. */
+    async function perguntarAgendaCopia() {
+        var tipo = await perguntar({
+            titulo: "Quando fazer a cópia do banco?",
+            texto: "A Cópia do banco copia o banco de dados inteiro do servidor para este computador e leva alguns minutos. Escolha quando ela deve ser feita. A escolha pode ser alterada em Configurações → Consulta.",
+            lista: [
+                { valor: "intervalo", titulo: "Em intervalos de horas", texto: "A cópia é feita a cada intervalo definido (ex.: a cada 3 horas)." },
+                { valor: "diaria", titulo: "Uma vez ao dia", texto: "A cópia é feita uma vez por dia, no horário definido (ex.: 06:00, antes da abertura da loja)." }
+            ],
+            ok: "Continuar", cancelar: "Decidir mais tarde"
+        });
+        if (tipo == null) return null;
+        var c = estado.cfg || {};
+        if (tipo === "intervalo") {
+            var horasAtuais = Math.max(1, Math.round((Number(c.copiaACadaMin) || 180) / 60));
+            var rh = await perguntar({
+                titulo: "Intervalo entre as cópias",
+                texto: "Informe de quantas em quantas horas a cópia do banco deve ser feita (de 1 a 24).",
+                campo: { valor: String(horasAtuais), placeholder: "Ex.: 3" }, ok: "Confirmar", cancelar: "Cancelar",
+                validar: function (_s, _s2, _e, v) {
+                    var n = Number(String(v || "").trim().replace(",", "."));
+                    return Number.isInteger(n) && n >= 1 && n <= 24 ? null : "Informe um número inteiro de horas, de 1 a 24.";
+                }
+            });
+            if (!rh) return null;
+            return { copiaAgenda: "intervalo", copiaACadaMin: Number(String(rh.campo).trim().replace(",", ".")) * 60 };
+        }
+        var rd = await perguntar({
+            titulo: "Horário da cópia diária",
+            texto: "Informe o horário da cópia diária, no formato HH:MM (ex.: 06:00). De preferência, um horário com o computador ligado e pouco movimento no caixa.",
+            campo: { valor: c.copiaHorario || "06:00", placeholder: "HH:MM" }, ok: "Confirmar", cancelar: "Cancelar",
+            validar: function (_s, _s2, _e, v) { return normalizarHora(v) ? null : "Informe um horário válido, no formato HH:MM (de 00:00 a 23:59)."; }
+        });
+        if (!rd) return null;
+        return { copiaAgenda: "diaria", copiaHorario: normalizarHora(rd.campo) };
+    }
+    /** "6:5" não; "6:05" → "06:05"; inválido → "". */
+    function normalizarHora(v) {
+        var m = /^\s*(\d{1,2}):(\d{2})\s*$/.exec(String(v == null ? "" : v));
+        if (!m || Number(m[1]) > 23 || Number(m[2]) > 59) return "";
+        return (m[1].length < 2 ? "0" : "") + m[1] + ":" + m[2];
+    }
+    /** Aplica a agenda escolhida nos campos da aba Consulta (sem salvar). */
+    function aplicarAgendaNoFormulario(a) {
+        $("cfgAgenda").value = a.copiaAgenda;
+        if (a.copiaHorario) $("cfgHorario").value = a.copiaHorario;
+        if (a.copiaACadaMin) $("cfgCopiaMin").value = a.copiaACadaMin;
+        estado.agendaDefinida = true;
+        marcarModo();
+    }
+    /** Abertura com a Cópia do banco ainda sem agenda escolhida: pergunta e salva. */
+    async function talvezPerguntarAgenda() {
+        var c = estado.cfg || {};
+        if (c.modo !== "copia" || c.metodoCopia === "instantaneo" || c.copiaAgenda) return;
+        var a = await perguntarAgendaCopia();
+        if (!a) return;
+        if (!(await garantirAdmin("Digite a senha do administrador para salvar a agenda da cópia."))) return;
+        if (await salvarConfig(a, false)) toast(a.copiaAgenda === "diaria" ? "A cópia do banco será feita uma vez ao dia, às " + a.copiaHorario + "." : "A cópia do banco será feita a cada " + (a.copiaACadaMin / 60) + " hora(s).", 5000);
+    }
+
     async function instalarFirebird(opcoes) {
         var trocar = !!(opcoes && opcoes.trocar);
         if (!(await garantirAdmin("Digite a senha do administrador para " + (trocar ? "trocar" : "instalar") + " o Firebird."))) return;
@@ -1025,12 +1105,14 @@
             var est = s.copia && s.copia.estimativaMs > 0 ? s.copia.estimativaMs : 0;
             var proxima = s.proximaEm && s.proximaEm > Date.now() ? new Date(s.proximaEm) : null;
             var hora = proxima ? String(proxima.getHours()).padStart(2, "0") + ":" + String(proxima.getMinutes()).padStart(2, "0") : "";
+            // Mesmo dia: "para as 06:30"; outro dia: "para 17/11/2026, às 06:30".
+            if (hora) hora = proxima.toDateString() !== new Date().toDateString() ? proxima.toLocaleDateString("pt-BR") + ", às " + hora : "as " + hora;
             var texto = gbak
                 ? "Isto faz agora uma CÓPIA COMPLETA do banco de dados: backup no servidor e restauração neste computador. " +
                   (est ? "A última cópia levou cerca de " + fmtDuracao(est) + ". " : "Pode levar alguns minutos. ") +
                   "Enquanto copia, o servidor do caixa fica um pouco mais lento; a consulta continua funcionando com o estoque atual."
                 : "Isto lê agora a tabela de produtos no servidor (leitura instantânea). Leva alguns segundos e a consulta continua funcionando.";
-            if (hora) texto += (gbak ? " A próxima cópia automática já está marcada para as " : " A próxima leitura automática já está marcada para as ") + hora + ".";
+            if (hora) texto += (gbak ? " A próxima cópia automática já está marcada para " : " A próxima leitura automática já está marcada para ") + hora + ".";
             var ok = await perguntar(gbak
                 ? { titulo: "Fazer uma nova cópia do banco agora?", texto: texto, ok: "Sim, copiar agora", cancelar: "Não" }
                 : { titulo: "Ler o estoque do servidor agora?", texto: texto, ok: "Sim, ler agora", cancelar: "Não" });
@@ -1054,7 +1136,25 @@
     $("fundo").addEventListener("click", fecharPainel);
     $("bFecharPainel").addEventListener("click", fecharPainel);
     $("bCancelar").addEventListener("click", fecharPainel);
-    $("bSalvar").addEventListener("click", function () { salvarConfig(lerFormulario(), true); });
+    $("bSalvar").addEventListener("click", function () {
+        var o = lerFormulario();
+        if (o.copiaAgenda === "diaria" && !normalizarHora(o.copiaHorario)) {
+            toast("Informe o horário da cópia diária (Configurações → Consulta).", 5000);
+            trocarAba("consulta");
+            setTimeout(function () { try { $("cfgHorario").focus(); } catch (_) {} }, 50);
+            return;
+        }
+        salvarConfig(o, true);
+    });
+    $("cfgAgenda").addEventListener("change", function () { estado.agendaDefinida = true; marcarModo(); });
+    $("cfgHorario").addEventListener("change", function () { estado.agendaDefinida = true; });
+    // Primeiro uso da Cópia do banco (ainda sem agenda): pergunta ao escolher o cartão.
+    var cartaoCopia = document.querySelector('input[name="modo"][value="copia"]');
+    if (cartaoCopia) cartaoCopia.addEventListener("change", async function () {
+        if (!cartaoCopia.checked || estado.agendaDefinida || !livre()) return;
+        var a = await perguntarAgendaCopia();
+        if (a) aplicarAgendaNoFormulario(a);
+    });
     $("bDesbloquear").addEventListener("click", desbloquear);
     $("travaSenha").addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); desbloquear(); } });
     var radios = document.querySelectorAll('input[name="modo"]');
@@ -1193,6 +1293,8 @@
                 if (!c.metaBusca && (recemCriada || !st.fonte)) metaEscolhida = await perguntarMeta();
                 // O Firebird deste computador só interessa à cópia completa (gbak).
                 if (c.modo === "copia" && c.metodoCopia !== "instantaneo") await perguntarFirebird(false);
+                // Cópia do banco sem agenda escolhida: intervalos de horas ou uma vez ao dia.
+                await talvezPerguntarAgenda();
             }
             // Configuração inicial terminou: com senha, a tela volta a ser pública.
             // Exceção: "Seleção manual" abriu a aba Banco de dados para o administrador preencher;

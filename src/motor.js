@@ -1,7 +1,7 @@
 "use strict";
 /**
  * motor.js
- * @version 1.7.1
+ * @version 1.8.0
  * @author Ruda Gabriel
  * @description O coração do aplicativo: mantém o estoque em memória e atualizado
  *              conforme o modo escolhido, acha o banco sozinho e responde às
@@ -27,7 +27,10 @@
  *
  * @changelog
  *   (Histórico completo das versões: CHANGELOG.md no repositório.)
- *   1.7.1 — O log "Estoque carregado" informa os itens sem descrição ignorados.
+ *   1.8.0 — Agenda da Cópia do banco: "uma vez ao dia" (copiaAgenda "diaria" +
+ *           copiaHorario) agenda a próxima cópia para o horário escolhido; depois
+ *           de uma cópia, a seguinte nunca fica a menos de 1 hora (vai para o dia
+ *           seguinte). Ao abrir, a cópia salva depois do último horário é mantida.
  */
 
 const fs = require("fs");
@@ -41,7 +44,7 @@ const Localizar = require("./localizar-banco.js");
 const Copia = require("./copia-gbak.js");
 const InstalarFb = require("./instalar-firebird.js");
 
-const VERSAO = "1.7.1";
+const VERSAO = "1.8.0";
 const ARQ_CACHE = "estoque-cache.json.gz";
 const CHAVES_CONEXAO = ["modo", "metodoCopia", "fbHost", "fbPorta", "fdbPath", "fbUser", "fbPass", "gbakPath", "pastaCopias", "copiaTimeoutMin"];
 
@@ -367,8 +370,14 @@ function criarMotor(dep) {
         if (timer.unref) timer.unref();
         emitir();
     };
-    const intervaloNormal = () => {
+    /** Próxima atualização. aposCopia: acabou de copiar (a seguinte nunca fica a menos de 1 h). */
+    const intervaloNormal = aposCopia => {
         if (cfg.modo === "direto") return cfg.diretoRecarregarSeg * 1000;
+        // Cópia do banco uma vez ao dia: no horário escolhido.
+        if (Config.agendaDiaria(cfg)) {
+            const ms = Config.msAteHorario(cfg.copiaHorario, Date.now(), aposCopia ? 60 * 60000 : 0);
+            if (ms != null) return ms;
+        }
         const base = cfg.copiaACadaMin * 60000;
         // Nunca ocupa o banco do caixa mais que 1/3 do tempo.
         return metodoEfetivo === "gbak" ? Math.max(base, 3 * duracaoUltimaCopia) : base;
@@ -455,7 +464,7 @@ function criarMotor(dep) {
             ultimoErro = null;
             tipoUltimoErro = null;
             definir("pronto", "Estoque atualizado.");
-            agendar(intervaloNormal());
+            agendar(intervaloNormal(true));
             // Banco adotado sozinho NESTA máquina (ou que não é SMALL.FDB): a meta é
             // a rede — procura o servidor em segundo plano e troca se achar.
             const ident = Localizar.identidadesDestaMaquina();
@@ -604,7 +613,9 @@ function criarMotor(dep) {
                 : "Meta da busca automática: " + (cfg.metaBusca === "local" ? "este computador primeiro." : "a rede primeiro."));
             ultimaBuscaAutomatica = 0;
             if (cfg.metaBusca !== "manual" && (!cfg.fdbPath || cfg.fbHostAuto)) agendar(200);
-        } else if (antes.copiaACadaMin !== cfg.copiaACadaMin || antes.diretoRecarregarSeg !== cfg.diretoRecarregarSeg) {
+        } else if (antes.copiaACadaMin !== cfg.copiaACadaMin || antes.diretoRecarregarSeg !== cfg.diretoRecarregarSeg ||
+                   antes.copiaAgenda !== cfg.copiaAgenda || antes.copiaHorario !== cfg.copiaHorario) {
+            if (Config.agendaDiaria(cfg)) reg.info("Cópia do banco agendada para uma vez ao dia, às " + cfg.copiaHorario + ".");
             if (!ocupado && estado === "pronto") agendar(intervaloNormal());
         }
         emitir();
@@ -636,7 +647,16 @@ function criarMotor(dep) {
                 const idade = Date.now() - (Number(doDisco.carregadoEm) || 0);
                 const prazo = cfg.copiaACadaMin * 60000;
                 const mesmoBanco = String(doDisco.origem || "") === (cfg.fbHost || "127.0.0.1") + ":" + cfg.fdbPath;
-                if (mesmoBanco && idade >= 0 && idade < prazo) {
+                if (Config.agendaDiaria(cfg)) {
+                    // Uma vez ao dia: a cópia salva vale se foi feita depois do último horário.
+                    const ultima = Config.ultimaOcorrencia(cfg.copiaHorario, Date.now());
+                    if (mesmoBanco && ultima != null && Number(doDisco.carregadoEm) >= ultima && idade >= 0) {
+                        espera = Math.max(espera, Config.msAteHorario(cfg.copiaHorario, Date.now()) || espera);
+                        reg.info("A cópia salva é posterior ao horário diário (" + cfg.copiaHorario + "): a próxima cópia fica para " +
+                            new Date(Date.now() + espera).toLocaleString("pt-BR") + " (ou Atualizar/F5).");
+                        definir("pronto", "Estoque salvo em dia.");
+                    }
+                } else if (mesmoBanco && idade >= 0 && idade < prazo) {
                     espera = Math.max(espera, prazo - idade);
                     reg.info("A cópia salva tem " + Math.round(idade / 60000) + " min (prazo de " + cfg.copiaACadaMin + " min): a próxima cópia fica para " +
                         new Date(Date.now() + espera).toLocaleTimeString("pt-BR") + " (ou Atualizar/F5).");

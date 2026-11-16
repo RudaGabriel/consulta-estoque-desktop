@@ -1,12 +1,12 @@
 <!doctype html>
 <!--
   index.html — Consulta Estoque (tela)
-  @version 1.5.1
+  @version 1.6.0
   @author Ruda Gabriel
   @changelog
     (Histórico completo das versões: CHANGELOG.md no repositório.)
-    1.5.1 — Versão do aplicativo ao lado do nome, em tom discreto; texto de cada caixa
-            de marcar num bloco só (os negritos não viram colunas).
+    1.6.0 — Agenda da Cópia do banco na aba Consulta: em intervalos de horas ou uma
+            vez ao dia, no horário definido.
 -->
 <html lang="pt-BR">
 <head>
@@ -189,7 +189,19 @@
         </label>
       </div>
       <div class="grupo" id="gCopia">
-        <label>Atualizar a cada (minutos — 180 = 3 horas)
+        <div id="gAgenda" hidden>
+          <label>Agenda da Cópia do banco
+            <select id="cfgAgenda">
+              <option value="intervalo">Em intervalos de horas</option>
+              <option value="diaria">Uma vez ao dia, no horário definido</option>
+            </select>
+          </label>
+          <label id="lHorario">Horário da cópia diária
+            <input type="time" id="cfgHorario" step="60">
+          </label>
+          <p class="dica" id="dicaAgenda"></p>
+        </div>
+        <label id="lCopiaMin"><span id="tCopiaMin">Atualizar a cada (minutos — 180 = 3 horas)</span>
           <input type="number" id="cfgCopiaMin" min="1" max="1440" step="1">
         </label>
       </div>

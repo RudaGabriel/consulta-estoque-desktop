@@ -7,11 +7,11 @@ Versões em uso hoje:
 
 | Arquivo | Versão |
 |---|---|
-| Aplicativo (`package.json`) | [1.7.1](#aplicativo) |
+| Aplicativo (`package.json`) | [1.8.0](#aplicativo) |
 | [`main.js`](#mainjs) | 1.5.3 |
 | [`preload.js`](#preloadjs) | 1.5.0 |
-| [`ui/index.html`, `ui/estilo.css`, `ui/app.js`](#ui) | 1.7.2 (`app.js`); 1.5.1 (`index.html`); 1.5.0 (`estilo.css`) |
-| [`src/motor.js`](#srcmotorjs) | 1.7.1 |
+| [`ui/index.html`, `ui/estilo.css`, `ui/app.js`](#ui) | 1.8.0 (`app.js`); 1.6.0 (`index.html`); 1.5.0 (`estilo.css`) |
+| [`src/motor.js`](#srcmotorjs) | 1.8.0 |
 | [`src/firebird.js`](#srcfirebirdjs) | 1.1.1 |
 | [`src/estoque-dados.js`](#srcestoque-dadosjs) | 1.2.0 |
 | [`src/estoque-busca.js`](#srcestoque-buscajs) | 1.3.0 |
@@ -20,7 +20,7 @@ Versões em uso hoje:
 | [`src/autoexcluir.js`](#srcautoexcluirjs) | 1.0.0 |
 | [`src/instalar-firebird.js`](#srcinstalar-firebirdjs) | 1.2.0 |
 | [`src/copia-gbak.js`](#srccopia-gbakjs) | 1.3.0 |
-| [`src/config.js`](#srcconfigjs) | 1.5.0 |
+| [`src/config.js`](#srcconfigjs) | 1.6.0 |
 | [`src/vigia.js`](#srcvigiajs) | 1.1.0 |
 | [`src/registro.js`](#srcregistrojs) | 1.0.0 |
 | [`src/demo.js`](#srcdemojs) | 1.2.0 |
@@ -36,6 +36,17 @@ Versões em uso hoje:
 ## Aplicativo
 
 Versão do Consulta Estoque (a que aparece no instalador e em *Configurações → Diagnóstico*).
+
+### 1.8.0 — 2026-11-16
+
+**Agenda da Cópia do banco: em intervalos de horas ou uma vez ao dia.**
+
+- Na primeira vez em que a **Cópia do banco** é usada (ao escolher o modo ou ao abrir o aplicativo já nesse modo), o aplicativo pergunta quando a cópia deve ser feita: **em intervalos de horas** (e quantas, de 1 a 24) ou **uma vez ao dia** (e o horário). Também é possível decidir mais tarde.
+- A mesma opção fica em *Configurações → Consulta → Agenda da Cópia do banco* (aparece só com a Cópia do banco escolhida).
+- Uma vez ao dia: a cópia é feita no horário escolhido; se o computador estiver desligado nesse horário, ao abrir o aplicativo; depois de uma cópia, a seguinte nunca fica a menos de 1 hora.
+- Só na Cópia do banco: o Instantâneo (leitura de segundos) continua com o intervalo, e a Leitura direta com a própria recarga.
+- Atualizar/F5 informa a data quando a próxima cópia é em outro dia.
+- 82 testes; tela validada no Electron 44 e 22.
 
 ### 1.7.1 — 2026-11-12
 
@@ -247,6 +258,10 @@ Ponte segura entre a tela e o processo principal.
 
 A tela.
 
+### 1.8.0 (`app.js`) e 1.6.0 (`index.html`) — 2026-11-16
+
+Agenda da Cópia do banco: `perguntarAgendaCopia` (lista "Em intervalos de horas" / "Uma vez ao dia", depois as horas de 1 a 24 ou o horário HH:MM, com validação), feita ao escolher o cartão da Cópia do banco pela primeira vez e na abertura (`talvezPerguntarAgenda`). Campos `#cfgAgenda` e `#cfgHorario` na aba Consulta (só com a Cópia do banco); o intervalo some com "uma vez ao dia"; "Salvar" recusa a cópia diária sem horário. A agenda só é enviada quando escolhida ("Decidir mais tarde" a mantém em aberto). Atualizar/F5: "para as HH:MM" ou "para DD/MM/AAAA, às HH:MM".
+
 ### 1.7.2 (`app.js`) — 2026-11-13
 
 Só o comentário de descrição: o aplicativo tem suporte a leitores de código de barras em modo teclado, inclusive 2D (não foi feito exclusivamente para eles). README, descrição do `package.json` e regras do projeto ajustados no mesmo sentido; o README explica o limite do QR Code (só quando contém exatamente o código, o EAN ou a referência; links e várias linhas não são reconhecidos).
@@ -296,6 +311,10 @@ Atualizar/F5 no modo Instantâneo pergunta "Ler o estoque do servidor agora?" (b
 ## `src/motor.js`
 
 Modos, atualização, cache em disco e auto-correção do banco.
+
+### 1.8.0 — 2026-11-16
+
+`intervaloNormal(aposCopia)`: com a agenda diária, a próxima atualização é o horário escolhido (depois de uma cópia, nunca a menos de 1 hora). Ao abrir, a cópia salva é mantida se for posterior ao último horário diário. Mudança de `copiaAgenda`/`copiaHorario` reagenda.
 
 ### 1.7.1 — 2026-11-12
 
@@ -494,6 +513,10 @@ Cópia por gbak.
 ## `src/config.js`
 
 Configuração validada.
+
+### 1.6.0 — 2026-11-16
+
+Chaves `copiaAgenda` ("" = ainda não escolhida, `intervalo`, `diaria`) e `copiaHorario` (`HH:MM`), sensíveis. Funções puras `agendaDiaria(cfg)`, `msAteHorario(hhmm, agora, minimoMs)` e `ultimaOcorrencia(hhmm, agora)`.
 
 ### 1.5.0 — 2026-11-12
 
