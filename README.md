@@ -6,13 +6,13 @@
 
 ### Consulta de preço e estoque sobre banco de dados Firebird, compatível com leitores de código de barras
 
-<img alt="aplicativo: v1.7.1" src="https://img.shields.io/badge/aplicativo-v1.7.1-2563EB?style=flat">
+<img alt="aplicativo: v1.8.0" src="https://img.shields.io/badge/aplicativo-v1.8.0-2563EB?style=flat">
 <img alt="plataforma: Windows 7 a 11" src="https://img.shields.io/badge/plataforma-Windows%207%20%7C%208%20%7C%2010%20%7C%2011-0078D4?style=flat&logo=data%3Aimage%2Fsvg%2Bxml%3Bbase64%2CPHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHZpZXdCb3g9JzAgMCAyNCAyNCcgZmlsbD0nd2hpdGUnPjxyZWN0IHg9JzMnIHk9JzMnIHdpZHRoPSc4JyBoZWlnaHQ9JzgnLz48cmVjdCB4PScxMycgeT0nMycgd2lkdGg9JzgnIGhlaWdodD0nOCcvPjxyZWN0IHg9JzMnIHk9JzEzJyB3aWR0aD0nOCcgaGVpZ2h0PSc4Jy8%2BPHJlY3QgeD0nMTMnIHk9JzEzJyB3aWR0aD0nOCcgaGVpZ2h0PSc4Jy8%2BPC9zdmc%2B&logoColor=white">
 <img alt="arquitetura: 64 e 32 bits" src="https://img.shields.io/badge/arquitetura-64%20e%2032%20bits-0E7490?style=flat">
 <img alt="idioma: pt-BR" src="https://img.shields.io/badge/idioma-pt--BR-16A34A?style=flat">
 <img alt="banco: somente leitura" src="https://img.shields.io/badge/banco-somente%20leitura-DC2626?style=flat&logo=data%3Aimage%2Fsvg%2Bxml%3Bbase64%2CPHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHZpZXdCb3g9JzAgMCAyNCAyNCcgZmlsbD0nbm9uZScgc3Ryb2tlPSd3aGl0ZScgc3Ryb2tlLXdpZHRoPScyLjInIHN0cm9rZS1saW5lY2FwPSdyb3VuZCcgc3Ryb2tlLWxpbmVqb2luPSdyb3VuZCc%2BPHBhdGggZD0nTTEyIDIyczgtNCA4LTEwVjVsLTgtMy04IDN2N2MwIDYgOCAxMCA4IDEweicvPjxwYXRoIGQ9J205IDEyIDIgMiA0LTQnLz48L3N2Zz4%3D&logoColor=white">
 <img alt="funciona: sem internet" src="https://img.shields.io/badge/funciona-sem%20internet-0891B2?style=flat">
-<img alt="testes: 80 passando" src="https://img.shields.io/badge/testes-80%20passando-22C55E?style=flat&logo=data%3Aimage%2Fsvg%2Bxml%3Bbase64%2CPHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHZpZXdCb3g9JzAgMCAyNCAyNCcgZmlsbD0nbm9uZScgc3Ryb2tlPSd3aGl0ZScgc3Ryb2tlLXdpZHRoPScyLjInIHN0cm9rZS1saW5lY2FwPSdyb3VuZCcgc3Ryb2tlLWxpbmVqb2luPSdyb3VuZCc%2BPHBhdGggZD0nTTkgMnY2TDQgMTlhMiAyIDAgMCAwIDEuOCAzaDEyLjRhMiAyIDAgMCAwIDEuOC0zTDE1IDhWMicvPjxwYXRoIGQ9J004IDJoOCcvPjxwYXRoIGQ9J003IDE1aDEwJy8%2BPC9zdmc%2B&logoColor=white">
+<img alt="testes: 82 passando" src="https://img.shields.io/badge/testes-82%20passando-22C55E?style=flat&logo=data%3Aimage%2Fsvg%2Bxml%3Bbase64%2CPHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHZpZXdCb3g9JzAgMCAyNCAyNCcgZmlsbD0nbm9uZScgc3Ryb2tlPSd3aGl0ZScgc3Ryb2tlLXdpZHRoPScyLjInIHN0cm9rZS1saW5lY2FwPSdyb3VuZCcgc3Ryb2tlLWxpbmVqb2luPSdyb3VuZCc%2BPHBhdGggZD0nTTkgMnY2TDQgMTlhMiAyIDAgMCAwIDEuOCAzaDEyLjRhMiAyIDAgMCAwIDEuOC0zTDE1IDhWMicvPjxwYXRoIGQ9J004IDJoOCcvPjxwYXRoIGQ9J003IDE1aDEwJy8%2BPC9zdmc%2B&logoColor=white">
 <img alt="licença: proprietária" src="https://img.shields.io/badge/licen%C3%A7a-propriet%C3%A1ria-6B7280?style=flat">
 
 <img alt="Electron: 44.9.3" src="https://img.shields.io/badge/Electron-44.9.3-47848F?style=flat&logo=electron&logoColor=white">
@@ -48,7 +48,7 @@ Um aplicativo de Windows, de **janela própria** (não abre no navegador), para 
 | 🏷️ **Cartão de preço** | O produto lido abre num cartão com o preço em destaque, o estoque, a unidade e o código de barras. A próxima leitura já substitui a anterior. |
 | 🌐 **Localiza o banco automaticamente** | Pergunta se o banco fica **na rede**, **neste computador** ou se será informado por **seleção manual**. Na busca automática, começa pelo local escolhido e **examina tudo**: disco deste computador, pastas compartilhadas e a rede inteira. Sem `SMALL.FDB` em lugar nenhum, mostra os outros arquivos `.FDB` achados para você escolher. |
 | 🔎 **Busca avançada** | Coringa `*` (`RAÇÃO*10KG`) e filtros de preço e de peso na própria busca: `RAÇÃO >50` (R$ 50 ou mais), `RAÇÃO <50` (até R$ 50) e `RAÇÃO >9KG` (9 kg ou mais). |
-| 🔁 **Três modos** | **Instantâneo** (padrão): uma leitura rápida e leve a cada intervalo, sem instalar nada. **Cópia do banco** (gbak): copia o banco inteiro para este computador. **Leitura direta**: preço e estoque do instante. Os três funcionam com o servidor fora do ar (estoque salvo). |
+| 🔁 **Três modos** | **Instantâneo** (padrão): uma leitura rápida e leve a cada intervalo, sem instalar nada. **Cópia do banco** (gbak): copia o banco inteiro para este computador, em intervalos de horas ou uma vez ao dia, no horário escolhido. **Leitura direta**: preço e estoque do instante. Os três funcionam com o servidor fora do ar (estoque salvo). |
 | 💾 **Abre na hora** | O último estoque carregado fica salvo no computador e aparece assim que o aplicativo abre, mesmo sem rede. Cópia ainda em dia não é refeita só porque o aplicativo abriu. |
 | 📊 **Andamento** | Barra abaixo do topo enquanto o estoque atualiza: na **Cópia do banco**, a porcentagem e o tempo que falta (estimado pela última cópia); no **Instantâneo**, o tempo da leitura. |
 | 🔒 **Somente leitura** | Nunca grava nada no banco de dados. |
@@ -229,8 +229,17 @@ Escolha em *Configurações → Consulta*. Em todos os modos o aplicativo **só 
 | Como funciona | Uma leitura só da tabela de produtos, em transação somente leitura, a cada intervalo | Backup do banco inteiro (`gbak`) e restauração somente leitura **neste computador**; a consulta lê a cópia | Lê o banco do servidor em somente leitura e **relê o produto aberto na hora** (selo *Ao vivo*) |
 | Peso no servidor | Mínimo (alguns segundos a cada intervalo) | Maior (minutos a cada cópia) | Uma leitura da lista a cada intervalo + uma consulta pequena por produto aberto |
 | Precisa instalar algo aqui? | Não | Firebird neste computador (sem ele, usa o Instantâneo) | Não |
-| Atualidade | Do intervalo (padrão **3 horas**; *Atualizar*/F5 a qualquer momento) | Do intervalo (padrão 3 horas) | Lista a cada 60 s; produto aberto ao vivo |
+| Atualidade | Do intervalo (padrão **3 horas**; *Atualizar*/F5 a qualquer momento) | Do intervalo (padrão 3 horas) **ou uma vez ao dia**, no horário escolhido | Lista a cada 60 s; produto aberto ao vivo |
 | Servidor fora do ar | Continua com o último estoque salvo | Continua com a última cópia | Mostra os dados salvos e avisa |
+
+**Agenda da Cópia do banco.** Na primeira vez em que a **Cópia do banco** é usada (ao escolher o modo ou ao abrir o aplicativo já nesse modo), o aplicativo pergunta quando a cópia deve ser feita:
+
+| Opção | O que acontece |
+|---|---|
+| **Em intervalos de horas** | Pergunta de quantas em quantas horas (1 a 24). A cópia é feita a cada intervalo (no mínimo 3 vezes a duração da última cópia) |
+| **Uma vez ao dia** | Pergunta o horário (ex.: `06:00`, antes da abertura da loja). A cópia é feita todos os dias nesse horário. Se o computador estiver desligado no horário, a cópia é feita ao abrir o aplicativo; depois de uma cópia, a seguinte nunca fica a menos de 1 hora |
+
+Também é possível **Decidir mais tarde** (vale o intervalo); essa escolha fica gravada e a pergunta não volta a cada abertura. Na abertura, a pergunta só aparece com a tela liberada (sem senha do administrador): com senha, a tela pública nunca fica presa nela, e o administrador é perguntado uma vez ao abrir *Configurações → Consulta*. A mesma opção fica em *Configurações → Consulta → Agenda da Cópia do banco*. Ela existe só na Cópia do banco: o **Instantâneo** é uma leitura de segundos e usa o intervalo; a **Leitura direta** tem a própria recarga.
 
 **Por que o Instantâneo é seguro como padrão:** é um único `SELECT` na tabela de produtos, numa transação **somente leitura**, *READ COMMITTED* sem espera — ele não bloqueia o caixa nem espera por ele, e o resultado é o mesmo que o gbak mostraria naquele instante (só a tabela de produtos, que é o que a consulta usa).
 
@@ -250,7 +259,7 @@ Escolha em *Configurações → Consulta*. Em todos os modos o aplicativo **só 
 - Depois da primeira cópia completa, **nenhuma outra começa logo em seguida**: a próxima só no fim do intervalo (ou com *Atualizar*/F5, que pergunta antes).
 - O gbak é procurado automaticamente: configurado → serviço do Firebird (pelo registro do Windows, rápido; mesma versão) → pastas conhecidas → `PATH`.
 - **Andamento:** a barra abaixo do topo mostra a etapa, a porcentagem e quanto falta, pela duração da última cópia (guardada em `copia.json`).
-- **Ao abrir o aplicativo** a cópia não é refeita se a última ainda está no prazo (padrão 3 horas) e é do mesmo banco: a próxima fica para quando o prazo vencer. *Atualizar*/F5 faz na hora.
+- **Ao abrir o aplicativo** a cópia não é refeita se a última ainda está no prazo (padrão 3 horas) e é do mesmo banco: a próxima fica para quando o prazo vencer. Com a agenda **uma vez ao dia**, a cópia é mantida se foi feita depois do último horário diário. *Atualizar*/F5 faz na hora.
 </details>
 
 ---
@@ -314,6 +323,9 @@ Tudo pode ser feito na tela (*Configurações*, **F10**). As chaves marcadas com
 | `modo` 🔒 | `copia` | `copia` (modos **Instantâneo** e **Cópia do banco**) ou `direto` (**Leitura direta**) |
 | `metodoCopia` 🔒 | `instantaneo` | Com `modo` = `copia`: `instantaneo` = **Instantâneo** (padrão); `auto` = **Cópia do banco** (gbak quando houver Firebird aqui, senão instantâneo); `gbak` = só gbak |
 | `copiaACadaMin` 🔒 | `180` (3 horas) | Intervalo entre as atualizações do Instantâneo e da Cópia do banco (1 a 1440 min) |
+| `copiaAgenda` 🔒 | vazio | Agenda da Cópia do banco: `intervalo` ou `diaria` (uma vez ao dia). Vazio = ainda não escolhida (vale o intervalo; perguntado no primeiro uso) |
+| `copiaHorario` 🔒 | vazio | Horário da cópia diária (`HH:MM`), com `copiaAgenda` = `diaria` |
+| `copiaAgendaAdiada` | `false` | Marcado por "Decidir mais tarde": a abertura não pergunta mais a agenda |
 | `copiaTimeoutMin` 🔒 | `30` | Tempo máximo de UMA cópia gbak (1 a 360 min) — limite de segurança, não o intervalo |
 | `diretoRecarregarSeg` 🔒 | `60` | Recarga da lista na leitura direta (15 a 3600 s) |
 | `diretoItemAoVivo` 🔒 | `true` | Reler estoque e preço ao abrir o produto (leitura direta) |
@@ -444,7 +456,7 @@ Uma única biblioteca em uso pelo aplicativo (`node-firebird`); o resto é o pr�
 | Instalador | [electron-builder](https://www.electron.build) | 26.18.0 | Instalador NSIS e versão portátil, x64 e ia32 |
 | Tela | HTML5, CSS e JavaScript sem framework | — | Leve para PCs fracos; temas claro e escuro |
 | Som | Web Audio API | — | Bipe da leitura, sem arquivos de áudio |
-| Testes | `node:test` + `node:assert` | Node 20+ | 80 testes com Firebird, gbak e aplicativo simulados |
+| Testes | `node:test` + `node:assert` | Node 20+ | 82 testes com Firebird, gbak e aplicativo simulados |
 | Senha | `crypto.pbkdf2` (Node) | — | *Hash* da senha do administrador com sal, comparação em tempo constante |
 | Teste da tela | Playwright + Electron | — | Fluxo do leitor, cartão, configurações, tema e Electron 22 |
 | Build | GitHub Actions | — | Testes + instaladores a cada push |
@@ -457,7 +469,7 @@ Uma única biblioteca em uso pelo aplicativo (`node-firebird`); o resto é o pr�
 npm test
 ```
 
-- **80 testes**, sem Firebird real:
+- **82 testes**, sem Firebird real:
   - **Firebird simulado** (`src/demo.js`): registra toda SQL e transação, para provar que nada de escrita sai;
   - **gbak simulado** (`test/mock-gbak.js`): backup, restauração, falhas e atraso.
 - **Trava de somente leitura:** comandos recusados, transação somente leitura, `node-firebird` 0.x e 1.x+.
@@ -470,11 +482,12 @@ npm test
 - **Motor:** auto-correção do endereço, `fbHostFixo`, dados salvos sem rede, item ao vivo na leitura direta, troca de modo, gbak ausente.
 - **Cópia gbak:** senha por variável de ambiente, cópia nova atômica, limpeza segura, falha mantém a anterior, cancelamento.
 - **Administrador:** senha só como *hash*, chaves sensíveis, padrões do quiosque (barra de tarefas oculta, também em config antigo), cópia a cada 3 horas.
+- **Agenda da Cópia do banco:** uma vez ao dia no horário escolhido, nunca duas cópias seguidas (menos de 1 hora), cálculo do próximo horário e do último horário diário, volta para intervalos.
 - **Caminho no servidor:** servidor informado sem o caminho, troca de servidor apaga o caminho antigo; **seleção manual** sem nenhuma busca automática.
 - **Apagar o portátil (processos de verdade):** espera o aplicativo fechar antes de apagar, apaga o `.exe` e a pasta de dados, reconhece a pasta temporária do portátil, nunca mexe em pasta de outro programa.
 - **Vigia (processos de verdade):** reabre o aplicativo fechado à força (rápido, sem abrir duas vezes enquanto o novo grava o PID), espera o reinício avisado, encerra com a saída autorizada e com a persistência desligada, um vigia só.
 - **Abertura:** cópia salva em dia não toca no banco ao abrir; estimativa da cópia pela duração de cada etapa (também antes da primeira cópia da abertura).
-- **Tela (Playwright, Electron 44 e 22):** três modos (Instantâneo padrão), cartão centralizado com preço grande e X centralizado, caixas e campos vazios escondidos, cartão fecha ao digitar, voltar ao topo, volume do bipe, sem totais, "Abaixo do mínimo" escondido sem mínimo, tela sem nomes de sistemas, configuração inicial (nome da loja, senha opcional, sem senha tudo livre, criar e remover a senha depois), barra de andamento da cópia, confirmação do Atualizar/F5, troca do Firebird, pergunta da localização do banco (três opções em lista, seleção manual abrindo a aba Banco de dados), filtro de peso, foco de volta na busca após 30 s, coringa e preço, leitura, limpeza após inatividade, fechar bloqueado, trava das abas, desbloqueio, ações sensíveis recusadas sem a senha, saída com Ctrl+Shift+Q, instalação do Firebird e escolha de outro `.FDB`.
+- **Tela (Playwright, Electron 44 e 22):** três modos (Instantâneo padrão), cartão centralizado com preço grande e X centralizado, caixas e campos vazios escondidos, cartão fecha ao digitar, voltar ao topo, volume do bipe, sem totais, "Abaixo do mínimo" escondido sem mínimo, tela sem nomes de sistemas, configuração inicial (nome da loja, senha opcional, sem senha tudo livre, criar e remover a senha depois), barra de andamento da cópia, confirmação do Atualizar/F5, troca do Firebird, pergunta da localização do banco (três opções em lista, seleção manual abrindo a aba Banco de dados), agenda da Cópia do banco (intervalos ou uma vez ao dia, no primeiro uso e na aba Consulta; "Decidir mais tarde" não volta na abertura seguinte; com senha, a tela pública não fica presa e o administrador é perguntado na aba Consulta), filtro de peso, foco de volta na busca após 30 s, coringa e preço, leitura, limpeza após inatividade, fechar bloqueado, trava das abas, desbloqueio, ações sensíveis recusadas sem a senha, saída com Ctrl+Shift+Q, instalação do Firebird e escolha de outro `.FDB`.
 
 ---
 

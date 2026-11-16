@@ -1,7 +1,7 @@
 "use strict";
 /**
  * config.js
- * @version 1.5.0
+ * @version 1.6.0
  * @author Ruda Gabriel
  * @description Configuração do aplicativo (config.json na pasta de dados):
  *              valores padrão, validação de cada chave e gravação atômica.
@@ -12,14 +12,16 @@
  *
  * @changelog
  *   (Histórico completo das versões: CHANGELOG.md no repositório.)
- *   1.5.0 — metaBusca "manual": o administrador informa o servidor e o caminho do
- *           banco; a busca automática não troca o banco sozinha.
+ *   1.6.0 — Agenda da Cópia do banco: copiaAgenda ("" = ainda não escolhida,
+ *           "intervalo" ou "diaria") e copiaHorario ("HH:MM"); agendaDiaria(cfg),
+ *           msAteHorario(hhmm, agora) e ultimaOcorrencia(hhmm, agora); copiaAgendaAdiada
+ *           ("Decidir mais tarde" fica gravado e a abertura não pergunta de novo).
  */
 
 const fs = require("fs");
 const path = require("path");
 
-const VERSAO = "1.5.0";
+const VERSAO = "1.6.0";
 // Versão do formato do config.json (migrações feitas uma vez só).
 const VERSAO_CONFIG = 3;
 
@@ -30,6 +32,9 @@ const ESQUEMA = {
     metodoCopia:         ["instantaneo", ["auto", "gbak", "instantaneo"]],
     copiaACadaMin:       [180, "int", 1, 1440],
     copiaTimeoutMin:     [30, "int", 1, 360],
+    copiaAgenda:         ["", ["", "intervalo", "diaria"]],   // Cópia do banco: "" = ainda não escolhida (vale "intervalo")
+    copiaHorario:        ["", "hora"],                          // Cópia do banco uma vez ao dia: "HH:MM"
+    copiaAgendaAdiada:   [false, "bool"],                       // "Decidir mais tarde": a abertura não pergunta mais a agenda
     diretoRecarregarSeg: [60, "int", 15, 3600],
     diretoItemAoVivo:    [true, "bool"],
     // Banco de dados
@@ -222,7 +227,44 @@ function sensiveisAlteradas(atual, parcial) {
     return SENSIVEIS.filter(k => p[k] !== undefined && validarValor(k, p[k]) !== a[k]);
 }
 
+// ── Agenda da Cópia do banco ─────────────────────────────────────────────────
+/** Puro: a Cópia do banco (gbak) está agendada para uma vez ao dia, com horário válido? */
+function agendaDiaria(cfg) {
+    const c = cfg || {};
+    return c.modo === "copia" && c.metodoCopia !== "instantaneo" && c.copiaAgenda === "diaria" && /^\d{2}:\d{2}$/.test(String(c.copiaHorario || ""));
+}
+/** Puro: data local de hoje no horário "HH:MM" (null se o horário for inválido). */
+function horarioDeHoje(hhmm, agora) {
+    const m = /^(\d{2}):(\d{2})$/.exec(String(hhmm || ""));
+    if (!m) return null;
+    const d = new Date(agora == null ? Date.now() : agora);
+    d.setHours(Number(m[1]), Number(m[2]), 0, 0);
+    return d;
+}
+/**
+ * Puro: milissegundos até a próxima vez do horário "HH:MM" (hoje, se ainda não
+ * passou; senão amanhã). minimoMs: se a próxima vez ficar a menos disso, vale a
+ * do dia seguinte (evita duas cópias seguidas). Horário inválido → null.
+ */
+function msAteHorario(hhmm, agora, minimoMs) {
+    const t0 = agora == null ? Date.now() : agora;
+    const d = horarioDeHoje(hhmm, t0);
+    if (!d) return null;
+    // Avança dia a dia (setDate respeita a mudança de horário de verão).
+    while (d.getTime() <= t0 || d.getTime() - t0 < (minimoMs || 0)) d.setDate(d.getDate() + 1);
+    return d.getTime() - t0;
+}
+/** Puro: instante da última vez em que o horário "HH:MM" já passou (hoje ou ontem). */
+function ultimaOcorrencia(hhmm, agora) {
+    const t0 = agora == null ? Date.now() : agora;
+    const d = horarioDeHoje(hhmm, t0);
+    if (!d) return null;
+    if (d.getTime() > t0) d.setDate(d.getDate() - 1);
+    return d.getTime();
+}
+
 module.exports = {
+    agendaDiaria, msAteHorario, ultimaOcorrencia,
     VERSAO, VERSAO_CONFIG, ESQUEMA, PUBLICAS, INTERNAS, SENSIVEIS, padrao, validarValor, normalizar, mesclar, carregar, salvar, gravarAtomico, semSenha,
     gerarHashSenha, conferirSenha, sensiveisAlteradas
 };

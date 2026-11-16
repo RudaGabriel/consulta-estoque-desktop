@@ -358,3 +358,28 @@ test("motor: seleção manual do banco → sem busca automática; com servidor e
     assert.strictEqual(buscas, 0);
     com.motor.encerrar();
 });
+
+test("motor: Cópia do banco uma vez ao dia → próxima no horário escolhido, nunca menos de 1 hora depois de uma cópia", async () => {
+    const hhmm = ms => { const d = new Date(Date.now() + ms); return String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0"); };
+    const base = { fbHost: "10.0.0.7", fdbPath: "D:\\DADOS\\SMALL.FDB", metodoCopia: "auto", copiaAgenda: "diaria", versaoConfig: 3 };
+    const bancos = () => ({ "10.0.0.7|D:\\DADOS\\SMALL.FDB": bancoExemplo() });
+    // Horário daqui a 5 horas (intervalo padrão é 3 h, para não passar por coincidência).
+    const a = montar(bancos(), Object.assign({ copiaHorario: hhmm(5 * 3600000) }, base), { portaAberta: async h => h === "10.0.0.7" });
+    await a.motor.iniciar();
+    // Espera o agendamento feito depois da carga (antes dele, proximaEm ainda é o da abertura).
+    await esperar(() => a.motor.status().itens === 15 && a.motor.status().proximaEm > Date.now() + 10 * 60000, 8000);
+    const fa = a.motor.status().proximaEm - Date.now();
+    assert.ok(fa > 4.9 * 3600000 && fa <= 5 * 3600000 + 60000, "próxima em ~5 h: " + Math.round(fa / 60000) + " min");
+    a.motor.encerrar();
+    // Horário daqui a 20 min, logo depois de uma cópia: fica para o dia seguinte.
+    const b = montar(bancos(), Object.assign({ copiaHorario: hhmm(20 * 60000) }, base), { portaAberta: async h => h === "10.0.0.7" });
+    await b.motor.iniciar();
+    // Espera o agendamento feito depois da carga (antes dele, proximaEm ainda é o da abertura).
+    await esperar(() => b.motor.status().itens === 15 && b.motor.status().proximaEm > Date.now() + 10 * 60000, 8000);
+    const fb = b.motor.status().proximaEm - Date.now();
+    assert.ok(fb > 23 * 3600000, "duas cópias seguidas evitadas: " + Math.round(fb / 60000) + " min");
+    // Voltar para intervalos usa o intervalo de novo.
+    b.motor.salvarConfig({ copiaAgenda: "intervalo", copiaACadaMin: 120 });
+    await esperar(() => Math.abs(b.motor.status().proximaEm - Date.now() - 120 * 60000) < 120000, 4000);
+    b.motor.encerrar();
+});

@@ -7,11 +7,11 @@ Versões em uso hoje:
 
 | Arquivo | Versão |
 |---|---|
-| Aplicativo (`package.json`) | [1.7.1](#aplicativo) |
-| [`main.js`](#mainjs) | 1.5.3 |
-| [`preload.js`](#preloadjs) | 1.5.0 |
-| [`ui/index.html`, `ui/estilo.css`, `ui/app.js`](#ui) | 1.7.2 (`app.js`); 1.5.1 (`index.html`); 1.5.0 (`estilo.css`) |
-| [`src/motor.js`](#srcmotorjs) | 1.7.1 |
+| Aplicativo (`package.json`) | [1.8.0](#aplicativo) |
+| [`main.js`](#mainjs) | 1.5.4 |
+| [`preload.js`](#preloadjs) | 1.6.0 |
+| [`ui/index.html`, `ui/estilo.css`, `ui/app.js`](#ui) | 1.8.0 (`app.js`); 1.6.0 (`index.html`); 1.5.0 (`estilo.css`) |
+| [`src/motor.js`](#srcmotorjs) | 1.8.0 |
 | [`src/firebird.js`](#srcfirebirdjs) | 1.1.1 |
 | [`src/estoque-dados.js`](#srcestoque-dadosjs) | 1.2.0 |
 | [`src/estoque-busca.js`](#srcestoque-buscajs) | 1.3.0 |
@@ -20,7 +20,7 @@ Versões em uso hoje:
 | [`src/autoexcluir.js`](#srcautoexcluirjs) | 1.0.0 |
 | [`src/instalar-firebird.js`](#srcinstalar-firebirdjs) | 1.2.0 |
 | [`src/copia-gbak.js`](#srccopia-gbakjs) | 1.3.0 |
-| [`src/config.js`](#srcconfigjs) | 1.5.0 |
+| [`src/config.js`](#srcconfigjs) | 1.6.0 |
 | [`src/vigia.js`](#srcvigiajs) | 1.1.0 |
 | [`src/registro.js`](#srcregistrojs) | 1.0.0 |
 | [`src/demo.js`](#srcdemojs) | 1.2.0 |
@@ -36,6 +36,18 @@ Versões em uso hoje:
 ## Aplicativo
 
 Versão do Consulta Estoque (a que aparece no instalador e em *Configurações → Diagnóstico*).
+
+### 1.8.0 — 2026-11-16
+
+**Agenda da Cópia do banco: em intervalos de horas ou uma vez ao dia.**
+
+- Na primeira vez em que a **Cópia do banco** é usada (ao escolher o modo ou ao abrir o aplicativo já nesse modo), o aplicativo pergunta quando a cópia deve ser feita: **em intervalos de horas** (e quantas, de 1 a 24) ou **uma vez ao dia** (e o horário). Também é possível decidir mais tarde: a escolha fica gravada e a pergunta não volta a cada abertura. Na abertura, a pergunta só aparece com a tela liberada (sem senha); com senha, a tela pública nunca fica presa nela, e o administrador é perguntado uma vez ao abrir *Configurações → Consulta*.
+- A mesma opção fica em *Configurações → Consulta → Agenda da Cópia do banco* (aparece só com a Cópia do banco escolhida).
+- Uma vez ao dia: a cópia é feita no horário escolhido; se o computador estiver desligado nesse horário, ao abrir o aplicativo; depois de uma cópia, a seguinte nunca fica a menos de 1 hora.
+- Só na Cópia do banco: o Instantâneo (leitura de segundos) continua com o intervalo, e a Leitura direta com a própria recarga.
+- Esperas longas são rearmadas de hora em hora: suspensão do computador ou ajuste do relógio não atrasam a cópia diária.
+- Atualizar/F5 informa a data quando a próxima cópia é em outro dia.
+- 82 testes; tela validada no Electron 44 e 22.
 
 ### 1.7.1 — 2026-11-12
 
@@ -173,6 +185,10 @@ Versão do Consulta Estoque (a que aparece no instalador e em *Configurações �
 
 Processo principal (janela, instância única, pasta de dados, IPC).
 
+### 1.5.4 — 2026-11-16
+
+`copia:adiar-agenda`: grava "Decidir mais tarde" da agenda da Cópia do banco (`copiaAgendaAdiada`) sem exigir a senha, no mesmo padrão de `firebird:nao-perguntar` (só desliga a pergunta).
+
 ### 1.5.3 — 2026-11-12
 
 Mensagens em linguagem formal ("Aguarde N s para tentar novamente", "o vigia é encerrado automaticamente").
@@ -215,6 +231,10 @@ Mensagens em linguagem formal ("Aguarde N s para tentar novamente", "o vigia é 
 
 Ponte segura entre a tela e o processo principal.
 
+### 1.6.0 — 2026-11-16
+
+**`adiarAgendaCopia`** ("Decidir mais tarde" da agenda da Cópia do banco).
+
 ### 1.5.0 — 2026-11-11
 
 **`autoexcluir`.**
@@ -246,6 +266,10 @@ Ponte segura entre a tela e o processo principal.
 ## `ui/index.html`, `ui/estilo.css`, `ui/app.js`
 
 A tela.
+
+### 1.8.0 (`app.js`) e 1.6.0 (`index.html`) — 2026-11-16
+
+Agenda da Cópia do banco: `perguntarAgendaCopia` (lista "Em intervalos de horas" / "Uma vez ao dia", depois as horas de 1 a 24 ou o horário HH:MM, com validação), feita ao escolher o cartão da Cópia do banco pela primeira vez e na abertura (`talvezPerguntarAgenda`). Campos `#cfgAgenda` e `#cfgHorario` na aba Consulta (só com a Cópia do banco); o intervalo some com "uma vez ao dia"; "Salvar" recusa a cópia diária sem horário. A agenda só é enviada quando escolhida. Na abertura, `talvezPerguntarAgenda` só pergunta com a tela liberada (`livre()`); "Decidir mais tarde" chama `adiarAgendaCopia` e a pergunta não volta; com senha, o administrador é perguntado uma vez ao abrir a aba Consulta. Atualizar/F5: "para as HH:MM" ou "para DD/MM/AAAA, às HH:MM".
 
 ### 1.7.2 (`app.js`) — 2026-11-13
 
@@ -296,6 +320,10 @@ Atualizar/F5 no modo Instantâneo pergunta "Ler o estoque do servidor agora?" (b
 ## `src/motor.js`
 
 Modos, atualização, cache em disco e auto-correção do banco.
+
+### 1.8.0 — 2026-11-16
+
+Temporizador rearmado de hora em hora contra o horário-alvo (`armar`), para esperas longas resistirem à suspensão do computador e a ajustes do relógio. `intervaloNormal(aposCopia)`: com a agenda diária, a próxima atualização é o horário escolhido (depois de uma cópia, nunca a menos de 1 hora). Ao abrir, a cópia salva é mantida se for posterior ao último horário diário. Mudança de `copiaAgenda`/`copiaHorario` reagenda.
 
 ### 1.7.1 — 2026-11-12
 
@@ -494,6 +522,10 @@ Cópia por gbak.
 ## `src/config.js`
 
 Configuração validada.
+
+### 1.6.0 — 2026-11-16
+
+Chaves `copiaAgenda` ("" = ainda não escolhida, `intervalo`, `diaria`), `copiaHorario` (`HH:MM`) e `copiaAgendaAdiada` ("Decidir mais tarde"), sensíveis (a última é gravada pelo processo principal, sem senha). Funções puras `agendaDiaria(cfg)`, `msAteHorario(hhmm, agora, minimoMs)` e `ultimaOcorrencia(hhmm, agora)`.
 
 ### 1.5.0 — 2026-11-12
 
