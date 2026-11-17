@@ -21,7 +21,7 @@
  *           ou nunca) e manual (no máximo uma por minuto), livres; baixar e instalar
  *           exige a senha (SHA-256 conferido; saída autorizada antes do instalador).
  *           Instalação automática silenciosa (sem janelas, reabre o aplicativo) ou com
- *           todos os detalhes; se a instalação falhar, a versão atual volta a abrir.
+ *           todos os detalhes; se a instalação for cancelada ou a permissão do Windows for negada, a versão atual volta a abrir.
  */
 
 const { app, BrowserWindow, ipcMain, dialog, shell, screen, powerSaveBlocker } = require("electron");

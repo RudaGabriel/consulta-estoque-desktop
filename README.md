@@ -427,10 +427,10 @@ Em *Configurações → Atualizações* — área **livre**, sem a senha do admi
 | Forma | O que acontece |
 |---|---|
 | **Silenciosa** (recomendada) | Instala sem janelas e **reabre o aplicativo automaticamente** em alguns instantes. Mantém o modo da instalação anterior (só para este usuário ou para todos); se o aplicativo foi instalado para todos os usuários, o Windows pede permissão. |
-| **Com todos os detalhes** | Abre o instalador com todas as etapas, para acompanhar a instalação. Ao terminar, o aplicativo é reaberto. |
+| **Com todos os detalhes** | Abre o instalador com todas as etapas (inclusive a pasta de instalação), para acompanhar a instalação. Ao terminar, o aplicativo é reaberto. |
 | Versão portátil | A versão nova fica na mesma pasta da atual (a pasta `ConsultaEstoque-dados` é a mesma) e abre no lugar dela. |
 
-Se a instalação falhar ou for cancelada, a versão atual volta a abrir: o quiosque não fica fechado.
+Depois do instalador, o aplicativo é aberto novamente; se a instalação for cancelada ou a permissão do Windows for negada, a versão atual volta a abrir. Se o aplicativo (ou o vigia) ainda estiver aberto, o instalador o encerra.
 
 - A verificação **nunca interrompe a tela pública**: quando há versão nova, só aparece a marca discreta "versão X disponível" ao lado da versão, no topo. Nada é baixado sem o administrador.
 - Só atualiza para uma versão **maior** que a instalada, nunca para uma anterior.
@@ -519,7 +519,7 @@ npm test
 - **Administrador:** senha só como *hash*, chaves sensíveis, padrões do quiosque (barra de tarefas oculta, também em config antigo), cópia a cada 3 horas.
 - **Agenda da Cópia do banco:** uma vez ao dia no horário escolhido, nunca duas cópias seguidas (menos de 1 hora), cálculo do próximo horário e do último horário diário, volta para intervalos.
 - **Caminho no servidor:** servidor informado sem o caminho, troca de servidor apaga o caminho antigo; **seleção manual** sem nenhuma busca automática.
-- **Atualizações:** instalação silenciosa (`/S --updated --force-run`) ou com todos os detalhes, o aplicativo sempre volta a abrir, caminhos com aspas ou `%` recusados, comparação de versões (só maior), escolha do arquivo pela variante, arquitetura e tipo, frequência da verificação, servidor que pede para tentar mais tarde (403/429), sem internet e sem resposta (prazo), endereço sem HTTPS recusado, download conferido pelo SHA-256 (arquivo diferente apagado).
+- **Atualizações:** instalação silenciosa (`/S --updated --force-run`) ou com todos os detalhes, o aplicativo é aberto depois do instalador, caminhos com aspas ou `%` recusados, comparação de versões (só maior), escolha do arquivo pela variante, arquitetura e tipo, frequência da verificação, servidor que pede para tentar mais tarde (403/429), sem internet e sem resposta (prazo), endereço sem HTTPS recusado, download conferido pelo SHA-256 (arquivo diferente apagado).
 - **Agenda persistente:** com o servidor desligado na hora da cópia diária, nova tentativa em minutos (não no dia seguinte) até concluir; cópia cancelada pelo tempo máximo tenta novamente em 30 minutos.
 - **Apagar o portátil (processos de verdade):** espera o aplicativo fechar antes de apagar, apaga o `.exe` e a pasta de dados, reconhece a pasta temporária do portátil, nunca mexe em pasta de outro programa.
 - **Vigia (processos de verdade):** reabre o aplicativo fechado à força (rápido, sem abrir duas vezes enquanto o novo grava o PID), espera o reinício avisado, encerra com a saída autorizada e com a persistência desligada, um vigia só.

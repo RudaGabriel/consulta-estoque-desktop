@@ -43,7 +43,7 @@ Versão do Consulta Estoque (a que aparece no instalador e em *Configurações �
 **Atualizações do aplicativo e agenda persistente da Cópia do banco.**
 
 - **Atualizações** (*Configurações → Atualizações*, área livre): **Verificar agora** (no máximo uma vez por minuto) e verificação automática **uma vez ao dia, por semana (padrão) ou por mês**, ou **nunca**. Qualquer pessoa pode verificar e mudar a frequência; **baixar e instalar exige a senha do administrador** e confirmação.
-- **Instalação automática** (sem navegador): **silenciosa** (recomendada — sem janelas, reabre o aplicativo em alguns instantes) ou **com todos os detalhes** (o instalador com as etapas). Se a instalação falhar ou for cancelada, a versão atual volta a abrir.
+- **Instalação automática** (sem navegador): **silenciosa** (recomendada — sem janelas, reabre o aplicativo em alguns instantes) ou **com todos os detalhes** (o instalador com todas as etapas). Depois do instalador, o aplicativo é aberto novamente; se a instalação for cancelada ou a permissão do Windows for negada, a versão atual volta a abrir.
 - O arquivo baixado é o da mesma versão do aplicativo (moderna ou legado, 64 ou 32 bits, instalador ou portátil) e é conferido pela impressão digital SHA-256 publicada com a versão. Instalador: o aplicativo fecha e o instalador abre (dados mantidos). Portátil: a versão nova fica na mesma pasta e abre no lugar da atual.
 - A verificação nunca interrompe a tela pública: só uma marca discreta "versão X disponível" ao lado da versão. Sem internet, nada muda.
 - **Agenda persistente:** uma cópia que falha tenta novamente até ser concluída (servidor desligado ou sem rede: 30 s a 10 min; cancelada pelo tempo máximo: 30 min), nos dois modos — antes, a cópia cancelada pelo tempo máximo esperava o dia seguinte na agenda diária.
@@ -503,7 +503,7 @@ Verificação e download de versões novas do aplicativo.
 
 ### 1.1.0 — 2026-11-17
 
-`comandoAtualizacao` (pura): aplica a atualização uns segundos depois de o aplicativo fechar — instalador silencioso (`/S --updated --force-run`; mantém o modo da instalação anterior, e o desinstalador antigo recebe `--updated` e não apaga os dados) ou com todos os detalhes (`--updated`), e em seguida abre o aplicativo (se a instalação falhou, a versão atual volta); portátil: abre a versão nova. Caminhos com aspas ou `%` recusados.
+`comandoAtualizacao` (pura): aplica a atualização uns segundos depois de o aplicativo fechar — instalador silencioso (`/S --updated --force-run`; mantém o modo da instalação anterior, e o desinstalador antigo recebe `--updated` e não apaga os dados) ou com todos os detalhes (sem `/S` e sem `--updated`, para mostrar todas as etapas — os dados continuam protegidos, porque o desinstalador antigo sempre recebe `--updated`), e em seguida abre o aplicativo (se a instalação for cancelada ou a permissão do Windows for negada, a versão atual volta a abrir); portátil: abre a versão nova. Caminhos com aspas ou `%` recusados.
 
 ### 1.0.0 — 2026-11-17
 

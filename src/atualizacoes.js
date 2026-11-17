@@ -20,8 +20,8 @@
  *   (Histórico completo das versões: CHANGELOG.md no repositório.)
  *   1.1.0 — comandoAtualizacao: atualização automática, silenciosa (/S --updated
  *           --force-run, sem janelas, reabre o aplicativo) ou com todos os detalhes (o
- *           instalador com as etapas); depois do instalador, o aplicativo é aberto
- *           novamente (se a instalação falhar ou for cancelada, a versão atual volta a abrir).
+ *           instalador com todas as etapas); depois do instalador, o aplicativo é aberto
+ *           novamente (se a instalação for cancelada ou a permissão do Windows for negada, a versão atual volta a abrir).
  */
 
 const https = require("https");
@@ -153,13 +153,15 @@ async function baixarAtualizacao(dep) {
 
 /**
  * Puro: linha de comando (cmd /s /c "...") que, uns segundos depois de este aplicativo
- * fechar (instância única), aplica a atualização e garante que o aplicativo volte a abrir.
+ * fechar (instância única), aplica a atualização e abre o aplicativo em seguida.
  *   Instalador silencioso: /S --updated --force-run (sem janelas; mantém o modo da instalação
  *   anterior; o desinstalador antigo recebe --updated e não apaga os dados).
- *   Instalador com todos os detalhes: --updated (as etapas do instalador aparecem).
+ *   Instalador com todos os detalhes: sem /S e sem --updated, para mostrar TODAS as etapas
+ *   (com --updated o instalador pula a pasta e a licença); os dados continuam protegidos,
+ *   porque o instalador sempre chama o desinstalador antigo com --updated.
+ *   Aplicativo ainda aberto (ou o vigia): o instalador o encerra (no silencioso, sem perguntar).
  *   Depois do instalador, abre o aplicativo: se ele já abriu, a segunda instância sai na hora;
- *   se a instalação falhou ou foi cancelada, a versão atual volta a abrir (o quiosque não
- *   fica fechado).
+ *   se a instalação for cancelada ou a permissão do Windows for negada, a versão atual volta a abrir.
  *   Portátil: abre a versão nova (baixada na mesma pasta).
  * Caminhos com aspas ou % são recusados (não podem ir para a linha do cmd).
  */
@@ -170,8 +172,8 @@ function comandoAtualizacao(o) {
     if (invalido(arquivo) || (!d.portatil && invalido(exeApp))) throw new Error("Caminho com caracteres não suportados (aspas ou %).");
     const espera = "ping -n 4 127.0.0.1 >nul";
     if (d.portatil) return "\"" + espera + " & start \"\" \"" + arquivo + "\"\"";
-    const args = d.modo === "detalhado" ? "--updated" : "/S --updated --force-run";
-    return "\"" + espera + " & start \"\" /wait \"" + arquivo + "\" " + args + " & ping -n 6 127.0.0.1 >nul & start \"\" \"" + exeApp + "\"\"";
+    const args = d.modo === "detalhado" ? "" : " /S --updated --force-run";
+    return "\"" + espera + " & start \"\" /wait \"" + arquivo + "\"" + args + " & ping -n 6 127.0.0.1 >nul & start \"\" \"" + exeApp + "\"\"";
 }
 
 module.exports = {

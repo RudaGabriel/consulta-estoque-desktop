@@ -127,8 +127,8 @@ test("atualizações: instalação automática silenciosa ou com todos os detalh
     assert.match(sil, /& start "" "[^"]+Consulta Estoque\.exe""$/, "depois do instalador, abre o aplicativo (se a instalação falhar, a versão atual volta)");
     assert.ok(sil.indexOf("ping -n 4") < sil.indexOf("/wait"), "espera o aplicativo fechar antes do instalador");
     const det = A.comandoAtualizacao(Object.assign({ modo: "detalhado" }, base));
-    assert.match(det, /\/wait "[^"]+instalador\.exe" --updated & /, "com todos os detalhes: instalador com as etapas");
-    assert.ok(!/\/S/.test(det), "sem /S no modo detalhado");
+    assert.match(det, /\/wait "[^"]+instalador\.exe" & /, "com todos os detalhes: instalador com todas as etapas");
+    assert.ok(!/\/S|--updated/.test(det), "sem /S e sem --updated (que pularia etapas) no modo detalhado");
     assert.strictEqual(A.comandoAtualizacao({ arquivo: "D:\\Pendrive\\ConsultaEstoque-1.9.0-win10-11-x64-portatil.exe", portatil: true }),
         "\"ping -n 4 127.0.0.1 >nul & start \"\" \"D:\\Pendrive\\ConsultaEstoque-1.9.0-win10-11-x64-portatil.exe\"\"", "portátil: abre a versão nova");
     assert.match(A.comandoAtualizacao(Object.assign({}, base)), /\/S --updated --force-run/, "sem modo: silenciosa");
