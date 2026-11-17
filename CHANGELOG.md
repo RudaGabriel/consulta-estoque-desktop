@@ -7,20 +7,21 @@ Versões em uso hoje:
 
 | Arquivo | Versão |
 |---|---|
-| Aplicativo (`package.json`) | [1.8.0](#aplicativo) |
-| [`main.js`](#mainjs) | 1.5.4 |
-| [`preload.js`](#preloadjs) | 1.6.0 |
-| [`ui/index.html`, `ui/estilo.css`, `ui/app.js`](#ui) | 1.8.0 (`app.js`); 1.6.0 (`index.html`); 1.5.0 (`estilo.css`) |
-| [`src/motor.js`](#srcmotorjs) | 1.8.0 |
+| Aplicativo (`package.json`) | [1.9.0](#aplicativo) |
+| [`main.js`](#mainjs) | 1.6.0 |
+| [`preload.js`](#preloadjs) | 1.7.0 |
+| [`ui/index.html`, `ui/estilo.css`, `ui/app.js`](#ui) | 1.9.0 (`app.js`); 1.7.0 (`index.html`); 1.6.0 (`estilo.css`) |
+| [`src/motor.js`](#srcmotorjs) | 1.8.1 |
 | [`src/firebird.js`](#srcfirebirdjs) | 1.1.1 |
 | [`src/estoque-dados.js`](#srcestoque-dadosjs) | 1.2.0 |
 | [`src/estoque-busca.js`](#srcestoque-buscajs) | 1.3.0 |
 | [`src/localizar-banco.js`](#srclocalizar-bancojs) | 1.5.0 |
 | [`src/caminhos.js`](#srccaminhosjs) | 1.0.0 |
 | [`src/autoexcluir.js`](#srcautoexcluirjs) | 1.0.0 |
+| [`src/atualizacoes.js`](#srcatualizacoesjs) | 1.0.0 |
 | [`src/instalar-firebird.js`](#srcinstalar-firebirdjs) | 1.2.0 |
 | [`src/copia-gbak.js`](#srccopia-gbakjs) | 1.3.0 |
-| [`src/config.js`](#srcconfigjs) | 1.6.0 |
+| [`src/config.js`](#srcconfigjs) | 1.7.0 |
 | [`src/vigia.js`](#srcvigiajs) | 1.1.0 |
 | [`src/registro.js`](#srcregistrojs) | 1.0.0 |
 | [`src/demo.js`](#srcdemojs) | 1.2.0 |
@@ -36,6 +37,16 @@ Versões em uso hoje:
 ## Aplicativo
 
 Versão do Consulta Estoque (a que aparece no instalador e em *Configurações → Diagnóstico*).
+
+### 1.9.0 — 2026-11-17
+
+**Atualizações do aplicativo e agenda persistente da Cópia do banco.**
+
+- **Atualizações** (*Configurações → Atualizações*, área livre): **Verificar agora** (no máximo uma vez por minuto) e verificação automática **uma vez ao dia, por semana (padrão) ou por mês**, ou **nunca**. Qualquer pessoa pode verificar e mudar a frequência; **baixar e instalar exige a senha do administrador** e confirmação.
+- O arquivo baixado é o da mesma versão do aplicativo (moderna ou legado, 64 ou 32 bits, instalador ou portátil) e é conferido pela impressão digital SHA-256 publicada com a versão. Instalador: o aplicativo fecha e o instalador abre (dados mantidos). Portátil: a versão nova fica na mesma pasta e abre no lugar da atual.
+- A verificação nunca interrompe a tela pública: só uma marca discreta "versão X disponível" ao lado da versão. Sem internet, nada muda.
+- **Agenda persistente:** uma cópia que falha tenta novamente até ser concluída (servidor desligado ou sem rede: 30 s a 10 min; cancelada pelo tempo máximo: 30 min), nos dois modos — antes, a cópia cancelada pelo tempo máximo esperava o dia seguinte na agenda diária.
+- 88 testes; tela validada no Electron 44 e 22.
 
 ### 1.8.0 — 2026-11-16
 
@@ -185,6 +196,10 @@ Versão do Consulta Estoque (a que aparece no instalador e em *Configurações �
 
 Processo principal (janela, instância única, pasta de dados, IPC).
 
+### 1.6.0 — 2026-11-17
+
+Atualizações do aplicativo: estado em `atualizacoes.json` (gravado só pelo processo principal), verificação automática conforme `atualizacoesFrequencia` (primeira 2 min após abrir, conferência de hora em hora, no máximo uma tentativa por hora), `atualizacoes:estado` e `atualizacoes:verificar` livres (manual: no máximo uma por minuto), `atualizacoes:instalar` com `exigirAdmin` (só no aplicativo empacotado do Windows, nunca no modo demonstração; portátil: pasta da versão atual, com teste de gravação). Depois do download conferido, abre o instalador/portátil novo pelo `cmd` uns segundos depois de fechar (instância única) e sai pela saída autorizada (o vigia não reabre a versão antiga). Modo demonstração: resultado simulado, sem rede.
+
 ### 1.5.4 — 2026-11-16
 
 `copia:adiar-agenda`: grava "Decidir mais tarde" da agenda da Cópia do banco (`copiaAgendaAdiada`) sem exigir a senha, no mesmo padrão de `firebird:nao-perguntar` (só desliga a pergunta).
@@ -231,6 +246,10 @@ Mensagens em linguagem formal ("Aguarde N s para tentar novamente", "o vigia é 
 
 Ponte segura entre a tela e o processo principal.
 
+### 1.7.0 — 2026-11-17
+
+**`atualizacoesEstado`, `verificarAtualizacoes`, `instalarAtualizacao` e `aoAtualizacoes`.**
+
 ### 1.6.0 — 2026-11-16
 
 **`adiarAgendaCopia`** ("Decidir mais tarde" da agenda da Cópia do banco).
@@ -266,6 +285,10 @@ Ponte segura entre a tela e o processo principal.
 ## `ui/index.html`, `ui/estilo.css`, `ui/app.js`
 
 A tela.
+
+### 1.9.0 (`app.js`), 1.7.0 (`index.html`) e 1.6.0 (`estilo.css`) — 2026-11-17
+
+Aba pública **Atualizações** (sem o botão Salvar): situação, **Verificar agora**, frequência (salva na hora, sem a senha) e **Baixar e instalar** (senha, depois confirmação; barra de andamento do download). Versão nova: marca discreta `#versaoNova` ao lado da versão — nenhuma janela na tela principal.
 
 ### 1.8.0 (`app.js`) e 1.6.0 (`index.html`) — 2026-11-16
 
@@ -320,6 +343,10 @@ Atualizar/F5 no modo Instantâneo pergunta "Ler o estoque do servidor agora?" (b
 ## `src/motor.js`
 
 Modos, atualização, cache em disco e auto-correção do banco.
+
+### 1.8.1 — 2026-11-17
+
+Agenda persistente: `esperaAposFalha(codigo, falhasSeguidas)` (exportada, pura) — a cópia cancelada pelo tempo máximo tenta novamente em 30 min (antes, `Math.max(intervaloNormal(), 30 min)` levava ao dia seguinte na agenda diária ou ao intervalo inteiro); outras falhas: 30 s a 10 min. Tenta até concluir.
 
 ### 1.8.0 — 2026-11-16
 
@@ -469,6 +496,16 @@ Comparação de pastas do Windows.
 
 ---
 
+## `src/atualizacoes.js`
+
+Verificação e download de versões novas do aplicativo.
+
+### 1.0.0 — 2026-11-17
+
+**Primeira versão.** Última versão pelo `SHA256SUMS.txt` de `releases/latest/download` (sem a API do GitHub e seu limite de consultas); funções puras `compararVersoes`, `lerSomas`, `escolherArquivo` (mesma variante, arquitetura e tipo) e `verificacaoDevida`; `baixarTexto` (até 64 KB, redirecionamentos, só HTTPS, prazo), `verificar` (403/429 e sem rede = tentar mais tarde) e `baixarAtualizacao` (download com andamento e SHA-256 conferido; arquivo diferente apagado).
+
+---
+
 ## `src/autoexcluir.js`
 
 Ajudante que apaga a versão portátil depois que ela fecha.
@@ -522,6 +559,10 @@ Cópia por gbak.
 ## `src/config.js`
 
 Configuração validada.
+
+### 1.7.0 — 2026-11-17
+
+`atualizacoesFrequencia` (`nunca`, `diaria`, `semanal` — padrão —, `mensal`), em `PUBLICAS` (exceção deliberada: só a frequência da verificação; instalar exige a senha).
 
 ### 1.6.0 — 2026-11-16
 

@@ -6,13 +6,13 @@
 
 ### Consulta de preço e estoque sobre banco de dados Firebird, compatível com leitores de código de barras
 
-<img alt="aplicativo: v1.8.0" src="https://img.shields.io/badge/aplicativo-v1.8.0-2563EB?style=flat">
+<img alt="aplicativo: v1.9.0" src="https://img.shields.io/badge/aplicativo-v1.9.0-2563EB?style=flat">
 <img alt="plataforma: Windows 7 a 11" src="https://img.shields.io/badge/plataforma-Windows%207%20%7C%208%20%7C%2010%20%7C%2011-0078D4?style=flat&logo=data%3Aimage%2Fsvg%2Bxml%3Bbase64%2CPHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHZpZXdCb3g9JzAgMCAyNCAyNCcgZmlsbD0nd2hpdGUnPjxyZWN0IHg9JzMnIHk9JzMnIHdpZHRoPSc4JyBoZWlnaHQ9JzgnLz48cmVjdCB4PScxMycgeT0nMycgd2lkdGg9JzgnIGhlaWdodD0nOCcvPjxyZWN0IHg9JzMnIHk9JzEzJyB3aWR0aD0nOCcgaGVpZ2h0PSc4Jy8%2BPHJlY3QgeD0nMTMnIHk9JzEzJyB3aWR0aD0nOCcgaGVpZ2h0PSc4Jy8%2BPC9zdmc%2B&logoColor=white">
 <img alt="arquitetura: 64 e 32 bits" src="https://img.shields.io/badge/arquitetura-64%20e%2032%20bits-0E7490?style=flat">
 <img alt="idioma: pt-BR" src="https://img.shields.io/badge/idioma-pt--BR-16A34A?style=flat">
 <img alt="banco: somente leitura" src="https://img.shields.io/badge/banco-somente%20leitura-DC2626?style=flat&logo=data%3Aimage%2Fsvg%2Bxml%3Bbase64%2CPHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHZpZXdCb3g9JzAgMCAyNCAyNCcgZmlsbD0nbm9uZScgc3Ryb2tlPSd3aGl0ZScgc3Ryb2tlLXdpZHRoPScyLjInIHN0cm9rZS1saW5lY2FwPSdyb3VuZCcgc3Ryb2tlLWxpbmVqb2luPSdyb3VuZCc%2BPHBhdGggZD0nTTEyIDIyczgtNCA4LTEwVjVsLTgtMy04IDN2N2MwIDYgOCAxMCA4IDEweicvPjxwYXRoIGQ9J205IDEyIDIgMiA0LTQnLz48L3N2Zz4%3D&logoColor=white">
 <img alt="funciona: sem internet" src="https://img.shields.io/badge/funciona-sem%20internet-0891B2?style=flat">
-<img alt="testes: 82 passando" src="https://img.shields.io/badge/testes-82%20passando-22C55E?style=flat&logo=data%3Aimage%2Fsvg%2Bxml%3Bbase64%2CPHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHZpZXdCb3g9JzAgMCAyNCAyNCcgZmlsbD0nbm9uZScgc3Ryb2tlPSd3aGl0ZScgc3Ryb2tlLXdpZHRoPScyLjInIHN0cm9rZS1saW5lY2FwPSdyb3VuZCcgc3Ryb2tlLWxpbmVqb2luPSdyb3VuZCc%2BPHBhdGggZD0nTTkgMnY2TDQgMTlhMiAyIDAgMCAwIDEuOCAzaDEyLjRhMiAyIDAgMCAwIDEuOC0zTDE1IDhWMicvPjxwYXRoIGQ9J004IDJoOCcvPjxwYXRoIGQ9J003IDE1aDEwJy8%2BPC9zdmc%2B&logoColor=white">
+<img alt="testes: 88 passando" src="https://img.shields.io/badge/testes-88%20passando-22C55E?style=flat&logo=data%3Aimage%2Fsvg%2Bxml%3Bbase64%2CPHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHZpZXdCb3g9JzAgMCAyNCAyNCcgZmlsbD0nbm9uZScgc3Ryb2tlPSd3aGl0ZScgc3Ryb2tlLXdpZHRoPScyLjInIHN0cm9rZS1saW5lY2FwPSdyb3VuZCcgc3Ryb2tlLWxpbmVqb2luPSdyb3VuZCc%2BPHBhdGggZD0nTTkgMnY2TDQgMTlhMiAyIDAgMCAwIDEuOCAzaDEyLjRhMiAyIDAgMCAwIDEuOC0zTDE1IDhWMicvPjxwYXRoIGQ9J004IDJoOCcvPjxwYXRoIGQ9J003IDE1aDEwJy8%2BPC9zdmc%2B&logoColor=white">
 <img alt="licença: proprietária" src="https://img.shields.io/badge/licen%C3%A7a-propriet%C3%A1ria-6B7280?style=flat">
 
 <img alt="Electron: 44.9.3" src="https://img.shields.io/badge/Electron-44.9.3-47848F?style=flat&logo=electron&logoColor=white">
@@ -33,7 +33,7 @@
 
 **Passe o leitor e veja o preço na hora · Tela cheia permanente (quiosque) com senha do administrador · Localiza o banco de dados automaticamente ou por seleção manual · Três modos: Instantâneo (padrão), Cópia do banco ou Leitura direta · Nunca escreve no banco · Funciona sem internet e até com o servidor fora do ar · Do PC antigo (Windows 7, 32 bits) ao mais novo**
 
-[Instalar](#instalacao) · [Usar](#uso) · [Leitor](#leitor) · [Quiosque e senha](#quiosque) · [Modos](#modos) · [Banco automático](#banco) · [Configurar](#configuracao) · [PCs antigos](#antigos) · [Segurança](#seguranca) · [Problemas](#problemas)
+[Instalar](#instalacao) · [Usar](#uso) · [Leitor](#leitor) · [Quiosque e senha](#quiosque) · [Modos](#modos) · [Banco automático](#banco) · [Configurar](#configuracao) · [PCs antigos](#antigos) · [Atualizações](#atualizacoes) · [Segurança](#seguranca) · [Problemas](#problemas)
 
 </div>
 
@@ -53,6 +53,7 @@ Um aplicativo de Windows, de **janela própria** (não abre no navegador), para 
 | 📊 **Andamento** | Barra abaixo do topo enquanto o estoque atualiza: na **Cópia do banco**, a porcentagem e o tempo que falta (estimado pela última cópia); no **Instantâneo**, o tempo da leitura. |
 | 🔒 **Somente leitura** | Nunca grava nada no banco de dados. |
 | 🔐 **Quiosque** | Abre em tela cheia e não sai dela; com a senha do administrador (opcional), não fecha sem ela. Se for fechado à força ou travar, **é reaberto automaticamente em 1 a 2 segundos**. Abre junto com o Windows, uma instância só. |
+| ⬆️ **Atualizações** | Verifica se há versão nova (uma vez ao dia, por semana ou por mês, ou só pelo botão **Verificar agora**). Qualquer pessoa pode verificar e mudar a frequência; baixar e instalar exige a senha do administrador. Sem internet, nada muda. |
 | 🖥️ **PCs antigos e novos** | Versão moderna (Windows 10/11, 64 bits) e versão **legado** (Windows 7 a 11, 64 e 32 bits). Modo leve sem animações. |
 
 <a id="instalacao"></a>
@@ -127,7 +128,8 @@ Abra com o parâmetro `--demo` (ex.: um atalho para `"Consulta Estoque.exe" --de
 | Limpar a tela | Automaticamente, **1 minuto** depois da última tecla ou leitura (busca e cartão somem). |
 | Sair do aplicativo | **Ctrl+Shift+Q** e a senha do administrador. |
 | Aumentar/diminuir o texto | **Ctrl + +** / **Ctrl + −** / **Ctrl + 0**, ou *Configurações → Tela*. |
-| Ver a versão do aplicativo | Ao lado do nome, no topo da tela (ex.: `v1.7.1`, em tom discreto). Também em *Configurações → Diagnóstico*. |
+| Ver a versão do aplicativo | Ao lado do nome, no topo da tela (ex.: `v1.9.0`, em tom discreto). Também em *Configurações → Diagnóstico*. Havendo versão nova, aparece ao lado, também discreto, "versão X disponível". |
+| Procurar uma versão nova do aplicativo | *Configurações → Atualizações → Verificar agora* (sem senha). Veja [Atualizações](#atualizacoes). |
 | Ver a situação do banco | Clique no indicador do topo (bolinha verde = atualizado, amarela = mostrando dados salvos porque o banco falhou, vermelha = sem conexão). Ao lado aparecem a hora da última atualização, o número de itens e o modo (instantâneo, cópia do banco ou leitura direta). |
 
 <details>
@@ -240,6 +242,8 @@ Escolha em *Configurações → Consulta*. Em todos os modos o aplicativo **só 
 | **Uma vez ao dia** | Pergunta o horário (ex.: `06:00`, antes da abertura da loja). A cópia é feita todos os dias nesse horário. Se o computador estiver desligado no horário, a cópia é feita ao abrir o aplicativo; depois de uma cópia, a seguinte nunca fica a menos de 1 hora |
 
 Também é possível **Decidir mais tarde** (vale o intervalo); essa escolha fica gravada e a pergunta não volta a cada abertura. Na abertura, a pergunta só aparece com a tela liberada (sem senha do administrador): com senha, a tela pública nunca fica presa nela, e o administrador é perguntado uma vez ao abrir *Configurações → Consulta*. A mesma opção fica em *Configurações → Consulta → Agenda da Cópia do banco*. Ela existe só na Cópia do banco: o **Instantâneo** é uma leitura de segundos e usa o intervalo; a **Leitura direta** tem a própria recarga.
+
+**Persistente até concluir.** Nos dois modos (intervalos ou uma vez ao dia), uma cópia que falha não espera o próximo horário: com o servidor desligado ou sem rede, o aplicativo tenta novamente em 30 segundos, 1, 2, 4 e 8 minutos e depois a cada 10 minutos, até o banco ficar disponível e a cópia ser concluída; a cópia cancelada por passar do **tempo máximo de uma cópia** tenta novamente em 30 minutos. Só depois de concluída a cópia volta à agenda (o próximo intervalo ou o próximo dia, no horário escolhido). Fechar e abrir o aplicativo não perde a cópia pendente: ao abrir, a cópia atrasada é feita.
 
 **Por que o Instantâneo é seguro como padrão:** é um único `SELECT` na tabela de produtos, numa transação **somente leitura**, *READ COMMITTED* sem espera — ele não bloqueia o caixa nem espera por ele, e o resultado é o mesmo que o gbak mostraria naquele instante (só a tabela de produtos, que é o que a consulta usa).
 
@@ -357,6 +361,7 @@ Tudo pode ser feito na tela (*Configurações*, **F10**). As chaves marcadas com
 | `tema` | `auto` | `auto`, `claro` ou `escuro` |
 | `zoom` | `1` | Tamanho do texto (0,6 a 2,5) |
 | `som` / `tabComoEnter` | `true` / `true` | Bipe na leitura / TAB do leitor vale como Enter |
+| `atualizacoesFrequencia` | `semanal` | Verificação automática de versões novas: `diaria`, `semanal`, `mensal` ou `nunca` (livre, sem a senha) |
 | `volumeSom` | `100` | Volume do bipe (10 a 100%) |
 | `modoLeve` | `false` | Sem animações (PCs antigos) |
 | `senhaAdmin` | — | *Hash* da senha do administrador (criado pela tela; nunca a senha). Vazio = sem senha, tudo livre |
@@ -401,6 +406,25 @@ Passo a passo:
 6. Confere que o serviço ficou de pé e passa a usá-lo (a **Cópia do banco** volta a usar o gbak).
 
 O Firebird do **servidor** e o banco de dados nunca são tocados. A troca é **recusada** quando o banco em uso está neste computador (o Firebird daqui seria o do próprio sistema). Não confirme a troca se outro programa deste computador usar o Firebird antigo.
+
+---
+
+<a id="atualizacoes"></a>
+
+## ⬆️ Atualizações do aplicativo
+
+Em *Configurações → Atualizações* — área **livre**, sem a senha do administrador:
+
+| O quê | Como |
+|---|---|
+| **Verificar agora** | Consulta se há versão nova (no máximo uma vez por minuto). |
+| **Verificar automaticamente** | **Uma vez ao dia**, **uma vez por semana** (padrão), **uma vez por mês** ou **Nunca** (somente pelo botão). A primeira verificação automática acontece 2 minutos depois de abrir; sem internet, nova tentativa em uma hora. |
+| **Baixar e instalar** | Só com a **senha do administrador** e confirmação. Baixa o arquivo da mesma versão do aplicativo (moderna ou legado, 64 ou 32 bits, instalador ou portátil) e confere a **impressão digital SHA-256** publicada com a versão. Instalador: o aplicativo fecha e o instalador abre (configurações, senha e estoque salvo são mantidos). Portátil: a versão nova fica na mesma pasta da atual e abre no lugar dela (a pasta `ConsultaEstoque-dados` é a mesma). |
+
+- A verificação **nunca interrompe a tela pública**: quando há versão nova, só aparece a marca discreta "versão X disponível" ao lado da versão, no topo. Nada é baixado sem o administrador.
+- Só atualiza para uma versão **maior** que a instalada, nunca para uma anterior.
+- A impressão digital SHA-256 prova que o arquivo chegou inteiro e é o publicado com a versão; ela não é uma assinatura digital (o aplicativo não tem assinatura paga, e o Windows pode exibir o aviso "O Windows protegeu o computador").
+- A verificação usa a internet; **sem internet o aplicativo funciona normalmente** (a consulta do estoque nunca depende dela).
 
 ---
 
@@ -456,7 +480,7 @@ Uma única biblioteca em uso pelo aplicativo (`node-firebird`); o resto é o pr�
 | Instalador | [electron-builder](https://www.electron.build) | 26.18.0 | Instalador NSIS e versão portátil, x64 e ia32 |
 | Tela | HTML5, CSS e JavaScript sem framework | — | Leve para PCs fracos; temas claro e escuro |
 | Som | Web Audio API | — | Bipe da leitura, sem arquivos de áudio |
-| Testes | `node:test` + `node:assert` | Node 20+ | 82 testes com Firebird, gbak e aplicativo simulados |
+| Testes | `node:test` + `node:assert` | Node 20+ | 88 testes com Firebird, gbak e aplicativo simulados |
 | Senha | `crypto.pbkdf2` (Node) | — | *Hash* da senha do administrador com sal, comparação em tempo constante |
 | Teste da tela | Playwright + Electron | — | Fluxo do leitor, cartão, configurações, tema e Electron 22 |
 | Build | GitHub Actions | — | Testes + instaladores a cada push |
@@ -469,7 +493,7 @@ Uma única biblioteca em uso pelo aplicativo (`node-firebird`); o resto é o pr�
 npm test
 ```
 
-- **82 testes**, sem Firebird real:
+- **88 testes**, sem Firebird real:
   - **Firebird simulado** (`src/demo.js`): registra toda SQL e transação, para provar que nada de escrita sai;
   - **gbak simulado** (`test/mock-gbak.js`): backup, restauração, falhas e atraso.
 - **Trava de somente leitura:** comandos recusados, transação somente leitura, `node-firebird` 0.x e 1.x+.
@@ -484,10 +508,12 @@ npm test
 - **Administrador:** senha só como *hash*, chaves sensíveis, padrões do quiosque (barra de tarefas oculta, também em config antigo), cópia a cada 3 horas.
 - **Agenda da Cópia do banco:** uma vez ao dia no horário escolhido, nunca duas cópias seguidas (menos de 1 hora), cálculo do próximo horário e do último horário diário, volta para intervalos.
 - **Caminho no servidor:** servidor informado sem o caminho, troca de servidor apaga o caminho antigo; **seleção manual** sem nenhuma busca automática.
+- **Atualizações:** comparação de versões (só maior), escolha do arquivo pela variante, arquitetura e tipo, frequência da verificação, servidor que pede para tentar mais tarde (403/429), sem internet e sem resposta (prazo), endereço sem HTTPS recusado, download conferido pelo SHA-256 (arquivo diferente apagado).
+- **Agenda persistente:** com o servidor desligado na hora da cópia diária, nova tentativa em minutos (não no dia seguinte) até concluir; cópia cancelada pelo tempo máximo tenta novamente em 30 minutos.
 - **Apagar o portátil (processos de verdade):** espera o aplicativo fechar antes de apagar, apaga o `.exe` e a pasta de dados, reconhece a pasta temporária do portátil, nunca mexe em pasta de outro programa.
 - **Vigia (processos de verdade):** reabre o aplicativo fechado à força (rápido, sem abrir duas vezes enquanto o novo grava o PID), espera o reinício avisado, encerra com a saída autorizada e com a persistência desligada, um vigia só.
 - **Abertura:** cópia salva em dia não toca no banco ao abrir; estimativa da cópia pela duração de cada etapa (também antes da primeira cópia da abertura).
-- **Tela (Playwright, Electron 44 e 22):** três modos (Instantâneo padrão), cartão centralizado com preço grande e X centralizado, caixas e campos vazios escondidos, cartão fecha ao digitar, voltar ao topo, volume do bipe, sem totais, "Abaixo do mínimo" escondido sem mínimo, tela sem nomes de sistemas, configuração inicial (nome da loja, senha opcional, sem senha tudo livre, criar e remover a senha depois), barra de andamento da cópia, confirmação do Atualizar/F5, troca do Firebird, pergunta da localização do banco (três opções em lista, seleção manual abrindo a aba Banco de dados), agenda da Cópia do banco (intervalos ou uma vez ao dia, no primeiro uso e na aba Consulta; "Decidir mais tarde" não volta na abertura seguinte; com senha, a tela pública não fica presa e o administrador é perguntado na aba Consulta), filtro de peso, foco de volta na busca após 30 s, coringa e preço, leitura, limpeza após inatividade, fechar bloqueado, trava das abas, desbloqueio, ações sensíveis recusadas sem a senha, saída com Ctrl+Shift+Q, instalação do Firebird e escolha de outro `.FDB`.
+- **Tela (Playwright, Electron 44 e 22):** três modos (Instantâneo padrão), cartão centralizado com preço grande e X centralizado, caixas e campos vazios escondidos, cartão fecha ao digitar, voltar ao topo, volume do bipe, sem totais, "Abaixo do mínimo" escondido sem mínimo, tela sem nomes de sistemas, configuração inicial (nome da loja, senha opcional, sem senha tudo livre, criar e remover a senha depois), barra de andamento da cópia, confirmação do Atualizar/F5, troca do Firebird, pergunta da localização do banco (três opções em lista, seleção manual abrindo a aba Banco de dados), aba Atualizações livre (verificar agora, frequência salva sem a senha, verificação manual limitada a uma por minuto, baixar e instalar com a senha, só a marca discreta na tela principal), agenda da Cópia do banco (intervalos ou uma vez ao dia, no primeiro uso e na aba Consulta; "Decidir mais tarde" não volta na abertura seguinte; com senha, a tela pública não fica presa e o administrador é perguntado na aba Consulta), filtro de peso, foco de volta na busca após 30 s, coringa e preço, leitura, limpeza após inatividade, fechar bloqueado, trava das abas, desbloqueio, ações sensíveis recusadas sem a senha, saída com Ctrl+Shift+Q, instalação do Firebird e escolha de outro `.FDB`.
 
 ---
 
@@ -505,6 +531,7 @@ npm test
 | `src/localizar-banco.js` | Descoberta automática do banco (meta, disco, pastas compartilhadas, rede) e os outros `.FDB` |
 | `src/caminhos.js` | Comparação de pastas do Windows (usada para apagar a versão portátil com segurança) |
 | `src/autoexcluir.js` | Ajudante que apaga a versão portátil depois que ela fecha |
+| `src/atualizacoes.js` | Verificação e download de versões novas (impressão digital SHA-256 conferida) |
 | `src/instalar-firebird.js` | Instalação ou troca do Firebird deste computador, na versão do servidor (2.5 a 5.0) |
 | `src/copia-gbak.js` | Cópia por gbak (backup + restauração somente leitura) |
 | `src/config.js`, `src/registro.js` | Configuração validada e log |
@@ -530,6 +557,8 @@ npm test
 | Leitor não abre o produto | Confira se o leitor envia **Enter** (ou TAB, com a opção ligada). Teste num Bloco de Notas: o código deve aparecer e pular de linha |
 | Cópia do banco: "gbak não encontrado" / "Firebird desta máquina não está rodando" | Volte ao modo **Instantâneo** (o padrão, sem Firebird aqui) em *Configurações → Consulta*, ou use *Banco de dados → Instalar o Firebird neste computador* |
 | "SMALL.FDB não encontrado em lugar nenhum" | Clique em **Ver outros arquivos .FDB** e escolha o banco certo (os que abrem com a tabela de produtos). Se a lista estiver vazia, confira se o servidor está ligado e na mesma rede |
+| "Sem conexão com a internet" em *Atualizações* | Normal em computadores sem internet: o aplicativo continua funcionando e tenta novamente mais tarde. Para atualizar, conecte o computador à internet ou baixe a versão nova em outro computador |
+| "O arquivo baixado não confere com a impressão digital" | O download chegou danificado (conexão instável, antivírus). Clique novamente em **Baixar e instalar**; nada foi instalado |
 | A instalação do Firebird falhou | Sem internet, permissão do Windows negada ou antivírus bloqueando. Tente novamente ou instale manualmente (firebirdsql.org) a mesma versão do servidor (aparece em *Banco de dados*) |
 | A busca não aceita `*`, `>` ou `>9kg` | *Configurações → Consulta*: ative **Busca com coringa** e **Filtro de preço e de peso na busca** |
 | "Versão do Firebird local incompatível" / Firebird daqui mais antigo | O aplicativo mostra as duas versões em *Banco de dados* e oferece **Trocar o Firebird deste computador** pela versão do servidor (com confirmação). Enquanto isso, usa a leitura instantânea |

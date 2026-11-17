@@ -383,3 +383,26 @@ test("motor: Cópia do banco uma vez ao dia → próxima no horário escolhido, 
     await esperar(() => Math.abs(b.motor.status().proximaEm - Date.now() - 120 * 60000) < 120000, 4000);
     b.motor.encerrar();
 });
+
+test("motor: agenda persistente — falha tenta novamente até concluir (30 s a 10 min; cancelada pelo tempo máximo: 30 min)", async () => {
+    const { esperaAposFalha } = require("../src/motor.js");
+    assert.deepStrictEqual([1, 2, 3, 4, 5, 6, 9].map(n => esperaAposFalha(null, n) / 1000), [30, 60, 120, 240, 480, 600, 600]);
+    assert.strictEqual(esperaAposFalha("CANCELADA", 1), 30 * 60000, "cancelada: 30 min, não o dia seguinte nem o intervalo inteiro");
+    // Uma vez ao dia com o servidor fora do ar: tenta novamente em minutos, não no dia seguinte.
+    const hhmm = ms => { const d = new Date(Date.now() + ms); return String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0"); };
+    let ligado = false;
+    const bancos = {}; // servidor "desligado": o banco ainda não responde
+    const m = montar(bancos,
+        { fbHost: "10.0.0.7", fdbPath: "D:\\DADOS\\SMALL.FDB", fbHostFixo: true, metodoCopia: "auto", copiaAgenda: "diaria", copiaHorario: hhmm(5 * 3600000), versaoConfig: 3 },
+        { portaAberta: async h => ligado && h === "10.0.0.7" });
+    await m.motor.iniciar();
+    await esperar(() => m.motor.status().erro && m.motor.status().proximaEm > Date.now(), 8000);
+    const falta = m.motor.status().proximaEm - Date.now();
+    assert.ok(falta <= 60000, "servidor desligado: nova tentativa em até 1 min (" + Math.round(falta / 1000) + " s)");
+    ligado = true;
+    bancos["10.0.0.7|D:\\DADOS\\SMALL.FDB"] = bancoExemplo(); // servidor volta
+    m.motor.atualizarAgora();
+    await esperar(() => m.motor.status().itens === 15 && m.motor.status().proximaEm > Date.now() + 3600000, 8000);
+    assert.ok(m.motor.status().proximaEm - Date.now() > 4 * 3600000, "concluída: volta ao horário diário");
+    m.motor.encerrar();
+});

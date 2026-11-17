@@ -1,7 +1,7 @@
 "use strict";
 /**
  * main.js
- * @version 1.5.4
+ * @version 1.6.0
  * @author Ruda Gabriel
  * @description Processo principal do Consulta Estoque (Electron): janela em
  *              modo quiosque, senha do administrador, módulo de persistência
@@ -17,8 +17,9 @@
  *
  * @changelog
  *   (Histórico completo das versões: CHANGELOG.md no repositório.)
- *   1.5.4 — "copia:adiar-agenda": grava "Decidir mais tarde" da agenda da Cópia do banco
- *           sem exigir a senha (só desliga a pergunta na abertura).
+ *   1.6.0 — Atualizações do aplicativo: verificação automática (diária, semanal, mensal
+ *           ou nunca) e manual (no máximo uma por minuto), livres; baixar e instalar
+ *           exige a senha (SHA-256 conferido; saída autorizada antes do instalador).
  */
 
 const { app, BrowserWindow, ipcMain, dialog, shell, screen, powerSaveBlocker } = require("electron");
@@ -34,6 +35,7 @@ const InstalarFirebird = require("./src/instalar-firebird.js");
 const Localizar = require("./src/localizar-banco.js");
 const { dentroDaPasta } = require("./src/caminhos.js");
 const Autoexcluir = require("./src/autoexcluir.js");
+const Atualizacoes = require("./src/atualizacoes.js");
 const pacote = require("./package.json");
 
 const VERSAO = pacote.version;
@@ -168,6 +170,64 @@ if (!INSTANCIA_PRINCIPAL) {
     // ── Vigia (persistência) ─────────────────────────────────────────────────
     const pidVivo = pid => { if (!(pid > 0)) return false; try { process.kill(pid, 0); return true; } catch (e) { return !!(e && e.code === "EPERM"); } };
     const lerPid = arq => { try { return parseInt(fs.readFileSync(arq, "utf8"), 10) || 0; } catch (_) { return 0; } };
+
+    // ── Atualizações do aplicativo ───────────────────────────────────────────
+    // Verificar e mudar a frequência é livre (área pública); baixar e instalar exige a senha.
+    // A verificação só registra o resultado: nada aparece na tela principal além de uma
+    // marca discreta ao lado da versão. Sem internet, o aplicativo segue normalmente.
+    const ARQ_ATUALIZACAO = path.join(PASTA_DADOS, "atualizacoes.json");
+    const atualizacao = { verificadoEm: 0, versaoNova: null, arquivo: null, erro: null, verificando: false, baixando: false, progresso: null, tentativaEm: 0 };
+    try {
+        const salvo = JSON.parse(fs.readFileSync(ARQ_ATUALIZACAO, "utf8"));
+        atualizacao.verificadoEm = Number(salvo.verificadoEm) || 0;
+        if (salvo.arquivo && Atualizacoes.compararVersoes(salvo.versaoNova, VERSAO) > 0) { atualizacao.versaoNova = String(salvo.versaoNova); atualizacao.arquivo = salvo.arquivo; }
+    } catch (_) {}
+    const alvoAtualizacao = () => ({ legado: /^legado/i.test(VARIANTE), arch: process.arch, portatil: PORTATIL });
+    // Baixar e instalar só no aplicativo empacotado do Windows (nunca no modo demonstração).
+    const podeInstalarAtualizacao = () => process.platform === "win32" && app.isPackaged && !DEMO && /^(legado|moderno)/i.test(VARIANTE);
+    const estadoAtualizacao = () => ({
+        versaoAtual: VERSAO, frequencia: motor ? motor.config().atualizacoesFrequencia : "semanal",
+        verificadoEm: atualizacao.verificadoEm, versaoNova: atualizacao.versaoNova, erro: atualizacao.erro,
+        verificando: atualizacao.verificando, baixando: atualizacao.baixando, progresso: atualizacao.progresso,
+        podeInstalar: podeInstalarAtualizacao(), portatil: PORTATIL
+    });
+    const emitirAtualizacao = () => enviar("atualizacoes:estado", estadoAtualizacao());
+    async function verificarAtualizacao(motivo) {
+        if (atualizacao.verificando || atualizacao.baixando) return;
+        atualizacao.verificando = true;
+        atualizacao.tentativaEm = Date.now();
+        emitirAtualizacao();
+        try {
+            let r;
+            // Modo demonstração: nunca usa a rede (resultado simulado só para conhecer a tela).
+            if (DEMO) r = { ok: true, versaoNova: process.env.CONSULTA_ATUALIZACAO_SIMULADA || null, arquivo: null };
+            else r = await Atualizacoes.verificar({ versaoAtual: VERSAO, alvo: alvoAtualizacao() });
+            if (r.ok) {
+                atualizacao.verificadoEm = Date.now();
+                atualizacao.versaoNova = r.versaoNova || null;
+                atualizacao.arquivo = r.arquivo || null;
+                atualizacao.erro = null;
+                try { Config.gravarAtomico(ARQ_ATUALIZACAO, JSON.stringify({ verificadoEm: atualizacao.verificadoEm, versaoNova: atualizacao.versaoNova, arquivo: atualizacao.arquivo })); } catch (_) {}
+                reg.info("Atualizações (" + motivo + "): " + (r.versaoNova ? "versão " + r.versaoNova + " disponível." : "esta é a versão mais recente (" + VERSAO + ")."));
+            } else {
+                atualizacao.erro = r.erro || "Não foi possível verificar.";
+                reg.aviso("Atualizações (" + motivo + "): " + atualizacao.erro + " Nova tentativa automática mais tarde.");
+            }
+        } catch (e) {
+            atualizacao.erro = "Não foi possível verificar: " + (e && e.message || e);
+            reg.aviso("Atualizações (" + motivo + "): " + atualizacao.erro);
+        } finally {
+            atualizacao.verificando = false;
+            emitirAtualizacao();
+        }
+    }
+    /** Verificação automática: no máximo uma tentativa por hora, conforme a frequência escolhida. */
+    function conferirAgendaAtualizacao() {
+        if (!motor) return;
+        const freq = motor.config().atualizacoesFrequencia;
+        if (Date.now() - atualizacao.tentativaEm < 55 * 60000) return;
+        if (Atualizacoes.verificacaoDevida(freq, atualizacao.verificadoEm)) verificarAtualizacao("verificação automática " + freq).catch(() => {});
+    }
 
     function garantirVigia(cfg) {
         if (!PODE_PERSISTIR || !cfg.persistente) return;
@@ -451,6 +511,71 @@ if (!INSTANCIA_PRINCIPAL) {
             vigiaAtivo: pidVivo(lerPid(ARQ.vigiaPid)),
             portatil: PORTATIL && process.platform === "win32" && !DEMO
         }));
+        // ── Atualizações (área pública; baixar e instalar exige a senha) ──
+        tratar("atualizacoes:estado", () => estadoAtualizacao());
+        tratar("atualizacoes:verificar", async () => {
+            // Tela pública: no máximo uma verificação manual por minuto.
+            if (Date.now() - atualizacao.tentativaEm < 60000 || atualizacao.verificando) return { ok: false, mensagem: "Uma verificação acabou de ser feita. Aguarde um minuto para verificar novamente.", estado: estadoAtualizacao() };
+            await verificarAtualizacao("verificação manual");
+            return { ok: true, estado: estadoAtualizacao() };
+        });
+        tratar("atualizacoes:instalar", async () => {
+            exigirAdmin();
+            if (!podeInstalarAtualizacao()) return { ok: false, mensagem: "A instalação de atualizações só funciona no aplicativo instalado ou portátil do Windows (não no modo demonstração)." };
+            if (!atualizacao.versaoNova || !atualizacao.arquivo) return { ok: false, mensagem: "Não há versão nova para instalar. Clique em Verificar agora." };
+            if (atualizacao.baixando) return { ok: false, mensagem: "A atualização já está sendo baixada." };
+            const dirPortatil = path.resolve(process.env.PORTABLE_EXECUTABLE_DIR || path.dirname(EXE_APP));
+            // Portátil: a versão nova fica ao lado da atual (a pasta de dados vai junto).
+            const pasta = PORTATIL ? dirPortatil : path.join(os.tmpdir(), "ConsultaEstoque-atualizacao");
+            if (PORTATIL) {
+                try { const t = path.join(pasta, ".teste-gravacao"); fs.writeFileSync(t, "x"); fs.unlinkSync(t); }
+                catch (_) { return { ok: false, mensagem: "A pasta da versão portátil não permite gravação (" + pasta + "). Copie o aplicativo para uma pasta com permissão de gravação e tente novamente." }; }
+            }
+            if (/["%]/.test(pasta)) return { ok: false, mensagem: "A pasta de destino tem caracteres não suportados (\" ou %): " + pasta };
+            atualizacao.baixando = true; atualizacao.progresso = { baixados: 0, total: 0 }; atualizacao.erro = null;
+            emitirAtualizacao();
+            let ultimoAviso = 0;
+            let arquivo;
+            try {
+                arquivo = await Atualizacoes.baixarAtualizacao({
+                    arquivo: atualizacao.arquivo, pasta,
+                    progresso: (baixados, total) => {
+                        atualizacao.progresso = { baixados, total };
+                        if (Date.now() - ultimoAviso > 500) { ultimoAviso = Date.now(); emitirAtualizacao(); }
+                    }
+                });
+            } catch (e) {
+                atualizacao.baixando = false; atualizacao.progresso = null;
+                atualizacao.erro = "Falha no download: " + (e && e.message || e);
+                reg.erro("Atualização: " + atualizacao.erro);
+                emitirAtualizacao();
+                return { ok: false, mensagem: atualizacao.erro };
+            }
+            // Abre o instalador (ou a versão portátil nova) uns segundos depois de este aplicativo fechar
+            // (instância única; o instalador substitui os arquivos com o aplicativo fechado).
+            try {
+                const filho = cp.spawn(process.env.ComSpec || "cmd.exe", ["/d", "/s", "/c", "\"ping -n 4 127.0.0.1 >nul & start \"\" \"" + arquivo + "\"\""],
+                    { detached: true, stdio: "ignore", windowsHide: true, windowsVerbatimArguments: true, cwd: os.tmpdir() });
+                await new Promise((ok, falha) => {
+                    const t = setTimeout(ok, 5000);
+                    filho.once("spawn", () => { clearTimeout(t); ok(); });
+                    filho.once("error", e => { clearTimeout(t); falha(e); });
+                });
+                filho.unref();
+            } catch (e) {
+                atualizacao.baixando = false; atualizacao.progresso = null;
+                atualizacao.erro = "Não foi possível abrir a atualização: " + (e && e.message || e) + ". O arquivo está em " + arquivo + ".";
+                reg.erro("Atualização: " + atualizacao.erro);
+                emitirAtualizacao();
+                return { ok: false, mensagem: atualizacao.erro };
+            }
+            reg.info("Atualização para a versão " + atualizacao.versaoNova + " baixada e conferida (SHA-256): " + arquivo + ". Fechando o aplicativo para atualizar.");
+            // Saída autorizada: o vigia termina e não reabre a versão antiga no meio da atualização.
+            try { if (pidVivo(lerPid(ARQ.vigiaPid))) fs.writeFileSync(ARQ.saida, String(Date.now())); } catch (_) {}
+            saidaAutorizada = true;
+            setTimeout(() => app.exit(0), 800);
+            return { ok: true };
+        });
         // Versão portátil: apaga a si mesma e todos os rastros (a instalada sai pelo desinstalador do Windows).
         tratar("app:autoexcluir", async () => {
             exigirAdmin();
@@ -594,6 +719,10 @@ if (!INSTANCIA_PRINCIPAL) {
         const cfg = motor.config();
         aplicarInicioComWindows(cfg);
         garantirVigia(cfg);
+        // Atualizações: primeira verificação 2 minutos depois de abrir (não concorre com a
+        // primeira leitura do estoque); depois, conferência de hora em hora.
+        setTimeout(conferirAgendaAtualizacao, 120000).unref();
+        setInterval(conferirAgendaAtualizacao, 60 * 60000).unref();
         // Reinício diário (memória limpa em PCs fracos): confere a cada 20 s.
         setInterval(() => {
             const c = motor.config();
