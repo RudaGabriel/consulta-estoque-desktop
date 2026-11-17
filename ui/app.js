@@ -1,6 +1,6 @@
 /**
  * app.js — Consulta Estoque (tela)
- * @version 1.8.0
+ * @version 1.9.0
  * @author Ruda Gabriel
  * @description Tela de consulta de preço e estoque, com suporte a leitores de
  *              código de barras USB/Bluetooth em modo teclado (que "digitam" o
@@ -10,12 +10,11 @@
  *              Compatível com o Chromium 108 (versão para Windows 7/8).
  * @changelog
  *   (Histórico completo das versões: CHANGELOG.md no repositório.)
- *   1.8.0 — Agenda da Cópia do banco: no primeiro uso, pergunta se a cópia é feita em
- *           intervalos de horas (e quantas) ou uma vez ao dia (e o horário); a mesma
- *           opção fica em Configurações → Consulta. Na abertura, só com a tela liberada
- *           (nunca prende a tela pública); "Decidir mais tarde" fica gravado. Com
- *           senha, o administrador é perguntado uma vez ao abrir a aba Consulta.
- *           Atualizar/F5 informa a data quando a próxima cópia é em outro dia.
+ *   1.9.0 — Aba pública "Atualizações": situação, "Verificar agora", frequência da
+ *           verificação automática (salva sem senha) e "Baixar e instalar" (com a senha
+ *           e confirmação). Instalação automática, silenciosa (sem janelas, reabre o
+ *           aplicativo) ou com todos os detalhes. Versão nova: só uma marca discreta ao
+ *           lado da versão — a tela pública nunca é interrompida.
  */
 (function () {
     "use strict";
@@ -516,9 +515,10 @@
         for (var i = 0; i < botoes.length; i++) botoes[i].classList.toggle("ativa", botoes[i].getAttribute("data-aba") === aba);
         desenharTrava();
         estado.logAberto = aba === "diag";
-        $("bSalvar").hidden = aba === "diag" || aba === "admin" || (!!ABAS_PROTEGIDAS[aba] && !livre());
+        $("bSalvar").hidden = aba === "diag" || aba === "admin" || aba === "atualiz" || (!!ABAS_PROTEGIDAS[aba] && !livre());
         if (aba === "banco") { desenharInfoBanco(); desenharFirebird(); }
         if (aba === "diag") carregarDiagnostico();
+        if (aba === "atualiz") api.atualizacoesEstado().then(desenharAtualiz, function () {});
         if (aba === "admin") desenharInfoAdmin();
         if (aba === "windows") desenharWindows();
     }
@@ -731,6 +731,9 @@
                     for (var x = 0; x < itens.length; x++) itens[x].classList.toggle("marcado", itens[x].querySelector("input").checked);
                 };
                 caixa.onchange = marcar;
+                // o.selecionado: o valor que já vem marcado (senão, o primeiro disponível).
+                var pre = o.lista.findIndex(function (it) { return !it.desabilitado && o.selecionado != null && it.valor === o.selecionado; });
+                if (pre >= 0) primeiro = pre;
                 if (primeiro >= 0) { caixa.querySelectorAll("input")[primeiro].checked = true; marcar(); }
             }
             setTimeout(function () {
@@ -857,6 +860,36 @@
             setTimeout(function () { try { $("cfgHost").focus(); } catch (_) {} }, 80);
         } else toast(meta === "local" ? "A busca automática começará por este computador." : "A busca automática começará pela rede.");
         return meta;
+    }
+
+    // ── Atualizações do aplicativo (aba pública) ──
+    function fmtMb(b) { return (Math.round((Number(b) || 0) / 104857.6) / 10).toLocaleString("pt-BR") + " MB"; }
+    function desenharAtualiz(st) {
+        if (!st) return;
+        estado.atualiz = st;
+        // Tela principal: só uma marca discreta ao lado da versão (nunca uma janela).
+        $("versaoNova").hidden = !st.versaoNova;
+        $("versaoNova").textContent = st.versaoNova ? "versão " + st.versaoNova + " disponível" : "";
+        var html = "<b>Versão instalada:</b> " + esc(st.versaoAtual);
+        if (st.verificando) html += "<br><b>Situação:</b> verificando...";
+        else if (st.versaoNova) html += "<br><b>Situação:</b> nova versão disponível: <b>" + esc(st.versaoNova) + "</b>.";
+        else if (st.verificadoEm) html += "<br><b>Situação:</b> esta é a versão mais recente.";
+        else html += "<br><b>Situação:</b> ainda não verificada.";
+        if (st.verificadoEm) html += "<br><b>Última verificação:</b> " + esc(fmtData(st.verificadoEm));
+        if (st.erro && !st.verificando) html += "<br><b>Último aviso:</b> " + esc(st.erro);
+        $("infoAtualiz").innerHTML = html;
+        $("bVerificarAtualiz").disabled = !!(st.verificando || st.baixando);
+        $("bInstalarAtualiz").hidden = !st.versaoNova;
+        $("bInstalarAtualiz").disabled = !!st.baixando;
+        $("bInstalarAtualiz").textContent = st.portatil ? "Baixar a versão nova" : "Baixar e instalar";
+        var p = st.progresso;
+        $("andAtualiz").hidden = !st.baixando;
+        if (st.baixando && p) {
+            var pct = p.total > 0 ? Math.min(100, Math.round(100 * p.baixados / p.total)) : 0;
+            $("andAtualizBarra").style.width = pct + "%";
+            $("andAtualizTexto").textContent = "Baixando: " + fmtMb(p.baixados) + (p.total > 0 ? " de " + fmtMb(p.total) + " (" + pct + "%)" : "");
+        }
+        if (st.frequencia && document.activeElement !== $("cfgAtualizFreq")) $("cfgAtualizFreq").value = st.frequencia;
     }
 
     // ── Agenda da Cópia do banco (primeiro uso) ──
@@ -1175,6 +1208,53 @@
         salvarConfig(o, true);
     });
     $("cfgAgenda").addEventListener("change", function () { estado.agendaDefinida = true; marcarModo(); });
+    // Atualizações: verificar e mudar a frequência são livres; baixar e instalar exige a senha.
+    $("bVerificarAtualiz").addEventListener("click", async function () {
+        $("bVerificarAtualiz").disabled = true;
+        var r = null;
+        try { r = await api.verificarAtualizacoes(); } catch (_) {}
+        if (r && r.estado) desenharAtualiz(r.estado);
+        if (r && r.ok === false && r.mensagem) toast(r.mensagem, 4000);
+        else if (r && r.estado) toast(r.estado.versaoNova ? "Nova versão disponível: " + r.estado.versaoNova + "." : r.estado.erro ? r.estado.erro : "Esta é a versão mais recente.", 4000);
+        $("bVerificarAtualiz").disabled = !!(estado.atualiz && (estado.atualiz.verificando || estado.atualiz.baixando));
+    });
+    $("cfgAtualizFreq").addEventListener("change", async function () {
+        var v = $("cfgAtualizFreq").value;
+        if (await salvarConfig({ atualizacoesFrequencia: v }, false))
+            toast(v === "nunca" ? "Verificação automática desligada (use Verificar agora)." : "Frequência da verificação salva.", 3000);
+    });
+    $("bInstalarAtualiz").addEventListener("click", async function () {
+        var st = estado.atualiz || {};
+        if (!st.versaoNova) return;
+        if (!(await garantirAdmin("Digite a senha do administrador para baixar e instalar a atualização."))) return;
+        var modo = "silencioso";
+        if (st.portatil) {
+            var sim = await perguntar({
+                titulo: "Atualizar para a versão " + st.versaoNova + "?",
+                texto: "A atualização é automática: o aplicativo baixa a versão portátil nova (cerca de 70 a 135 MB) para a mesma pasta da atual, confere a impressão digital SHA-256, fecha este aplicativo e abre a versão nova. A pasta de dados (configurações, senha e estoque salvo) é mantida.",
+                ok: "Atualizar agora", cancelar: "Cancelar"
+            });
+            if (!sim) return;
+        } else {
+            modo = await perguntar({
+                titulo: "Atualizar para a versão " + st.versaoNova + "?",
+                texto: "A atualização é automática: o aplicativo baixa o instalador da versão nova (cerca de 70 a 145 MB), confere a impressão digital SHA-256 e instala. Configurações, senha e estoque salvo são mantidos. Escolha como instalar:",
+                lista: [
+                    { valor: "silencioso", titulo: "Silenciosa (recomendada)", texto: "Instala sem janelas e reabre o aplicativo automaticamente em alguns instantes. O Windows pode pedir permissão, se o aplicativo foi instalado para todos os usuários." },
+                    { valor: "detalhado", titulo: "Com todos os detalhes", texto: "Abre o instalador com todas as etapas, para acompanhar a instalação. Ao terminar, o aplicativo é reaberto." }
+                ],
+                selecionado: (estado.cfg && estado.cfg.atualizacoesModo) || "silencioso",
+                ok: "Atualizar agora", cancelar: "Cancelar"
+            });
+            if (modo == null) return;
+        }
+        var r = null;
+        try { r = await api.instalarAtualizacao({ modo: modo }); } catch (e) { r = { ok: false, mensagem: String(e && e.message || e) }; }
+        if (await resultadoAdmin(r))
+            toast(st.portatil ? "Atualização conferida. A versão nova será aberta em alguns instantes."
+                : modo === "detalhado" ? "Atualização conferida. O instalador será aberto em alguns instantes."
+                : "Atualização conferida. Instalando sem janelas; o aplicativo será reaberto automaticamente em alguns instantes.", 8000);
+    });
     $("cfgHorario").addEventListener("change", function () { estado.agendaDefinida = true; });
     // Primeiro uso da Cópia do banco (ainda sem agenda): pergunta ao escolher o cartão.
     var cartaoCopia = document.querySelector('input[name="modo"][value="copia"]');
@@ -1293,6 +1373,7 @@
         $("fAtv").checked = !!ler("fAtv", false);
         try { estado.info = await api.info(); } catch (_) {}
         try { if (estado.info && estado.info.versao) $("versaoApp").textContent = "v" + estado.info.versao; } catch (_) {}
+        try { api.aoAtualizacoes(desenharAtualiz); desenharAtualiz(await api.atualizacoesEstado()); } catch (_) {}
         try { estado.cfg = await api.lerConfig(); aplicarAparencia(estado.cfg); } catch (_) {}
         api.aoStatus(desenharStatus);
         api.aoPedirSaida(function () { pedirSaida(); });

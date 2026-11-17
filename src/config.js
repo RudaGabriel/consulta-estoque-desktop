@@ -1,7 +1,7 @@
 "use strict";
 /**
  * config.js
- * @version 1.6.0
+ * @version 1.7.0
  * @author Ruda Gabriel
  * @description Configuração do aplicativo (config.json na pasta de dados):
  *              valores padrão, validação de cada chave e gravação atômica.
@@ -12,16 +12,16 @@
  *
  * @changelog
  *   (Histórico completo das versões: CHANGELOG.md no repositório.)
- *   1.6.0 — Agenda da Cópia do banco: copiaAgenda ("" = ainda não escolhida,
- *           "intervalo" ou "diaria") e copiaHorario ("HH:MM"); agendaDiaria(cfg),
- *           msAteHorario(hhmm, agora) e ultimaOcorrencia(hhmm, agora); copiaAgendaAdiada
- *           ("Decidir mais tarde" fica gravado e a abertura não pergunta de novo).
+ *   1.7.0 — atualizacoesFrequencia ("nunca", "diaria", "semanal", "mensal"; padrão
+ *           semanal), PÚBLICA: qualquer pessoa vê e muda a frequência da verificação de
+ *           atualizações (baixar e instalar continua exigindo a senha). atualizacoesModo
+ *           ("silencioso" ou "detalhado"): a última forma de instalação escolhida.
  */
 
 const fs = require("fs");
 const path = require("path");
 
-const VERSAO = "1.6.0";
+const VERSAO = "1.7.0";
 // Versão do formato do config.json (migrações feitas uma vez só).
 const VERSAO_CONFIG = 3;
 
@@ -72,6 +72,9 @@ const ESQUEMA = {
     limitePagina:        [100, "int", 20, 1000],
     nomeLoja:            ["", "texto"],
     tabComoEnter:        [true, "bool"],
+    // Atualizações do aplicativo (frequência da verificação automática)
+    atualizacoesFrequencia: ["semanal", ["nunca", "diaria", "semanal", "mensal"]],
+    atualizacoesModo:    ["silencioso", ["silencioso", "detalhado"]],   // última escolha (gravada ao instalar, com a senha)
     // Busca
     buscaCoringa:        [true, "bool"],
     buscaPreco:          [true, "bool"],
@@ -84,7 +87,8 @@ const ESQUEMA = {
 
 // Chaves que só mudam com a senha do administrador (a tela de consulta fica
 // aberta ao público: cliente não pode trocar o banco, sair do quiosque etc.).
-const PUBLICAS = ["tema", "modoLeve", "som", "volumeSom", "zoom", "tabComoEnter"];
+// Públicas: as visuais e a frequência da verificação de atualizações (só verifica; instalar exige a senha).
+const PUBLICAS = ["tema", "modoLeve", "som", "volumeSom", "zoom", "tabComoEnter", "atualizacoesFrequencia"];
 const INTERNAS = ["senhaAdmin", "fbHostAuto", "versaoConfig", "configInicial"];
 const SENSIVEIS = Object.keys(ESQUEMA).filter(k => PUBLICAS.indexOf(k) < 0 && INTERNAS.indexOf(k) < 0);
 

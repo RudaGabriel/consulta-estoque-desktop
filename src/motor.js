@@ -1,7 +1,7 @@
 "use strict";
 /**
  * motor.js
- * @version 1.8.0
+ * @version 1.8.1
  * @author Ruda Gabriel
  * @description O coração do aplicativo: mantém o estoque em memória e atualizado
  *              conforme o modo escolhido, acha o banco sozinho e responde às
@@ -27,12 +27,9 @@
  *
  * @changelog
  *   (Histórico completo das versões: CHANGELOG.md no repositório.)
- *   1.8.0 — Agenda da Cópia do banco: "uma vez ao dia" (copiaAgenda "diaria" +
- *           copiaHorario) agenda a próxima cópia para o horário escolhido; depois
- *           de uma cópia, a seguinte nunca fica a menos de 1 hora (vai para o dia
- *           seguinte). Ao abrir, a cópia salva depois do último horário é mantida.
- *           Esperas longas são rearmadas de hora em hora contra o horário-alvo
- *           (suspensão do computador ou ajuste do relógio não atrasam a cópia).
+ *   1.8.1 — Agenda persistente: a cópia cancelada pelo tempo máximo tenta novamente em
+ *           30 min até ser concluída (antes esperava o dia seguinte na agenda diária,
+ *           ou o intervalo inteiro). Falhas de conexão já tentavam novamente (até 10 min).
  */
 
 const fs = require("fs");
@@ -46,7 +43,7 @@ const Localizar = require("./localizar-banco.js");
 const Copia = require("./copia-gbak.js");
 const InstalarFb = require("./instalar-firebird.js");
 
-const VERSAO = "1.8.0";
+const VERSAO = "1.8.1";
 const ARQ_CACHE = "estoque-cache.json.gz";
 const CHAVES_CONEXAO = ["modo", "metodoCopia", "fbHost", "fbPorta", "fdbPath", "fbUser", "fbPass", "gbakPath", "pastaCopias", "copiaTimeoutMin"];
 
@@ -396,7 +393,7 @@ function criarMotor(dep) {
         // Nunca ocupa o banco do caixa mais que 1/3 do tempo.
         return metodoEfetivo === "gbak" ? Math.max(base, 3 * duracaoUltimaCopia) : base;
     };
-    const intervaloErro = () => Math.min(10 * 60000, 30000 * Math.pow(2, Math.max(0, falhasSeguidas - 1)));
+    const intervaloErro = () => esperaAposFalha(null, falhasSeguidas);
 
     async function carregarUmaVez(gen) {
         metodoEfetivo = await decidirMetodo();
@@ -499,7 +496,8 @@ function criarMotor(dep) {
             reg.erro("Falha ao atualizar o estoque: " + FB.mensagemDe(e).slice(0, 400));
             if (retrato) definir("pronto", "Mostrando o estoque de " + new Date(retrato.carregadoEm).toLocaleString("pt-BR") + " — " + ultimoErro);
             else definir("erro", ultimoErro);
-            agendar(e.codigo === "CANCELADA" ? Math.max(intervaloNormal(), 30 * 60000) : intervaloErro());
+            // Persistente até concluir: nunca espera o próximo horário/intervalo depois de uma falha.
+            agendar(esperaAposFalha(e.codigo, falhasSeguidas));
         } finally {
             ocupado = false;
             emitir();
@@ -763,4 +761,15 @@ function criarMotor(dep) {
     };
 }
 
-module.exports = { VERSAO, criarMotor, ARQ_CACHE };
+/**
+ * Puro: espera até a nova tentativa depois de uma falha (a agenda é persistente: tenta
+ * até concluir, nos dois modos). Cópia cancelada pelo tempo máximo: 30 min (uma cópia
+ * lenta não volta a ocupar o servidor na hora). Outras falhas (servidor desligado, rede):
+ * 30 s, 1, 2, 4, 8 min e depois a cada 10 min.
+ */
+function esperaAposFalha(codigo, falhasSeguidas) {
+    if (codigo === "CANCELADA") return 30 * 60000;
+    return Math.min(10 * 60000, 30000 * Math.pow(2, Math.max(0, (falhasSeguidas || 1) - 1)));
+}
+
+module.exports = { VERSAO, criarMotor, ARQ_CACHE, esperaAposFalha };

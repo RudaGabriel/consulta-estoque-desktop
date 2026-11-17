@@ -1,13 +1,13 @@
 /*
   estilo.css — Consulta Estoque (tela)
-  @version 1.5.0
+  @version 1.6.0
   @author Ruda Gabriel
   Compatível com o Chromium 108 (versão para Windows 7/8): sem CSS aninhado,
   sem color-mix, sem :has().
   @changelog
     (Histórico completo das versões: CHANGELOG.md no repositório.)
-    1.5.0 — Versão do aplicativo ao lado do nome (tom discreto); dicas da busca à
-            esquerda; texto das caixas de marcar num bloco só, com a caixa no topo.
+    1.6.0 — Marca discreta de versão nova ao lado da versão; barra de andamento do
+            download da atualização.
 */
 :root {
   --fundo: #f4f6f8; --superficie: #ffffff; --superficie2: #eef1f4; --borda: #d9dee4;
@@ -53,6 +53,11 @@ svg { width: 18px; height: 18px; flex: 0 0 auto; }
 .logo { width: 30px; height: 30px; color: var(--destaque); }
 .titulo { font-weight: 700; font-size: 17px; white-space: nowrap; }
 .versao-app { font-weight: 400; font-size: 12px; color: var(--texto2); opacity: .75; margin-left: 8px; }
+.versao-nova { font-weight: 400; font-size: 11.5px; color: var(--texto2); margin-left: 8px; }
+.versao-nova::before { content: ""; display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--destaque); margin-right: 5px; vertical-align: 1px; }
+.andamento-atualiz { display: flex; align-items: center; gap: 10px; font-size: 13px; color: var(--texto2); }
+.andamento-atualiz .barra { flex: 1; height: 8px; border-radius: 4px; background: var(--superficie2); overflow: hidden; }
+.andamento-atualiz .barra > div { height: 100%; width: 0; background: var(--destaque); transition: width .3s; }
 .loja { color: var(--texto2); font-size: 12.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 260px; }
 .estado {
   display: flex; align-items: center; gap: 8px; margin-left: auto; min-width: 0; max-width: 46vw;

@@ -1,14 +1,15 @@
 "use strict";
 /**
  * preload.js
- * @version 1.6.0
+ * @version 1.7.0
  * @author Ruda Gabriel
  * @description Ponte segura entre a tela e o processo principal: expõe só as
  *              funções da consulta (window.consulta), nunca o Node inteiro.
  *
  * @changelog
  *   (Histórico completo das versões: CHANGELOG.md no repositório.)
- *   1.6.0 — adiarAgendaCopia ("Decidir mais tarde" da agenda da Cópia do banco).
+ *   1.7.0 — Atualizações: atualizacoesEstado, verificarAtualizacoes, instalarAtualizacao
+ *           e aoAtualizacoes.
  */
 const { contextBridge, ipcRenderer } = require("electron");
 
@@ -47,11 +48,15 @@ contextBridge.exposeInMainWorld("consulta", {
     instalarFirebird: o => ipcRenderer.invoke("firebird:instalar", o || {}),
     firebirdNaoPerguntar: () => ipcRenderer.invoke("firebird:nao-perguntar"),
     adiarAgendaCopia: () => ipcRenderer.invoke("copia:adiar-agenda"),
+    atualizacoesEstado: () => ipcRenderer.invoke("atualizacoes:estado"),
+    verificarAtualizacoes: () => ipcRenderer.invoke("atualizacoes:verificar"),
+    instalarAtualizacao: p => ipcRenderer.invoke("atualizacoes:instalar", p),
     outrosFdb: () => ipcRenderer.invoke("banco:outros"),
     usarBanco: p => ipcRenderer.invoke("banco:usar", p),
     aoEtapaFirebird: f => ouvir("firebird:etapa", f),
     aoPedirSaida: f => ouvir("admin:pedir-saida", f),
     aoStatus: f => ouvir("estoque:status", f),
     aoDadosNovos: f => ouvir("estoque:dados-novos", f),
-    aoLog: f => ouvir("app:log-linha", f)
+    aoLog: f => ouvir("app:log-linha", f),
+    aoAtualizacoes: f => ouvir("atualizacoes:estado", f)
 });

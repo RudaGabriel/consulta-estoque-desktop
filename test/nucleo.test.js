@@ -316,6 +316,11 @@ test("config: agenda da Cópia do banco (intervalo ou uma vez ao dia) e cálculo
     assert.strictEqual(c.copiaAgenda, "", "ainda não escolhida");
     assert.strictEqual(c.copiaHorario, "");
     assert.strictEqual(c.copiaAgendaAdiada, false, "\"Decidir mais tarde\" ainda não usado");
+    assert.strictEqual(c.atualizacoesFrequencia, "semanal", "atualizações: uma vez por semana");
+    assert.ok(Config.PUBLICAS.includes("atualizacoesFrequencia") && !Config.SENSIVEIS.includes("atualizacoesFrequencia"), "frequência das atualizações: livre (área pública)");
+    assert.strictEqual(Config.validarValor("atualizacoesFrequencia", "anual"), "semanal");
+    assert.strictEqual(c.atualizacoesModo, "silencioso", "instalação silenciosa por padrão");
+    assert.ok(Config.SENSIVEIS.includes("atualizacoesModo"), "forma de instalar: só com a senha");
     assert.strictEqual(Config.validarValor("copiaAgenda", "semanal"), "");
     assert.strictEqual(Config.validarValor("copiaHorario", "6:05"), "06:05");
     assert.strictEqual(Config.validarValor("copiaHorario", "25:00"), "");

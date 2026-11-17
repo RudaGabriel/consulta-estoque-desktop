@@ -1,12 +1,12 @@
 <!doctype html>
 <!--
   index.html — Consulta Estoque (tela)
-  @version 1.6.0
+  @version 1.7.0
   @author Ruda Gabriel
   @changelog
     (Histórico completo das versões: CHANGELOG.md no repositório.)
-    1.6.0 — Agenda da Cópia do banco na aba Consulta: em intervalos de horas ou uma
-            vez ao dia, no horário definido.
+    1.7.0 — Aba pública "Atualizações": verificar agora, frequência da verificação
+            automática e "Baixar e instalar" (com a senha); marca discreta de versão nova.
 -->
 <html lang="pt-BR">
 <head>
@@ -21,7 +21,7 @@
   <div class="marca">
     <svg class="logo" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7l9-4 9 4v10l-9 4-9-4z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M3 7l9 4 9-4M12 11v10" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>
     <div>
-      <div class="titulo">Consulta Estoque<span class="versao-app" id="versaoApp"></span></div>
+      <div class="titulo">Consulta Estoque<span class="versao-app" id="versaoApp"></span><span class="versao-nova" id="versaoNova" hidden></span></div>
       <div class="loja" id="loja"></div>
     </div>
   </div>
@@ -138,6 +138,7 @@
   </div>
   <nav class="abas" id="abas">
     <button type="button" data-aba="tela" class="ativa">Tela</button>
+    <button type="button" data-aba="atualiz">Atualizações</button>
     <button type="button" data-aba="consulta" data-protegida="1">Consulta</button>
     <button type="button" data-aba="banco" data-protegida="1">Banco de dados</button>
     <button type="button" data-aba="windows" data-protegida="1">Windows</button>
@@ -297,6 +298,24 @@
         <button class="btn" id="bBloquear" type="button">Bloquear agora</button>
       </div>
       <p class="dica">O desbloqueio vale por 5 minutos e termina ao fechar as configurações.</p>
+    </section>
+
+    <section data-pagina="atualiz" hidden>
+      <div class="caixa-info" id="infoAtualiz"></div>
+      <div class="botoes">
+        <button class="btn" id="bVerificarAtualiz" type="button">Verificar agora</button>
+        <button class="btn primario" id="bInstalarAtualiz" type="button" hidden>Baixar e instalar</button>
+      </div>
+      <div class="andamento-atualiz" id="andAtualiz" hidden><div class="barra"><div id="andAtualizBarra"></div></div><span id="andAtualizTexto"></span></div>
+      <label>Verificar automaticamente
+        <select id="cfgAtualizFreq">
+          <option value="diaria">Uma vez ao dia</option>
+          <option value="semanal">Uma vez por semana</option>
+          <option value="mensal">Uma vez por mês</option>
+          <option value="nunca">Nunca (somente pelo botão Verificar agora)</option>
+        </select>
+      </label>
+      <p class="dica">Esta área é livre: qualquer pessoa pode verificar se há versão nova e mudar a frequência. Baixar e instalar exige a senha do administrador. A verificação usa a internet; sem ela, o aplicativo continua funcionando normalmente. A integridade do arquivo baixado é conferida pela impressão digital SHA-256 publicada com a versão.</p>
     </section>
 
     <section data-pagina="diag" hidden>
