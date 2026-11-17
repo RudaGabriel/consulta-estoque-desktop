@@ -119,3 +119,20 @@ test("atualizações: download conferido pelo SHA-256; arquivo diferente é apag
     await assert.rejects(A.baixarAtualizacao({ arquivo: { nome: "..\\\\outro.exe", versao: "1.9.0", hash: sha(conteudo) }, pasta, get: getFalso({}) }), /inválido/, "nome estranho recusado");
     fs.rmSync(pasta, { recursive: true, force: true });
 });
+
+test("atualizações: instalação automática silenciosa ou com todos os detalhes; o aplicativo sempre volta a abrir", () => {
+    const base = { arquivo: "C:\\Users\\Loja\\AppData\\Local\\Temp\\ConsultaEstoque-atualizacao\\ConsultaEstoque-1.9.0-win10-11-x64-instalador.exe", exeApp: "C:\\Users\\Loja\\AppData\\Local\\Programs\\Consulta Estoque\\Consulta Estoque.exe" };
+    const sil = A.comandoAtualizacao(Object.assign({ modo: "silencioso" }, base));
+    assert.match(sil, /start "" \/wait "[^"]+instalador\.exe" \/S --updated --force-run/, "silenciosa: sem janelas, como atualização, reabrindo");
+    assert.match(sil, /& start "" "[^"]+Consulta Estoque\.exe""$/, "depois do instalador, abre o aplicativo (se a instalação falhar, a versão atual volta)");
+    assert.ok(sil.indexOf("ping -n 4") < sil.indexOf("/wait"), "espera o aplicativo fechar antes do instalador");
+    const det = A.comandoAtualizacao(Object.assign({ modo: "detalhado" }, base));
+    assert.match(det, /\/wait "[^"]+instalador\.exe" --updated & /, "com todos os detalhes: instalador com as etapas");
+    assert.ok(!/\/S/.test(det), "sem /S no modo detalhado");
+    assert.strictEqual(A.comandoAtualizacao({ arquivo: "D:\\Pendrive\\ConsultaEstoque-1.9.0-win10-11-x64-portatil.exe", portatil: true }),
+        "\"ping -n 4 127.0.0.1 >nul & start \"\" \"D:\\Pendrive\\ConsultaEstoque-1.9.0-win10-11-x64-portatil.exe\"\"", "portátil: abre a versão nova");
+    assert.match(A.comandoAtualizacao(Object.assign({}, base)), /\/S --updated --force-run/, "sem modo: silenciosa");
+    assert.throws(() => A.comandoAtualizacao({ arquivo: "C:\\100%\\x.exe", exeApp: "C:\\a.exe" }), /não suportados/);
+    assert.throws(() => A.comandoAtualizacao({ arquivo: "C:\\a.exe", exeApp: "C:\\\"b.exe" }), /não suportados/);
+    assert.throws(() => A.comandoAtualizacao({ arquivo: "", exeApp: "C:\\a.exe" }), /não suportados/);
+});

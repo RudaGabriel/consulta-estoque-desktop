@@ -20,6 +20,8 @@
  *   1.6.0 — Atualizações do aplicativo: verificação automática (diária, semanal, mensal
  *           ou nunca) e manual (no máximo uma por minuto), livres; baixar e instalar
  *           exige a senha (SHA-256 conferido; saída autorizada antes do instalador).
+ *           Instalação automática silenciosa (sem janelas, reabre o aplicativo) ou com
+ *           todos os detalhes; se a instalação falhar, a versão atual volta a abrir.
  */
 
 const { app, BrowserWindow, ipcMain, dialog, shell, screen, powerSaveBlocker } = require("electron");
@@ -519,8 +521,10 @@ if (!INSTANCIA_PRINCIPAL) {
             await verificarAtualizacao("verificação manual");
             return { ok: true, estado: estadoAtualizacao() };
         });
-        tratar("atualizacoes:instalar", async () => {
+        tratar("atualizacoes:instalar", async p => {
             exigirAdmin();
+            // Silenciosa (padrão): sem janelas, reabre o aplicativo; detalhada: o instalador com as etapas.
+            const modo = objeto(p).modo === "detalhado" ? "detalhado" : "silencioso";
             if (!podeInstalarAtualizacao()) return { ok: false, mensagem: "A instalação de atualizações só funciona no aplicativo instalado ou portátil do Windows (não no modo demonstração)." };
             if (!atualizacao.versaoNova || !atualizacao.arquivo) return { ok: false, mensagem: "Não há versão nova para instalar. Clique em Verificar agora." };
             if (atualizacao.baixando) return { ok: false, mensagem: "A atualização já está sendo baixada." };
@@ -531,7 +535,8 @@ if (!INSTANCIA_PRINCIPAL) {
                 try { const t = path.join(pasta, ".teste-gravacao"); fs.writeFileSync(t, "x"); fs.unlinkSync(t); }
                 catch (_) { return { ok: false, mensagem: "A pasta da versão portátil não permite gravação (" + pasta + "). Copie o aplicativo para uma pasta com permissão de gravação e tente novamente." }; }
             }
-            if (/["%]/.test(pasta)) return { ok: false, mensagem: "A pasta de destino tem caracteres não suportados (\" ou %): " + pasta };
+            if (/["%]/.test(pasta) || /["%]/.test(EXE_APP)) return { ok: false, mensagem: "A pasta do aplicativo ou de destino tem caracteres não suportados (\" ou %): " + pasta };
+            try { motor.salvarConfig({ atualizacoesModo: modo }); } catch (_) {}
             atualizacao.baixando = true; atualizacao.progresso = { baixados: 0, total: 0 }; atualizacao.erro = null;
             emitirAtualizacao();
             let ultimoAviso = 0;
@@ -551,10 +556,11 @@ if (!INSTANCIA_PRINCIPAL) {
                 emitirAtualizacao();
                 return { ok: false, mensagem: atualizacao.erro };
             }
-            // Abre o instalador (ou a versão portátil nova) uns segundos depois de este aplicativo fechar
-            // (instância única; o instalador substitui os arquivos com o aplicativo fechado).
+            // Aplica a atualização uns segundos depois de este aplicativo fechar (instância única; o
+            // instalador substitui os arquivos com o aplicativo fechado) e abre o aplicativo de volta.
             try {
-                const filho = cp.spawn(process.env.ComSpec || "cmd.exe", ["/d", "/s", "/c", "\"ping -n 4 127.0.0.1 >nul & start \"\" \"" + arquivo + "\"\""],
+                const linha = Atualizacoes.comandoAtualizacao({ arquivo, exeApp: EXE_APP, modo, portatil: PORTATIL });
+                const filho = cp.spawn(process.env.ComSpec || "cmd.exe", ["/d", "/s", "/c", linha],
                     { detached: true, stdio: "ignore", windowsHide: true, windowsVerbatimArguments: true, cwd: os.tmpdir() });
                 await new Promise((ok, falha) => {
                     const t = setTimeout(ok, 5000);
@@ -569,7 +575,8 @@ if (!INSTANCIA_PRINCIPAL) {
                 emitirAtualizacao();
                 return { ok: false, mensagem: atualizacao.erro };
             }
-            reg.info("Atualização para a versão " + atualizacao.versaoNova + " baixada e conferida (SHA-256): " + arquivo + ". Fechando o aplicativo para atualizar.");
+            reg.info("Atualização para a versão " + atualizacao.versaoNova + " baixada e conferida (SHA-256): " + arquivo + ". Fechando o aplicativo para atualizar (" +
+                (PORTATIL ? "versão portátil" : modo === "detalhado" ? "instalador com todos os detalhes" : "instalação silenciosa, com reabertura automática") + ").");
             // Saída autorizada: o vigia termina e não reabre a versão antiga no meio da atualização.
             try { if (pidVivo(lerPid(ARQ.vigiaPid))) fs.writeFileSync(ARQ.saida, String(Date.now())); } catch (_) {}
             saidaAutorizada = true;

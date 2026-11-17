@@ -18,7 +18,7 @@ Versões em uso hoje:
 | [`src/localizar-banco.js`](#srclocalizar-bancojs) | 1.5.0 |
 | [`src/caminhos.js`](#srccaminhosjs) | 1.0.0 |
 | [`src/autoexcluir.js`](#srcautoexcluirjs) | 1.0.0 |
-| [`src/atualizacoes.js`](#srcatualizacoesjs) | 1.0.0 |
+| [`src/atualizacoes.js`](#srcatualizacoesjs) | 1.1.0 |
 | [`src/instalar-firebird.js`](#srcinstalar-firebirdjs) | 1.2.0 |
 | [`src/copia-gbak.js`](#srccopia-gbakjs) | 1.3.0 |
 | [`src/config.js`](#srcconfigjs) | 1.7.0 |
@@ -43,10 +43,11 @@ Versão do Consulta Estoque (a que aparece no instalador e em *Configurações �
 **Atualizações do aplicativo e agenda persistente da Cópia do banco.**
 
 - **Atualizações** (*Configurações → Atualizações*, área livre): **Verificar agora** (no máximo uma vez por minuto) e verificação automática **uma vez ao dia, por semana (padrão) ou por mês**, ou **nunca**. Qualquer pessoa pode verificar e mudar a frequência; **baixar e instalar exige a senha do administrador** e confirmação.
+- **Instalação automática** (sem navegador): **silenciosa** (recomendada — sem janelas, reabre o aplicativo em alguns instantes) ou **com todos os detalhes** (o instalador com as etapas). Se a instalação falhar ou for cancelada, a versão atual volta a abrir.
 - O arquivo baixado é o da mesma versão do aplicativo (moderna ou legado, 64 ou 32 bits, instalador ou portátil) e é conferido pela impressão digital SHA-256 publicada com a versão. Instalador: o aplicativo fecha e o instalador abre (dados mantidos). Portátil: a versão nova fica na mesma pasta e abre no lugar da atual.
 - A verificação nunca interrompe a tela pública: só uma marca discreta "versão X disponível" ao lado da versão. Sem internet, nada muda.
 - **Agenda persistente:** uma cópia que falha tenta novamente até ser concluída (servidor desligado ou sem rede: 30 s a 10 min; cancelada pelo tempo máximo: 30 min), nos dois modos — antes, a cópia cancelada pelo tempo máximo esperava o dia seguinte na agenda diária.
-- 88 testes; tela validada no Electron 44 e 22.
+- 89 testes; tela validada no Electron 44 e 22.
 
 ### 1.8.0 — 2026-11-16
 
@@ -198,7 +199,7 @@ Processo principal (janela, instância única, pasta de dados, IPC).
 
 ### 1.6.0 — 2026-11-17
 
-Atualizações do aplicativo: estado em `atualizacoes.json` (gravado só pelo processo principal), verificação automática conforme `atualizacoesFrequencia` (primeira 2 min após abrir, conferência de hora em hora, no máximo uma tentativa por hora), `atualizacoes:estado` e `atualizacoes:verificar` livres (manual: no máximo uma por minuto), `atualizacoes:instalar` com `exigirAdmin` (só no aplicativo empacotado do Windows, nunca no modo demonstração; portátil: pasta da versão atual, com teste de gravação). Depois do download conferido, abre o instalador/portátil novo pelo `cmd` uns segundos depois de fechar (instância única) e sai pela saída autorizada (o vigia não reabre a versão antiga). Modo demonstração: resultado simulado, sem rede.
+Atualizações do aplicativo: estado em `atualizacoes.json` (gravado só pelo processo principal), verificação automática conforme `atualizacoesFrequencia` (primeira 2 min após abrir, conferência de hora em hora, no máximo uma tentativa por hora), `atualizacoes:estado` e `atualizacoes:verificar` livres (manual: no máximo uma por minuto), `atualizacoes:instalar` com `exigirAdmin` (só no aplicativo empacotado do Windows, nunca no modo demonstração; portátil: pasta da versão atual, com teste de gravação). Depois do download conferido, abre o instalador/portátil novo pelo `cmd` uns segundos depois de fechar (instância única) e sai pela saída autorizada (o vigia não reabre a versão antiga). Modo demonstração: resultado simulado, sem rede. `atualizacoes:instalar` recebe `{ modo }` (silencioso ou detalhado), grava a escolha e usa `comandoAtualizacao`.
 
 ### 1.5.4 — 2026-11-16
 
@@ -248,7 +249,7 @@ Ponte segura entre a tela e o processo principal.
 
 ### 1.7.0 — 2026-11-17
 
-**`atualizacoesEstado`, `verificarAtualizacoes`, `instalarAtualizacao` e `aoAtualizacoes`.**
+**`atualizacoesEstado`, `verificarAtualizacoes`, `instalarAtualizacao({ modo })` e `aoAtualizacoes`.**
 
 ### 1.6.0 — 2026-11-16
 
@@ -288,7 +289,7 @@ A tela.
 
 ### 1.9.0 (`app.js`), 1.7.0 (`index.html`) e 1.6.0 (`estilo.css`) — 2026-11-17
 
-Aba pública **Atualizações** (sem o botão Salvar): situação, **Verificar agora**, frequência (salva na hora, sem a senha) e **Baixar e instalar** (senha, depois confirmação; barra de andamento do download). Versão nova: marca discreta `#versaoNova` ao lado da versão — nenhuma janela na tela principal.
+Aba pública **Atualizações** (sem o botão Salvar): situação, **Verificar agora**, frequência (salva na hora, sem a senha) e **Baixar e instalar** (senha, depois a escolha entre **Silenciosa** e **Com todos os detalhes**; barra de andamento do download). `perguntar` aceita `selecionado` (item já marcado). Versão nova: marca discreta `#versaoNova` ao lado da versão — nenhuma janela na tela principal.
 
 ### 1.8.0 (`app.js`) e 1.6.0 (`index.html`) — 2026-11-16
 
@@ -500,6 +501,10 @@ Comparação de pastas do Windows.
 
 Verificação e download de versões novas do aplicativo.
 
+### 1.1.0 — 2026-11-17
+
+`comandoAtualizacao` (pura): aplica a atualização uns segundos depois de o aplicativo fechar — instalador silencioso (`/S --updated --force-run`; mantém o modo da instalação anterior, e o desinstalador antigo recebe `--updated` e não apaga os dados) ou com todos os detalhes (`--updated`), e em seguida abre o aplicativo (se a instalação falhou, a versão atual volta); portátil: abre a versão nova. Caminhos com aspas ou `%` recusados.
+
 ### 1.0.0 — 2026-11-17
 
 **Primeira versão.** Última versão pelo `SHA256SUMS.txt` de `releases/latest/download` (sem a API do GitHub e seu limite de consultas); funções puras `compararVersoes`, `lerSomas`, `escolherArquivo` (mesma variante, arquitetura e tipo) e `verificacaoDevida`; `baixarTexto` (até 64 KB, redirecionamentos, só HTTPS, prazo), `verificar` (403/429 e sem rede = tentar mais tarde) e `baixarAtualizacao` (download com andamento e SHA-256 conferido; arquivo diferente apagado).
@@ -562,7 +567,7 @@ Configuração validada.
 
 ### 1.7.0 — 2026-11-17
 
-`atualizacoesFrequencia` (`nunca`, `diaria`, `semanal` — padrão —, `mensal`), em `PUBLICAS` (exceção deliberada: só a frequência da verificação; instalar exige a senha).
+`atualizacoesFrequencia` (`nunca`, `diaria`, `semanal` — padrão —, `mensal`), em `PUBLICAS` (exceção deliberada: só a frequência da verificação; instalar exige a senha). `atualizacoesModo` (`silencioso` — padrão — ou `detalhado`), sensível.
 
 ### 1.6.0 — 2026-11-16
 

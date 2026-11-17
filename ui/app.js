@@ -12,8 +12,9 @@
  *   (Histórico completo das versões: CHANGELOG.md no repositório.)
  *   1.9.0 — Aba pública "Atualizações": situação, "Verificar agora", frequência da
  *           verificação automática (salva sem senha) e "Baixar e instalar" (com a senha
- *           e confirmação). Versão nova: só uma marca discreta ao lado da versão — a
- *           tela pública nunca é interrompida.
+ *           e confirmação). Instalação automática, silenciosa (sem janelas, reabre o
+ *           aplicativo) ou com todos os detalhes. Versão nova: só uma marca discreta ao
+ *           lado da versão — a tela pública nunca é interrompida.
  */
 (function () {
     "use strict";
@@ -730,6 +731,9 @@
                     for (var x = 0; x < itens.length; x++) itens[x].classList.toggle("marcado", itens[x].querySelector("input").checked);
                 };
                 caixa.onchange = marcar;
+                // o.selecionado: o valor que já vem marcado (senão, o primeiro disponível).
+                var pre = o.lista.findIndex(function (it) { return !it.desabilitado && o.selecionado != null && it.valor === o.selecionado; });
+                if (pre >= 0) primeiro = pre;
                 if (primeiro >= 0) { caixa.querySelectorAll("input")[primeiro].checked = true; marcar(); }
             }
             setTimeout(function () {
@@ -1223,18 +1227,33 @@
         var st = estado.atualiz || {};
         if (!st.versaoNova) return;
         if (!(await garantirAdmin("Digite a senha do administrador para baixar e instalar a atualização."))) return;
-        if (!st.podeInstalar) { toast("A instalação de atualizações só funciona no aplicativo instalado ou portátil do Windows (não no modo demonstração).", 5000); return; }
-        var sim = await perguntar({
-            titulo: "Atualizar para a versão " + st.versaoNova + "?",
-            texto: st.portatil
-                ? "O aplicativo baixa a versão portátil nova (cerca de 70 a 135 MB) para a mesma pasta da atual, confere a impressão digital SHA-256 e, em seguida, fecha este aplicativo e abre a versão nova. A pasta de dados (configurações, senha e estoque salvo) é mantida."
-                : "O aplicativo baixa o instalador da versão nova (cerca de 70 a 145 MB), confere a impressão digital SHA-256 e, em seguida, fecha este aplicativo e abre o instalador. Configurações, senha e estoque salvo são mantidos. Siga o instalador até o fim; ao terminar, ele pode abrir o aplicativo novamente.",
-            ok: "Baixar e atualizar", cancelar: "Cancelar"
-        });
-        if (!sim) return;
+        var modo = "silencioso";
+        if (st.portatil) {
+            var sim = await perguntar({
+                titulo: "Atualizar para a versão " + st.versaoNova + "?",
+                texto: "A atualização é automática: o aplicativo baixa a versão portátil nova (cerca de 70 a 135 MB) para a mesma pasta da atual, confere a impressão digital SHA-256, fecha este aplicativo e abre a versão nova. A pasta de dados (configurações, senha e estoque salvo) é mantida.",
+                ok: "Atualizar agora", cancelar: "Cancelar"
+            });
+            if (!sim) return;
+        } else {
+            modo = await perguntar({
+                titulo: "Atualizar para a versão " + st.versaoNova + "?",
+                texto: "A atualização é automática: o aplicativo baixa o instalador da versão nova (cerca de 70 a 145 MB), confere a impressão digital SHA-256 e instala. Configurações, senha e estoque salvo são mantidos. Escolha como instalar:",
+                lista: [
+                    { valor: "silencioso", titulo: "Silenciosa (recomendada)", texto: "Instala sem janelas e reabre o aplicativo automaticamente em alguns instantes. O Windows pode pedir permissão, se o aplicativo foi instalado para todos os usuários." },
+                    { valor: "detalhado", titulo: "Com todos os detalhes", texto: "Abre o instalador com todas as etapas, para acompanhar a instalação. Ao terminar, o aplicativo é reaberto." }
+                ],
+                selecionado: (estado.cfg && estado.cfg.atualizacoesModo) || "silencioso",
+                ok: "Atualizar agora", cancelar: "Cancelar"
+            });
+            if (modo == null) return;
+        }
         var r = null;
-        try { r = await api.instalarAtualizacao(); } catch (e) { r = { ok: false, mensagem: String(e && e.message || e) }; }
-        if (await resultadoAdmin(r)) toast("Atualização conferida. O aplicativo será fechado para atualizar.", 6000);
+        try { r = await api.instalarAtualizacao({ modo: modo }); } catch (e) { r = { ok: false, mensagem: String(e && e.message || e) }; }
+        if (await resultadoAdmin(r))
+            toast(st.portatil ? "Atualização conferida. A versão nova será aberta em alguns instantes."
+                : modo === "detalhado" ? "Atualização conferida. O instalador será aberto em alguns instantes."
+                : "Atualização conferida. Instalando sem janelas; o aplicativo será reaberto automaticamente em alguns instantes.", 8000);
     });
     $("cfgHorario").addEventListener("change", function () { estado.agendaDefinida = true; });
     // Primeiro uso da Cópia do banco (ainda sem agenda): pergunta ao escolher o cartão.

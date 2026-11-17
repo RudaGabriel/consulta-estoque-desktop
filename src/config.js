@@ -14,7 +14,8 @@
  *   (Histórico completo das versões: CHANGELOG.md no repositório.)
  *   1.7.0 — atualizacoesFrequencia ("nunca", "diaria", "semanal", "mensal"; padrão
  *           semanal), PÚBLICA: qualquer pessoa vê e muda a frequência da verificação de
- *           atualizações (baixar e instalar continua exigindo a senha).
+ *           atualizações (baixar e instalar continua exigindo a senha). atualizacoesModo
+ *           ("silencioso" ou "detalhado"): a última forma de instalação escolhida.
  */
 
 const fs = require("fs");
@@ -73,6 +74,7 @@ const ESQUEMA = {
     tabComoEnter:        [true, "bool"],
     // Atualizações do aplicativo (frequência da verificação automática)
     atualizacoesFrequencia: ["semanal", ["nunca", "diaria", "semanal", "mensal"]],
+    atualizacoesModo:    ["silencioso", ["silencioso", "detalhado"]],   // última escolha (gravada ao instalar, com a senha)
     // Busca
     buscaCoringa:        [true, "bool"],
     buscaPreco:          [true, "bool"],

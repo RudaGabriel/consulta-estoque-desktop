@@ -50,7 +50,7 @@ contextBridge.exposeInMainWorld("consulta", {
     adiarAgendaCopia: () => ipcRenderer.invoke("copia:adiar-agenda"),
     atualizacoesEstado: () => ipcRenderer.invoke("atualizacoes:estado"),
     verificarAtualizacoes: () => ipcRenderer.invoke("atualizacoes:verificar"),
-    instalarAtualizacao: () => ipcRenderer.invoke("atualizacoes:instalar"),
+    instalarAtualizacao: p => ipcRenderer.invoke("atualizacoes:instalar", p),
     outrosFdb: () => ipcRenderer.invoke("banco:outros"),
     usarBanco: p => ipcRenderer.invoke("banco:usar", p),
     aoEtapaFirebird: f => ouvir("firebird:etapa", f),

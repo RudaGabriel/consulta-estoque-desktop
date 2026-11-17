@@ -12,7 +12,7 @@
 <img alt="idioma: pt-BR" src="https://img.shields.io/badge/idioma-pt--BR-16A34A?style=flat">
 <img alt="banco: somente leitura" src="https://img.shields.io/badge/banco-somente%20leitura-DC2626?style=flat&logo=data%3Aimage%2Fsvg%2Bxml%3Bbase64%2CPHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHZpZXdCb3g9JzAgMCAyNCAyNCcgZmlsbD0nbm9uZScgc3Ryb2tlPSd3aGl0ZScgc3Ryb2tlLXdpZHRoPScyLjInIHN0cm9rZS1saW5lY2FwPSdyb3VuZCcgc3Ryb2tlLWxpbmVqb2luPSdyb3VuZCc%2BPHBhdGggZD0nTTEyIDIyczgtNCA4LTEwVjVsLTgtMy04IDN2N2MwIDYgOCAxMCA4IDEweicvPjxwYXRoIGQ9J205IDEyIDIgMiA0LTQnLz48L3N2Zz4%3D&logoColor=white">
 <img alt="funciona: sem internet" src="https://img.shields.io/badge/funciona-sem%20internet-0891B2?style=flat">
-<img alt="testes: 88 passando" src="https://img.shields.io/badge/testes-88%20passando-22C55E?style=flat&logo=data%3Aimage%2Fsvg%2Bxml%3Bbase64%2CPHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHZpZXdCb3g9JzAgMCAyNCAyNCcgZmlsbD0nbm9uZScgc3Ryb2tlPSd3aGl0ZScgc3Ryb2tlLXdpZHRoPScyLjInIHN0cm9rZS1saW5lY2FwPSdyb3VuZCcgc3Ryb2tlLWxpbmVqb2luPSdyb3VuZCc%2BPHBhdGggZD0nTTkgMnY2TDQgMTlhMiAyIDAgMCAwIDEuOCAzaDEyLjRhMiAyIDAgMCAwIDEuOC0zTDE1IDhWMicvPjxwYXRoIGQ9J004IDJoOCcvPjxwYXRoIGQ9J003IDE1aDEwJy8%2BPC9zdmc%2B&logoColor=white">
+<img alt="testes: 89 passando" src="https://img.shields.io/badge/testes-89%20passando-22C55E?style=flat&logo=data%3Aimage%2Fsvg%2Bxml%3Bbase64%2CPHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHZpZXdCb3g9JzAgMCAyNCAyNCcgZmlsbD0nbm9uZScgc3Ryb2tlPSd3aGl0ZScgc3Ryb2tlLXdpZHRoPScyLjInIHN0cm9rZS1saW5lY2FwPSdyb3VuZCcgc3Ryb2tlLWxpbmVqb2luPSdyb3VuZCc%2BPHBhdGggZD0nTTkgMnY2TDQgMTlhMiAyIDAgMCAwIDEuOCAzaDEyLjRhMiAyIDAgMCAwIDEuOC0zTDE1IDhWMicvPjxwYXRoIGQ9J004IDJoOCcvPjxwYXRoIGQ9J003IDE1aDEwJy8%2BPC9zdmc%2B&logoColor=white">
 <img alt="licença: proprietária" src="https://img.shields.io/badge/licen%C3%A7a-propriet%C3%A1ria-6B7280?style=flat">
 
 <img alt="Electron: 44.9.3" src="https://img.shields.io/badge/Electron-44.9.3-47848F?style=flat&logo=electron&logoColor=white">
@@ -362,6 +362,7 @@ Tudo pode ser feito na tela (*Configurações*, **F10**). As chaves marcadas com
 | `zoom` | `1` | Tamanho do texto (0,6 a 2,5) |
 | `som` / `tabComoEnter` | `true` / `true` | Bipe na leitura / TAB do leitor vale como Enter |
 | `atualizacoesFrequencia` | `semanal` | Verificação automática de versões novas: `diaria`, `semanal`, `mensal` ou `nunca` (livre, sem a senha) |
+| `atualizacoesModo` 🔒 | `silencioso` | Última forma de instalação escolhida: `silencioso` ou `detalhado` |
 | `volumeSom` | `100` | Volume do bipe (10 a 100%) |
 | `modoLeve` | `false` | Sem animações (PCs antigos) |
 | `senhaAdmin` | — | *Hash* da senha do administrador (criado pela tela; nunca a senha). Vazio = sem senha, tudo livre |
@@ -419,7 +420,17 @@ Em *Configurações → Atualizações* — área **livre**, sem a senha do admi
 |---|---|
 | **Verificar agora** | Consulta se há versão nova (no máximo uma vez por minuto). |
 | **Verificar automaticamente** | **Uma vez ao dia**, **uma vez por semana** (padrão), **uma vez por mês** ou **Nunca** (somente pelo botão). A primeira verificação automática acontece 2 minutos depois de abrir; sem internet, nova tentativa em uma hora. |
-| **Baixar e instalar** | Só com a **senha do administrador** e confirmação. Baixa o arquivo da mesma versão do aplicativo (moderna ou legado, 64 ou 32 bits, instalador ou portátil) e confere a **impressão digital SHA-256** publicada com a versão. Instalador: o aplicativo fecha e o instalador abre (configurações, senha e estoque salvo são mantidos). Portátil: a versão nova fica na mesma pasta da atual e abre no lugar dela (a pasta `ConsultaEstoque-dados` é a mesma). |
+| **Baixar e instalar** | Só com a **senha do administrador** e confirmação. A atualização é **automática** (sem navegador, sem baixar nada à mão): baixa o arquivo da mesma versão do aplicativo (moderna ou legado, 64 ou 32 bits, instalador ou portátil), confere a **impressão digital SHA-256** publicada com a versão e instala. Configurações, senha e estoque salvo são mantidos. |
+
+**Formas de instalar** (escolhidas na confirmação; a última escolha fica marcada):
+
+| Forma | O que acontece |
+|---|---|
+| **Silenciosa** (recomendada) | Instala sem janelas e **reabre o aplicativo automaticamente** em alguns instantes. Mantém o modo da instalação anterior (só para este usuário ou para todos); se o aplicativo foi instalado para todos os usuários, o Windows pede permissão. |
+| **Com todos os detalhes** | Abre o instalador com todas as etapas, para acompanhar a instalação. Ao terminar, o aplicativo é reaberto. |
+| Versão portátil | A versão nova fica na mesma pasta da atual (a pasta `ConsultaEstoque-dados` é a mesma) e abre no lugar dela. |
+
+Se a instalação falhar ou for cancelada, a versão atual volta a abrir: o quiosque não fica fechado.
 
 - A verificação **nunca interrompe a tela pública**: quando há versão nova, só aparece a marca discreta "versão X disponível" ao lado da versão, no topo. Nada é baixado sem o administrador.
 - Só atualiza para uma versão **maior** que a instalada, nunca para uma anterior.
@@ -480,7 +491,7 @@ Uma única biblioteca em uso pelo aplicativo (`node-firebird`); o resto é o pr�
 | Instalador | [electron-builder](https://www.electron.build) | 26.18.0 | Instalador NSIS e versão portátil, x64 e ia32 |
 | Tela | HTML5, CSS e JavaScript sem framework | — | Leve para PCs fracos; temas claro e escuro |
 | Som | Web Audio API | — | Bipe da leitura, sem arquivos de áudio |
-| Testes | `node:test` + `node:assert` | Node 20+ | 88 testes com Firebird, gbak e aplicativo simulados |
+| Testes | `node:test` + `node:assert` | Node 20+ | 89 testes com Firebird, gbak e aplicativo simulados |
 | Senha | `crypto.pbkdf2` (Node) | — | *Hash* da senha do administrador com sal, comparação em tempo constante |
 | Teste da tela | Playwright + Electron | — | Fluxo do leitor, cartão, configurações, tema e Electron 22 |
 | Build | GitHub Actions | — | Testes + instaladores a cada push |
@@ -493,7 +504,7 @@ Uma única biblioteca em uso pelo aplicativo (`node-firebird`); o resto é o pr�
 npm test
 ```
 
-- **88 testes**, sem Firebird real:
+- **89 testes**, sem Firebird real:
   - **Firebird simulado** (`src/demo.js`): registra toda SQL e transação, para provar que nada de escrita sai;
   - **gbak simulado** (`test/mock-gbak.js`): backup, restauração, falhas e atraso.
 - **Trava de somente leitura:** comandos recusados, transação somente leitura, `node-firebird` 0.x e 1.x+.
@@ -508,12 +519,12 @@ npm test
 - **Administrador:** senha só como *hash*, chaves sensíveis, padrões do quiosque (barra de tarefas oculta, também em config antigo), cópia a cada 3 horas.
 - **Agenda da Cópia do banco:** uma vez ao dia no horário escolhido, nunca duas cópias seguidas (menos de 1 hora), cálculo do próximo horário e do último horário diário, volta para intervalos.
 - **Caminho no servidor:** servidor informado sem o caminho, troca de servidor apaga o caminho antigo; **seleção manual** sem nenhuma busca automática.
-- **Atualizações:** comparação de versões (só maior), escolha do arquivo pela variante, arquitetura e tipo, frequência da verificação, servidor que pede para tentar mais tarde (403/429), sem internet e sem resposta (prazo), endereço sem HTTPS recusado, download conferido pelo SHA-256 (arquivo diferente apagado).
+- **Atualizações:** instalação silenciosa (`/S --updated --force-run`) ou com todos os detalhes, o aplicativo sempre volta a abrir, caminhos com aspas ou `%` recusados, comparação de versões (só maior), escolha do arquivo pela variante, arquitetura e tipo, frequência da verificação, servidor que pede para tentar mais tarde (403/429), sem internet e sem resposta (prazo), endereço sem HTTPS recusado, download conferido pelo SHA-256 (arquivo diferente apagado).
 - **Agenda persistente:** com o servidor desligado na hora da cópia diária, nova tentativa em minutos (não no dia seguinte) até concluir; cópia cancelada pelo tempo máximo tenta novamente em 30 minutos.
 - **Apagar o portátil (processos de verdade):** espera o aplicativo fechar antes de apagar, apaga o `.exe` e a pasta de dados, reconhece a pasta temporária do portátil, nunca mexe em pasta de outro programa.
 - **Vigia (processos de verdade):** reabre o aplicativo fechado à força (rápido, sem abrir duas vezes enquanto o novo grava o PID), espera o reinício avisado, encerra com a saída autorizada e com a persistência desligada, um vigia só.
 - **Abertura:** cópia salva em dia não toca no banco ao abrir; estimativa da cópia pela duração de cada etapa (também antes da primeira cópia da abertura).
-- **Tela (Playwright, Electron 44 e 22):** três modos (Instantâneo padrão), cartão centralizado com preço grande e X centralizado, caixas e campos vazios escondidos, cartão fecha ao digitar, voltar ao topo, volume do bipe, sem totais, "Abaixo do mínimo" escondido sem mínimo, tela sem nomes de sistemas, configuração inicial (nome da loja, senha opcional, sem senha tudo livre, criar e remover a senha depois), barra de andamento da cópia, confirmação do Atualizar/F5, troca do Firebird, pergunta da localização do banco (três opções em lista, seleção manual abrindo a aba Banco de dados), aba Atualizações livre (verificar agora, frequência salva sem a senha, verificação manual limitada a uma por minuto, baixar e instalar com a senha, só a marca discreta na tela principal), agenda da Cópia do banco (intervalos ou uma vez ao dia, no primeiro uso e na aba Consulta; "Decidir mais tarde" não volta na abertura seguinte; com senha, a tela pública não fica presa e o administrador é perguntado na aba Consulta), filtro de peso, foco de volta na busca após 30 s, coringa e preço, leitura, limpeza após inatividade, fechar bloqueado, trava das abas, desbloqueio, ações sensíveis recusadas sem a senha, saída com Ctrl+Shift+Q, instalação do Firebird e escolha de outro `.FDB`.
+- **Tela (Playwright, Electron 44 e 22):** três modos (Instantâneo padrão), cartão centralizado com preço grande e X centralizado, caixas e campos vazios escondidos, cartão fecha ao digitar, voltar ao topo, volume do bipe, sem totais, "Abaixo do mínimo" escondido sem mínimo, tela sem nomes de sistemas, configuração inicial (nome da loja, senha opcional, sem senha tudo livre, criar e remover a senha depois), barra de andamento da cópia, confirmação do Atualizar/F5, troca do Firebird, pergunta da localização do banco (três opções em lista, seleção manual abrindo a aba Banco de dados), aba Atualizações livre (verificar agora, frequência salva sem a senha, verificação manual limitada a uma por minuto, baixar e instalar com a senha e a escolha entre silenciosa e com todos os detalhes, só a marca discreta na tela principal), agenda da Cópia do banco (intervalos ou uma vez ao dia, no primeiro uso e na aba Consulta; "Decidir mais tarde" não volta na abertura seguinte; com senha, a tela pública não fica presa e o administrador é perguntado na aba Consulta), filtro de peso, foco de volta na busca após 30 s, coringa e preço, leitura, limpeza após inatividade, fechar bloqueado, trava das abas, desbloqueio, ações sensíveis recusadas sem a senha, saída com Ctrl+Shift+Q, instalação do Firebird e escolha de outro `.FDB`.
 
 ---
 
